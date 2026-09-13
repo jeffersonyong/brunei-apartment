@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+import { canSendPasswordResets } from '@/lib/db/password-reset'
+
 import { LoginForm } from './login-form'
 
 export const metadata: Metadata = {
@@ -11,6 +13,10 @@ export const metadata: Metadata = {
  * bounces them straight to their destination — so it renders for exactly one
  * audience: staff without a session, on any device from the front desk
  * desktop to a guard's phone.
+ *
+ * Whether "Forgot password?" works is this deployment's to answer (capability
+ * F8, open question N42): it is always shown, and inert until email can be
+ * sent.
  */
 export default async function LoginPage({
   searchParams,
@@ -19,5 +25,10 @@ export default async function LoginPage({
 }) {
   const { next } = await searchParams
 
-  return <LoginForm next={typeof next === 'string' ? next : undefined} />
+  return (
+    <LoginForm
+      next={typeof next === 'string' ? next : undefined}
+      canResetByEmail={canSendPasswordResets()}
+    />
+  )
 }
