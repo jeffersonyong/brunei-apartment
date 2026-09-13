@@ -10,8 +10,6 @@ describe('activeHref', () => {
   test('prefers the longest match so a child route does not light up its parent', () => {
     expect(activeHref('/portal/bookings/new')).toBe('/portal/bookings/new')
     expect(activeHref('/portal/payments/cash')).toBe('/portal/payments/cash')
-    // The Admin landing page is itself a route, so its children must still win.
-    expect(activeHref('/portal/settings')).toBe('/portal/settings')
     expect(activeHref('/portal/settings/property')).toBe('/portal/settings/property')
     expect(activeHref('/portal/settings/audit')).toBe('/portal/settings/audit')
     // Reports and the cash-up are siblings in the nav and nested in the URL.
@@ -62,17 +60,20 @@ describe('breadcrumbTrail', () => {
   })
 
   test('names Others as the group for the account screen', () => {
-    expect(breadcrumbTrail('/portal/settings')).toEqual([
+    expect(breadcrumbTrail('/portal/account')).toEqual([
       { label: 'Portal', href: '/portal' },
       { label: 'Others' },
       { label: 'Settings' },
     ])
   })
 
-  test('keeps Settings out of Admin, whose screens are the permission-gated ones', () => {
+  test('keeps Settings out of Admin, and out of the admin screens’ URL', () => {
     const admin = navGroups.find((group) => group.label === 'Admin')
 
-    expect(admin?.items.map((item) => item.href)).not.toContain('/portal/settings')
+    expect(admin?.items.map((item) => item.href)).not.toContain('/portal/account')
+    // The admin screens share `/portal/settings/`, and that prefix is not a
+    // screen of its own — so nothing lights up there as if it were their parent.
+    expect(activeHref('/portal/settings')).toBeNull()
   })
 
   test('closes the nav on Others, so the catch-all does not sit mid-list', () => {
@@ -87,13 +88,14 @@ describe('breadcrumbTrail', () => {
     ])
   })
 
-  test('files website photos under their own area, not under Admin', () => {
+  test('files website photos under Admin, beside the rest of the configuration', () => {
     expect(activeHref('/portal/website/photos')).toBe('/portal/website/photos')
     expect(breadcrumbTrail('/portal/website/photos')).toEqual([
       { label: 'Portal', href: '/portal' },
-      { label: 'Website' },
-      { label: 'Photos' },
+      { label: 'Admin' },
+      { label: 'Website photos' },
     ])
+    expect(navGroups.map((group) => group.label)).not.toContain('Website')
   })
 
   test('falls back to the root crumb rather than guessing labels from the URL', () => {

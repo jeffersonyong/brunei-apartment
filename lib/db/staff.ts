@@ -7,7 +7,8 @@ import { currentPropertyId } from '@/lib/db/property'
 import { dataClient } from '@/lib/supabase/data'
 
 /**
- * Staff accounts and roles, for the F1/F2 admin screens.
+ * Staff accounts and roles, for the F1/F2 admin screens and for a person's own
+ * Settings.
  *
  * A staff member is an auth.users row plus user_role grants — there is no
  * profile table (architecture.md §3): the display name lives in
@@ -45,9 +46,19 @@ export interface RoleWithPermissions {
   permissions: readonly string[]
 }
 
+/**
+ * Whether an administrator has disabled the account: a GoTrue ban still
+ * running. Read by the staff list and by the password reset email, which must
+ * not send a disabled account a link GoTrue would refuse.
+ */
+export function isAccountDisabled(user: User): boolean {
+  const bannedUntil = (user as { banned_until?: string }).banned_until
+
+  return Boolean(bannedUntil && new Date(bannedUntil).getTime() > Date.now())
+}
+
 function toStaffAccount(user: User, roles: readonly StaffRoleSummary[]): StaffAccount {
   const metadataName = user.user_metadata?.display_name
-  const bannedUntil = (user as { banned_until?: string }).banned_until
 
   return {
     id: user.id,
@@ -56,7 +67,7 @@ function toStaffAccount(user: User, roles: readonly StaffRoleSummary[]): StaffAc
       typeof metadataName === 'string' && metadataName.trim() !== ''
         ? metadataName
         : (user.email ?? ''),
-    disabled: Boolean(bannedUntil && new Date(bannedUntil).getTime() > Date.now()),
+    disabled: isAccountDisabled(user),
     roles,
   }
 }
@@ -394,4 +405,109 @@ export async function deleteStaffAccount(
   })
 
   return { ok: true }
+}
+
+/**
+ * The roles one account holds, alphabetical — for somebody reading their own
+ * access on Settings.
+ *
+ * Its own read rather than `listStaff()` searched for one row: that lists
+ * every account from GoTrue to build a roster, and this needs one person's
+ * grants.
+ */
+export async function rolesForUser(userId: string): Promise<readonly StaffRoleSummary[]> {
+  const propertyId = await currentPropertyId()
+
+  const [{ data, error }, roles] = await Promise.all([
+    dataClient()
+      .from('user_role')
+      .select('role_id')
+      .eq('property_id', propertyId)
+      .eq('user_id', userId),
+    listRoles(),
+  ])
+
+  if (error) {
+    throw new Error(`Could not read roles for user ${userId}: ${error.message}`)
+  }
+
+  const heldRoleIds = new Set((data as { role_id: string }[]).map((row) => row.role_id))
+
+  return roles.filter((role) => heldRoleIds.has(role.id))
+}
+
+export interface RenameStaffAccountResult {
+  /** False when the account already had this name: nothing written, nothing recorded. */
+  changed: boolean
+}
+
+/**
+ * Sets the name an account goes by — in the sidebar, on the staff list, and
+ * beside everything the trail says it did.
+ *
+ * Recorded with both sides, because a name is how the audit log is read: an
+ * event saying only "renamed" would leave nobody able to place the person
+ * last month's entries were filed under. A rename that changes nothing writes
+ * nothing, so an idle save cannot fabricate history (architecture.md §4).
+ *
+ * The actor is a parameter rather than assumed to be the account itself.
+ * Today a staff member names themselves on Settings; the event says who acted
+ * either way.
+ */
+export async function renameStaffAccount(
+  userId: string,
+  displayName: string,
+  actorId: string,
+): Promise<RenameStaffAccountResult> {
+  const { data, error: readError } = await dataClient().auth.admin.getUserById(userId)
+
+  if (readError || !data.user) {
+    throw new Error(`Could not read the account before renaming it: ${readError?.message}`)
+  }
+
+  const storedName = data.user.user_metadata?.display_name
+  const before = typeof storedName === 'string' ? storedName : ''
+
+  if (before === displayName) {
+    return { changed: false }
+  }
+
+  // GoTrue merges user_metadata key by key, so this touches the name alone.
+  const { error } = await dataClient().auth.admin.updateUserById(userId, {
+    user_metadata: { display_name: displayName },
+  })
+
+  if (error) {
+    throw new Error(`Could not rename the account: ${error.message}`)
+  }
+
+  await recordAuditEvent({
+    actorId,
+    action: 'staff.renamed',
+    entityType: 'staff_user',
+    entityId: userId,
+    before: { display_name: before },
+    after: { display_name: displayName },
+  })
+
+  return { changed: true }
+}
+
+/**
+ * Records that somebody chose their own password.
+ *
+ * Only the record is made here. The change itself happens on the person's own
+ * session (`auth.updateUser`, app/(auth)/actions.ts), because GoTrue then keeps
+ * that session and ends every other one. The event is what lets the trail read
+ * "reset by an administrator, then changed by its owner" instead of stopping
+ * at the reset — so whoever handed out the temporary password can see it has
+ * stopped working.
+ */
+export async function recordOwnPasswordChange(userId: string): Promise<void> {
+  await recordAuditEvent({
+    actorId: userId,
+    action: 'staff.password_changed',
+    entityType: 'staff_user',
+    entityId: userId,
+  })
 }

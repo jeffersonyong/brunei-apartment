@@ -192,8 +192,11 @@ function record(
   })
 }
 
-/** The half of an address that is safe to keep for ever. */
-function domainOf(address: string): string | null {
+/**
+ * The half of an address that is safe to keep for ever. Shared with the staff
+ * password reset email (lib/db/password-reset.ts), which files the same fact.
+ */
+export function domainOf(address: string): string | null {
   const at = address.lastIndexOf('@')
 
   return at === -1 ? null : address.slice(at + 1).toLowerCase()

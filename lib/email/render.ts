@@ -5,6 +5,7 @@ import type {
   EmailStatus,
   EmailTransfer,
 } from '@/lib/domain/booking-email'
+import type { PasswordResetEmailModel } from '@/lib/domain/password-reset'
 
 /**
  * The one place email HTML exists (capability A8).
@@ -88,6 +89,77 @@ export function renderBookingEmail(model: BookingEmailModel): RenderedEmail {
 }
 
 /**
+ * The staff password-reset email (capability F8).
+ *
+ * The booking email's frame with the operations register inside it. It goes to
+ * a member of staff about the portal, so it follows the monochrome surface's
+ * rules — an ink button with white on it, a sans headline, no lagoon and no
+ * Fraunces — for the reason the sign-in screen refuses both: the brand face and
+ * the brand hue travel together, and only on the customer surface.
+ */
+export function renderPasswordResetEmail(model: PasswordResetEmailModel): RenderedEmail {
+  return {
+    html: frame(model.preheader, passwordResetBody(model)),
+    text: passwordResetText(model),
+  }
+}
+
+/** The outer tables every email sits in: the sunk ground, and one card on it. */
+function frame(preheader: string, body: string): string {
+  return [
+    `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escape(preheader)}</div>`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${CANVAS_SUNK};margin:0;padding:24px 12px;color-scheme:light">`,
+    '<tr><td align="center">',
+    `<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:${CANVAS};border:1px solid ${HAIRLINE};border-radius:12px">`,
+    `<tr><td style="padding:32px 28px 28px 28px;font-family:${SANS};font-size:14px;line-height:21px;color:${INK}">`,
+    body,
+    '</td></tr></table></td></tr></table>',
+  ].join('')
+}
+
+function passwordResetBody(model: PasswordResetEmailModel): string {
+  const href = escape(model.action.url)
+  const notes = model.notes
+    .map(
+      (note) =>
+        `<p style="margin:12px 0 0 0;font-size:14px;line-height:21px;color:${MUTE}">${escape(note)}</p>`,
+    )
+    .join('')
+
+  return [
+    eyebrow(model.eyebrow),
+    `<h1 style="margin:12px 0 0 0;font-family:${SANS};font-size:22px;line-height:28px;font-weight:600;letter-spacing:-0.22px;color:${INK}">${escape(model.headline)}</h1>`,
+    `<p style="margin:12px 0 0 0;font-size:16px;line-height:25px;color:${INK}">${escape(model.intro)}</p>`,
+    '<div style="margin-top:24px">',
+    `<a href="${href}" style="display:inline-block;padding:10px 18px;background-color:${INK};color:${CANVAS};font-size:13px;line-height:20px;font-weight:500;text-decoration:none;border-radius:6px">${escape(model.action.label)}</a>`,
+    // Restated as text, because some mail apps strip buttons and a link
+    // somebody can see is one they can copy.
+    `<p style="margin:12px 0 0 0;font-size:12px;line-height:16px;color:${MUTE};word-break:break-all">${href}</p>`,
+    `<p style="margin:8px 0 0 0;font-size:12px;line-height:16px;color:${MUTE}">${escape(model.action.note)}</p>`,
+    '</div>',
+    notes,
+    `<div style="margin-top:28px;padding-top:20px;border-top:1px solid ${HAIRLINE}">`,
+    `<p style="margin:0;font-size:12px;line-height:16px;color:${MUTE}">${escape(model.footer)}</p></div>`,
+  ].join('')
+}
+
+function passwordResetText(model: PasswordResetEmailModel): string {
+  return [
+    model.headline.toUpperCase(),
+    '',
+    model.intro,
+    '',
+    `${model.action.label}: ${model.action.url}`,
+    model.action.note,
+    '',
+    ...model.notes,
+    '',
+    '—',
+    model.footer,
+  ].join('\n')
+}
+
+/**
  * Every interpolated value passes through here.
  *
  * Guest names, vehicle registrations, line descriptions and bank details are
@@ -106,12 +178,7 @@ function escape(value: string): string {
 }
 
 function renderHtml(model: BookingEmailModel): string {
-  return [
-    `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escape(model.preheader)}</div>`,
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${CANVAS_SUNK};margin:0;padding:24px 12px;color-scheme:light">`,
-    '<tr><td align="center">',
-    `<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:${CANVAS};border:1px solid ${HAIRLINE};border-radius:12px">`,
-    `<tr><td style="padding:32px 28px 28px 28px;font-family:${SANS};font-size:14px;line-height:21px;color:${INK}">`,
+  const body = [
     eyebrow(model.footer.propertyName),
     `<h1 style="margin:12px 0 0 0;font-family:${DISPLAY};font-size:28px;line-height:34px;font-weight:600;letter-spacing:-0.56px;color:${INK}">${escape(model.headline)}</h1>`,
     statusChip(model.status),
@@ -126,10 +193,11 @@ function renderHtml(model: BookingEmailModel): string {
     model.arrival.length === 0 ? '' : arrival(model.arrival),
     action(model),
     footer(model),
-    '</td></tr></table></td></tr></table>',
   ]
     .filter((part) => part !== '')
     .join('')
+
+  return frame(model.preheader, body)
 }
 
 function eyebrow(text: string, colour: string = MUTE): string {

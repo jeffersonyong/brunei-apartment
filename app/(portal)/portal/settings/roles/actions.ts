@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '@/lib/auth/password-policy'
 import { PERMISSIONS, type Permission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require-permission'
 import { adminRoleKeepsConfigManage, wouldLockSelfOut } from '@/lib/auth/role-guards'
@@ -50,7 +51,7 @@ const createStaffSchema = z.object({
   displayName: z.string().trim().min(1, 'Enter their name.').max(120),
   email: z.email('Enter a valid email address.'),
   // Mirrors supabase/config.toml minimum_password_length.
-  tempPassword: z.string().min(6, 'Use at least 6 characters.'),
+  tempPassword: z.string().min(MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT),
   roleIds: z.array(z.uuid()),
 })
 
@@ -218,7 +219,7 @@ export async function setAccountStatusAction(
 
 const resetPasswordSchema = z.object({
   userId: z.uuid(),
-  tempPassword: z.string().min(6, 'Use at least 6 characters.'),
+  tempPassword: z.string().min(MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT),
 })
 
 export async function resetStaffPasswordAction(

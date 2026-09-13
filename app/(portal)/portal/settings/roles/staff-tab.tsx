@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label'
 import { Pagination } from '@/components/ui/pagination'
 import { clampPage, pageCountFor } from '@/components/ui/pagination-range'
 import { toast } from '@/components/ui/toast-store'
+import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password-policy'
 import { generateTempPassword } from '@/lib/auth/temp-password'
 import {
   Table,
@@ -285,7 +286,7 @@ function TempPasswordField({
         placeholder="Generate one, or type your own"
         autoComplete="off"
         required
-        minLength={6}
+        minLength={MIN_PASSWORD_LENGTH}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={error ? true : undefined}

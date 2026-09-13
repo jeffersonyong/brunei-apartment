@@ -61,3 +61,15 @@ export const PERMISSION_GROUPS: readonly { label: string; permissions: readonly 
     permissions: ['config.manage', 'report.view', 'document.view_identity'],
   },
 ]
+
+/**
+ * The groups above, narrowed to what somebody holds, with any left empty
+ * dropped. It is how Settings reads a person's own access back to them — in
+ * the order and the words the roles matrix gave whoever granted it.
+ */
+export function heldPermissionGroups(held: ReadonlySet<Permission>): typeof PERMISSION_GROUPS {
+  return PERMISSION_GROUPS.map((group) => ({
+    label: group.label,
+    permissions: group.permissions.filter((permission) => held.has(permission)),
+  })).filter((group) => group.permissions.length > 0)
+}

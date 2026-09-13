@@ -3,34 +3,41 @@ import { NextResponse } from 'next/server'
 import { buildBookingEmail, type BookingEmailKind } from '@/lib/domain/booking-email'
 import { contact } from '@/lib/domain/contact'
 import { line } from '@/lib/domain/lines'
-import { renderBookingEmail } from '@/lib/email/render'
+import { buildPasswordResetEmail, resetPasswordUrl } from '@/lib/domain/password-reset'
+import { renderBookingEmail, renderPasswordResetEmail } from '@/lib/email/render'
 
 /**
- * The four emails, drawn in a browser (capability A8).
+ * The emails, drawn in a browser (capabilities A8 and F8).
  *
  * It exists because **nothing sends**: Resend delivers only to the account
  * owner until a sending domain is verified and none is chosen, so without this
- * the only way to see what a guest receives would be to read the markup. An
- * email is a design surface and has to be looked at.
+ * the only way to see what a guest — or a member of staff resetting a password
+ * — receives would be to read the markup. An email is a design surface and has
+ * to be looked at.
  *
  * **404 outside development**, which is the whole of its access control — it
  * is a route rather than a page so that check is one line and cannot be
  * reached by a link. It touches no database: every figure below is invented,
  * so it discloses nothing and works against an empty stack.
  *
- *   /api/dev/email-preview                     — the four, side by side
+ *   /api/dev/email-preview                     — all of them, side by side
  *   /api/dev/email-preview?case=created-stay   — one, on its own
  *   /api/dev/email-preview?case=created-stay&format=text
+ *   /api/dev/email-preview?case=password-reset
  */
 export const dynamic = 'force-dynamic'
 
-type PreviewCase = 'created-stay' | 'created-day-pass' | 'confirmed-stay' | 'confirmed-day-pass'
+type BookingPreviewCase =
+  'created-stay' | 'created-day-pass' | 'confirmed-stay' | 'confirmed-day-pass'
+
+type PreviewCase = BookingPreviewCase | 'password-reset'
 
 const CASES: Readonly<Record<PreviewCase, string>> = {
   'created-stay': 'Booked a stay — how to pay',
   'created-day-pass': 'Booked a day pass — how to pay',
   'confirmed-stay': 'Stay confirmed — deposit held, stay owed',
   'confirmed-day-pass': 'Day pass confirmed',
+  'password-reset': 'Staff — choose a new password',
 }
 
 export function GET(request: Request): NextResponse {
@@ -49,7 +56,10 @@ export function GET(request: Request): NextResponse {
     return NextResponse.json({ error: 'Unknown case', cases: Object.keys(CASES) }, { status: 400 })
   }
 
-  const rendered = renderBookingEmail(modelFor(requested))
+  const rendered =
+    requested === 'password-reset'
+      ? renderPasswordResetEmail(passwordResetModel())
+      : renderBookingEmail(modelFor(requested))
 
   return url.searchParams.get('format') === 'text'
     ? new NextResponse(rendered.text, {
@@ -68,7 +78,7 @@ function html(body: string): NextResponse {
   })
 }
 
-/** The four in one page, each in its own frame at a phone's width. */
+/** All of them in one page, each in its own frame at a phone's width. */
 function index(): string {
   const frames = Object.entries(CASES)
     .map(
@@ -84,15 +94,23 @@ function index(): string {
     )
     .join('')
 
-  return `<!doctype html><meta charset="utf-8"><title>Booking emails — preview</title>
+  return `<!doctype html><meta charset="utf-8"><title>Emails — preview</title>
     <body style="margin:0;padding:24px;background:#f3f3f3;font:14px/21px system-ui">
-      <h1 style="font:600 22px/28px system-ui;margin:0 0 4px 0">Booking emails</h1>
+      <h1 style="font:600 22px/28px system-ui;margin:0 0 4px 0">Emails</h1>
       <p style="margin:0 0 20px 0;color:#6b6b6b">Development only. Every figure is invented.</p>
       <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">${frames}</div>
     </body>`
 }
 
-function modelFor(preview: PreviewCase) {
+/** An invented account and a token of the right shape that unlocks nothing. */
+function passwordResetModel() {
+  return buildPasswordResetEmail({
+    email: 'mary@example.com',
+    resetUrl: resetPasswordUrl('https://palmvilla.bn', '0'.repeat(56)),
+  })
+}
+
+function modelFor(preview: BookingPreviewCase) {
   const isDayPass = preview.endsWith('day-pass')
   const kind: BookingEmailKind = preview.startsWith('created')
     ? 'booking_created'

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
+import { MIN_PASSWORD_LENGTH } from './password-policy'
 import { generateTempPassword } from './temp-password'
 
 describe('generateTempPassword', () => {
@@ -17,9 +18,9 @@ describe('generateTempPassword', () => {
     }
   })
 
-  test('clears the configured minimum password length', () => {
-    // supabase/config.toml minimum_password_length = 6; the separator counts.
-    expect(generateTempPassword().length).toBeGreaterThanOrEqual(6)
+  test('clears the minimum password length', () => {
+    // The separators count toward it, as the auth server counts every character.
+    expect(generateTempPassword().length).toBeGreaterThanOrEqual(MIN_PASSWORD_LENGTH)
   })
 
   test('two passwords differ', () => {

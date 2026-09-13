@@ -65,7 +65,7 @@ export const navGroups = [
    * Property holds one screen today and will hold more — facilities, and
    * whatever housekeeping and long-stay bring — which is why it is a group
    * rather than a lone item filed under Admin. Units is a daily operations
-   * screen, and Admin is where the permission-gated ones live.
+   * screen, and Admin is where the business is configured.
    */
   { label: 'Property', items: [{ href: '/portal/units', label: 'Units', icon: DoorOpen }] },
   {
@@ -81,27 +81,24 @@ export const navGroups = [
       { href: '/portal/reports/cash-up', label: 'Daily cash-up', icon: Coins },
     ],
   },
-  /**
-   * The public site's photographs (capability F7). An area of its own rather
-   * than a screen under Admin, because the groups name areas of the work and
-   * not permission levels (design.md, Portal nav items): whoever runs the
-   * Instagram account can hold `site_image.manage` without being an
-   * administrator, and filing it under Admin would say otherwise.
-   */
-  {
-    label: 'Website',
-    items: [{ href: '/portal/website/photos', label: 'Photos', icon: ImageIcon }],
-  },
   {
     label: 'Admin',
     items: [
       { href: '/portal/settings/property', label: 'Property settings', icon: Tag },
       // Under Admin rather than beside Units in Property, deliberately. The
       // Units board is a daily operations screen; naming the building is
-      // configuration and is gated on `config.manage` like everything else
-      // here. The board links across to it, which is where anyone looking for
-      // it will look first.
+      // configuration and is gated on `config.manage`. The board links across
+      // to it, which is where anyone looking for it will look first.
       { href: '/portal/settings/units', label: 'Unit registry', icon: Building2 },
+      // The public site's photographs (capability F7). They were a Website
+      // group of one, and a label over a single screen that will not be
+      // joined is chrome rather than structure — the photos are what the
+      // business shows the public, configured once and refreshed now and then,
+      // the same kind of work as the rates above them. The group names that
+      // work, not who may do it: the screen answers to `site_image.manage`,
+      // which whoever runs the Instagram account can hold without being an
+      // administrator.
+      { href: '/portal/website/photos', label: 'Website photos', icon: ImageIcon },
       { href: '/portal/settings/roles', label: 'Roles & staff', icon: Users },
       { href: '/portal/settings/audit', label: 'Audit log', icon: ScrollText },
       // No "Export data" item. The screen it pointed at listed seventeen table
@@ -112,12 +109,16 @@ export const navGroups = [
     ],
   },
   /**
-   * Settings is not Admin: the screens in that group are the ones only an
-   * administrator may open, while this is where anyone signed in manages their
-   * own account. It belongs to no area of the work, so it closes the nav under
-   * the catch-all label rather than borrowing a permission it does not need.
+   * Settings is not Admin: that group configures the business, while this is
+   * where anyone signed in looks after their own account — their name, their
+   * password, what they have been given access to. It belongs to no area of
+   * the work, so it closes the nav under the catch-all label rather than
+   * borrowing a permission it does not need.
+   *
+   * Addressed `/portal/account`, not `/portal/settings`: the admin screens
+   * share that prefix, and a person's own account is not their parent.
    */
-  { label: 'Others', items: [{ href: '/portal/settings', label: 'Settings', icon: Settings }] },
+  { label: 'Others', items: [{ href: '/portal/account', label: 'Settings', icon: Settings }] },
 ] as const satisfies readonly NavGroup[]
 
 /**
