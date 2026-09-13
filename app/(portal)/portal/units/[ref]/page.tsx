@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 
+import { MarkReadyButton } from '@/components/mark-ready-button'
 import { EmptyState } from '@/components/portal/empty-state'
 import { HISTORY_PAGE_SIZE, historyPage } from '@/components/portal/history-page'
 import { PageHeader } from '@/components/portal/page-header'
@@ -14,7 +15,10 @@ import { getActor } from '@/lib/auth/require-permission'
 import { listAuditEventPage } from '@/lib/db/audit'
 import { listStaff } from '@/lib/db/staff'
 import { getUnitStateByRef } from '@/lib/db/units'
-import { formatStayDate } from '@/lib/domain/dates'
+import { formatStayDate, formatTimestamp } from '@/lib/domain/dates'
+import { INSPECTION_OUTCOME_LABELS } from '@/lib/domain/inspection'
+
+import { RecordInspection } from '../../deposits/[reference]/record-inspection'
 
 import { UnitActions } from './unit-actions'
 import { UnitHistory } from './unit-history'
@@ -105,6 +109,16 @@ export default async function UnitPage({ params, searchParams }: PageProps) {
   // The database refuses the rest anyway — the exclusion constraint and the
   // out-of-service trigger — so this only decides whether the button appears.
   const mayLease = unit.occupant === null && unit.outOfService === null
+
+  // The stay this unit is being turned over after, while there is a turnover
+  // to speak of: a guest who has left since turnovers were kept (capabilities
+  // C2–C3). Stays before that date have nothing to mark, and a guest still in
+  // is the Today card's business.
+  const lastStay =
+    unit.lastStay?.status === 'completed' && unit.lastStay.end >= unit.turnoverTrackedSince
+      ? unit.lastStay
+      : null
+  const mayInspect = hasPermission(actor.permissions, 'inspection.record')
 
   return (
     <>
@@ -218,6 +232,69 @@ export default async function UnitPage({ params, searchParams }: PageProps) {
               </p>
             )}
           </SectionCard>
+
+          {/* The turnover, from the desk's side: the same inspection and the
+              same Mark ready the cleaner's phone offers, for the day the
+              cleaner is not the one who does it. Ready is a board status only
+              — it changes nothing about selling this unit (D-3). */}
+          {lastStay ? (
+            <SectionCard id="unit-last-stay" title="Last stay">
+              <dl className="grid gap-md sm:grid-cols-2">
+                <Fact label="Guest" value={lastStay.guestName} />
+                <Fact
+                  label="Booking"
+                  value={
+                    <Button asChild variant="tertiary" className="font-mono">
+                      <Link href={`/portal/bookings/${lastStay.reference}`}>
+                        {lastStay.reference}
+                      </Link>
+                    </Button>
+                  }
+                />
+                <Fact
+                  label="Inspection"
+                  value={
+                    lastStay.inspection ? (
+                      INSPECTION_OUTCOME_LABELS[lastStay.inspection.outcome]
+                    ) : (
+                      <span className="text-muted-foreground">Not inspected yet</span>
+                    )
+                  }
+                />
+                <Fact
+                  label="Marked ready"
+                  value={
+                    lastStay.readyAt ? (
+                      <span className="tabular-nums">{formatTimestamp(lastStay.readyAt)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">Not yet</span>
+                    )
+                  }
+                />
+              </dl>
+
+              {lastStay.inspection === null && mayInspect ? (
+                <div className="mt-lg">
+                  <RecordInspection
+                    bookingId={lastStay.bookingId}
+                    reference={lastStay.reference}
+                    unitRef={unit.ref}
+                    nextStep="The unit can now be marked ready."
+                  />
+                </div>
+              ) : null}
+
+              {lastStay.inspection !== null && lastStay.readyAt === null ? (
+                <div className="mt-lg">
+                  <MarkReadyButton
+                    bookingId={lastStay.bookingId}
+                    unitRef={unit.ref}
+                    reference={lastStay.reference}
+                  />
+                </div>
+              ) : null}
+            </SectionCard>
+          ) : null}
         </div>
 
         <SectionCard id="unit-history" title="History">
