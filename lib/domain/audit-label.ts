@@ -55,6 +55,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'booking.secure_with_deposit',
   'booking.check_in',
   'booking.check_out',
+  'booking.admit',
   'booking.expire',
   'booking.cancel',
   'booking.mark_no_show',
@@ -192,6 +193,8 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   'booking.cancel': 'Cancelled',
   'booking.check_in': 'Checked in',
   'booking.check_out': 'Checked out',
+  // A day pass let in at the gate, which also closes it (N54).
+  'booking.admit': 'Admitted',
   // The booking's own status move, distinct from the payment event beside it.
   // Labelling both "Payment verified" made the trail say the same thing twice:
   // the money is the payment's event, the status is the booking's.

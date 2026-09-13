@@ -1,24 +1,32 @@
 import { describe, expect, test } from 'vitest'
 
-import { addDays } from '@/lib/domain/dates'
-import { bnd } from '@/lib/domain/money'
+import { addDays, todayInBrunei } from '@/lib/domain/dates'
+import { bnd, type Cents } from '@/lib/domain/money'
 import { dataClient } from '@/lib/supabase/data'
 
+import { admitDayPass } from './day-pass-admission'
+import { checkInBooking } from './deposits'
 import { getGateBooking, listGateBookings, searchGateBookings, type GateBooking } from './gate'
+import { recordCashPayment } from './payments'
+import { currentPropertyId } from './property'
 import { createPublicDayPassBooking, type CreatePublicDayPassInput } from './public-bookings'
 import {
   givenBooking,
   givenBookingInState,
   givenCheckedInBooking,
+  givenStaffAccount,
   givenTransferBooking,
 } from './test/factory'
 
 /**
- * The gate's reads against the real database (capabilities D1, D2, D4).
+ * The gate's reads against the real database (capabilities D1, D2, D4), and
+ * its one write of its own: admitting a day pass (N54).
  *
- * "Today" is passed in rather than read from the clock, so these describe a
- * fixed day and cannot drift into a different answer at midnight in Brunei.
- * The day sits inside the public day-pass window the other public tests use.
+ * "Today" is passed in rather than read from the clock for the reads, so they
+ * describe a fixed day and cannot drift into a different answer at midnight
+ * in Brunei. The day sits inside the public day-pass window the other public
+ * tests use. Admission is the exception: `admit_day_pass()` reads today in the
+ * property's own timezone, so those tests date their passes by the same clock.
  */
 
 const TODAY = '2026-10-05'
@@ -58,6 +66,37 @@ function dayPassOn(date: string, overrides: Partial<CreatePublicDayPassInput> = 
     ],
     ...overrides,
   })
+}
+
+/**
+ * A BND 20 pass sold online and then paid in cash at the desk, which confirms
+ * it — through the product's own writers, so what a test admits is the row
+ * the product makes. `paid` short of the total is recorded with a reason, as
+ * the desk would have to give one.
+ */
+async function paidPassOn(
+  date: string,
+  guestPhone: string,
+  paid: Cents = bnd(20),
+): Promise<{ bookingId: string; reference: string }> {
+  const created = await dayPassOn(date, { guestPhone })
+
+  if (!created.ok) {
+    throw new Error(`Test setup could not sell the day pass: ${created.error.message}`)
+  }
+
+  const cash = await recordCashPayment({
+    bookingId: created.data.bookingId,
+    amount: paid,
+    amountOverrideReason: paid === bnd(20) ? null : 'Test: part of the pass paid at the desk',
+    actorId: null,
+  })
+
+  if (!cash.ok) {
+    throw new Error(`Test setup could not take the cash: ${cash.error.message}`)
+  }
+
+  return { bookingId: created.data.bookingId, reference: created.data.reference }
 }
 
 describe("today's list at the gate", () => {
@@ -148,7 +187,7 @@ describe("today's list at the gate", () => {
     expect(listed).not.toContain(noShow.reference)
   })
 
-  test("today's day pass is listed on its own, unpaid until the transfer is verified", async () => {
+  test("today's day pass is listed on its own, and sent to the office until it is paid", async () => {
     const today = await dayPassOn(TODAY)
     const otherDay = await dayPassOn(TOMORROW, { guestPhone: '+673 710 0002' })
 
@@ -159,7 +198,7 @@ describe("today's list at the gate", () => {
     const list = await listGateBookings(TODAY)
     const row = list.dayPasses.find((candidate) => candidate.id === today.data.bookingId)
 
-    expect(row?.verdict).toEqual({ kind: 'day_pass', paid: false })
+    expect(row?.verdict).toEqual({ kind: 'office', reason: 'pass_unpaid' })
     expect(row?.headcount).toBe(2)
     expect(row?.unitRef).toBeNull()
     expect(everyone(list)).not.toContain(otherDay.data.reference)
@@ -270,7 +309,116 @@ describe('one booking, read fresh for the check-in', () => {
   })
 })
 
-describe('who may check guests in and out (N11)', () => {
+describe('admitting a day pass (N54)', () => {
+  const today = todayInBrunei()
+
+  test('a paid pass for today is admitted, which closes it, and it stays on the list as admitted', async () => {
+    const pass = await paidPassOn(today, '+673 710 0101')
+
+    expect(await admitDayPass({ bookingId: pass.bookingId, actorId: null })).toEqual({
+      ok: true,
+      status: 'completed',
+    })
+
+    const row = (await listGateBookings(today)).dayPasses.find((r) => r.id === pass.bookingId)
+
+    expect(row?.status).toBe('completed')
+    expect(row?.verdict).toEqual({ kind: 'admitted' })
+  })
+
+  test('the booking’s history names who admitted it, the day and the headcount', async () => {
+    const pass = await paidPassOn(today, '+673 710 0102')
+    const actorId = await givenStaffAccount()
+
+    await admitDayPass({ bookingId: pass.bookingId, actorId })
+
+    const { data, error } = await dataClient()
+      .from('audit_event')
+      .select('actor_id, after')
+      .eq('entity_id', pass.bookingId)
+      .eq('action', 'booking.admit')
+
+    expect(error).toBeNull()
+    expect(data).toHaveLength(1)
+    expect(data?.[0]?.actor_id).toBe(actorId)
+    expect(data?.[0]?.after).toMatchObject({ status: 'completed', pass_date: today, headcount: 2 })
+  })
+
+  test('a pass for another day is refused, and stays confirmed', async () => {
+    const pass = await paidPassOn(addDays(today, 1), '+673 710 0103')
+
+    const result = await admitDayPass({ bookingId: pass.bookingId, actorId: null })
+
+    expect(!result.ok && result.error.code).toBe('not_today')
+    expect((await getGateBooking(pass.bookingId, today))?.status).toBe('confirmed')
+  })
+
+  test('a pass confirmed with money still owed is refused', async () => {
+    const pass = await paidPassOn(today, '+673 710 0104', bnd(10))
+
+    const result = await admitDayPass({ bookingId: pass.bookingId, actorId: null })
+
+    expect(!result.ok && result.error.code).toBe('owed')
+  })
+
+  test('a pass nobody has paid for cannot be admitted', async () => {
+    const created = await dayPassOn(today, { guestPhone: '+673 710 0105' })
+
+    if (!created.ok) throw new Error(created.error.message)
+
+    const result = await admitDayPass({ bookingId: created.data.bookingId, actorId: null })
+
+    expect(!result.ok && result.error.code).toBe('illegal_transition')
+  })
+
+  test('a pass cannot be admitted twice', async () => {
+    const pass = await paidPassOn(today, '+673 710 0106')
+
+    await admitDayPass({ bookingId: pass.bookingId, actorId: null })
+    const again = await admitDayPass({ bookingId: pass.bookingId, actorId: null })
+
+    expect(!again.ok && again.error.code).toBe('terminal_state')
+  })
+
+  test('a stay is never admitted', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-17',
+      checkIn: today,
+      checkOut: addDays(today, 2),
+    })
+
+    const result = await admitDayPass({ bookingId: booking.id, actorId: null })
+
+    expect(!result.ok && result.error.code).toBe('not_a_day_pass')
+  })
+
+  test('a day pass is never checked in', async () => {
+    const pass = await paidPassOn(today, '+673 710 0107')
+
+    const result = await checkInBooking({ bookingId: pass.bookingId, actorId: null })
+
+    expect(!result.ok && result.error.code).toBe('not_a_stay')
+  })
+
+  test('the generic transition writer refuses to admit, so neither rule can be walked around', async () => {
+    const pass = await paidPassOn(today, '+673 710 0108')
+
+    const { data, error } = await dataClient().rpc('transition_booking', {
+      p_property_id: await currentPropertyId(),
+      p_booking_id: pass.bookingId,
+      p_from_status: 'confirmed',
+      p_to_status: 'completed',
+      p_event: 'admit',
+      p_actor_id: null,
+      p_reason: null,
+    })
+
+    expect(error).toBeNull()
+    expect(data).toEqual({ ok: false, error: 'admits_through_admit_day_pass' })
+  })
+})
+
+describe('who works the gate, and who checks guests out (N11, N54)', () => {
   async function slugsHolding(permission: string): Promise<string[]> {
     const { data, error } = await dataClient()
       .from('role_permission')
@@ -286,8 +434,12 @@ describe('who may check guests in and out (N11)', () => {
       .sort()
   }
 
-  test('the guard, the desk and Admin check guests in', async () => {
-    expect(await slugsHolding('booking.check_in')).toEqual(['admin', 'front-office', 'security'])
+  test('the desk and Admin check stays in — not the guard, because the keys are at the counter', async () => {
+    expect(await slugsHolding('booking.check_in')).toEqual(['admin', 'front-office'])
+  })
+
+  test('the guard, the desk and Admin admit day passes', async () => {
+    expect(await slugsHolding('day_pass.admit')).toEqual(['admin', 'front-office', 'security'])
   })
 
   test('housekeeping, the desk and Admin check guests out', async () => {

@@ -6,44 +6,70 @@ import { formatStayDate, formatStayRange } from '@/lib/domain/dates'
 import { gateVerdictSentence, type GateVerdict } from '@/lib/domain/gate'
 import { formatVehicles } from '@/lib/domain/vehicle'
 
-import { CheckInButton } from './check-in-button'
+import { GateActionButton, type GateMove } from './gate-action-button'
 
 /**
  * One car at the barrier.
  *
  * Read top to bottom the way a guard reads it: whose booking and which door,
  * the plate to match against the car in front of them, what to do, and — only
- * when the answer is to let them in — the one full-width button at the foot of
- * the card (design.md §Field: the row's primary action, full width, at the
- * bottom). A card that sends a guest to the office has no button at all, so
- * there is nothing to press and then be refused by.
+ * when the card has a move its reader may make — the one full-width button at
+ * the foot of the card (design.md §Field: the row's primary action, full
+ * width, at the bottom). A card that sends a guest to the office has no button
+ * at all, so there is nothing to press and then be refused by.
+ *
+ * Which move a card offers is the verdict's; whether it is offered is the
+ * reader's permission (N54). The guard admits a paid pass and sees a stay as
+ * Expected, with the office named as where it is checked in; the desk, on the
+ * same screen, gets the Check in button as well.
  *
  * The badge is the answer at a glance and the sentence is the reason. No
  * figure appears anywhere: the guard does not take money (prd.md §12).
  */
+
+/** The two gate moves the reader holds. */
+export interface GateMoves {
+  /** `booking.check_in`: a stay's card offers Check in. */
+  mayCheckIn: boolean
+  /** `day_pass.admit`: a pass's card offers Admit. */
+  mayAdmit: boolean
+}
 
 type BadgeTone = NonNullable<ComponentProps<typeof Badge>['tone']>
 
 /**
  * The verdict in the status language — the one place this mapping lives, as
  * `BookingStatusBadge` keeps the booking's. `active` for a guest in residence
- * is design.md's checked-in pair.
+ * and a pass in use is design.md's checked-in pair.
  */
 function verdictBadge(verdict: GateVerdict): { label: string; tone: BadgeTone } {
   switch (verdict.kind) {
     case 'check_in':
       return { label: 'Expected', tone: 'positive' }
+    case 'admit':
+      return { label: 'Paid', tone: 'positive' }
+    case 'admitted':
+      return { label: 'Admitted', tone: 'active' }
     case 'office':
       return { label: 'Send to office', tone: 'warning' }
-    case 'day_pass':
-      return verdict.paid
-        ? { label: 'Paid', tone: 'positive' }
-        : { label: 'Send to office', tone: 'warning' }
     case 'in_residence':
       return { label: 'Checked in', tone: 'active' }
     case 'closed':
       return { label: 'Closed', tone: 'neutral' }
   }
+}
+
+/** The card's one move, when it has one and its reader may make it. */
+function moveOf(verdict: GateVerdict, moves: GateMoves): GateMove | null {
+  if (verdict.kind === 'check_in' && moves.mayCheckIn) {
+    return 'check_in'
+  }
+
+  if (verdict.kind === 'admit' && moves.mayAdmit) {
+    return 'admit'
+  }
+
+  return null
 }
 
 function placeOf(booking: GateBooking): string {
@@ -68,8 +94,9 @@ function datesOf(booking: GateBooking): string {
     : formatStayDate(booking.arrival)
 }
 
-export function GateCard({ booking }: { booking: GateBooking }) {
+export function GateCard({ booking, moves }: { booking: GateBooking; moves: GateMoves }) {
   const badge = verdictBadge(booking.verdict)
+  const move = moveOf(booking.verdict, moves)
   const place = placeOf(booking)
   const plates = formatVehicles(booking.vehicles)
 
@@ -107,11 +134,12 @@ export function GateCard({ booking }: { booking: GateBooking }) {
       </dl>
 
       <p className="mt-md text-body-sm text-foreground">
-        {gateVerdictSentence(booking.verdict, booking.arrival)}
+        {gateVerdictSentence(booking.verdict, booking.arrival, { mayCheckIn: moves.mayCheckIn })}
       </p>
 
-      {booking.verdict.kind === 'check_in' ? (
-        <CheckInButton
+      {move ? (
+        <GateActionButton
+          move={move}
           bookingId={booking.id}
           reference={booking.reference}
           guestName={booking.guestName}

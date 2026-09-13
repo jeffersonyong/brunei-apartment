@@ -40,6 +40,7 @@ const ALL_EVENTS: readonly BookingEvent[] = [
   'secure_with_deposit',
   'check_in',
   'check_out',
+  'admit',
   'expire',
   'cancel',
   'mark_no_show',
@@ -209,6 +210,36 @@ describe('illegal moves are refused', () => {
     for (const event of ['hold', 'pay_in_full', 'submit_payment', 'secure_with_deposit'] as const) {
       expect(transition('confirmed', event).ok).toBe(false)
     }
+  })
+})
+
+describe('a day pass is admitted, not checked in (N40, N54)', () => {
+  test('admitting a confirmed pass closes it as completed, in one move', () => {
+    // A pass is used up on entry, like a ticket torn at the door. Nothing
+    // closes a pass later — there is no unit to leave — so admitting it is
+    // what closes it. The machine cannot see the stream; `admit_day_pass()`
+    // refuses a stay, as `check_in_booking()` refuses a pass.
+    const result = transition('confirmed', 'admit')
+
+    expect(result.ok && result.status).toBe('completed')
+  })
+
+  test('only a confirmed booking can be admitted', () => {
+    for (const status of ALL_STATUSES.filter((candidate) => candidate !== 'confirmed')) {
+      expect(transition(status, 'admit').ok).toBe(false)
+    }
+  })
+
+  test('a booking completes only by the guest leaving or the pass being admitted', () => {
+    const reachesCompleted = ALL_STATUSES.flatMap((status) =>
+      allowedEvents(status).filter((event) => {
+        const result = transition(status, event)
+
+        return result.ok && result.status === 'completed'
+      }),
+    )
+
+    expect([...reachesCompleted].sort()).toEqual(['admit', 'check_out'])
   })
 })
 

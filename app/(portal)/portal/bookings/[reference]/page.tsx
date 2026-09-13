@@ -41,6 +41,7 @@ import { DocumentRow } from '../../documents/document-row'
 import { PaymentActions } from '../../payments/payment-actions'
 
 import { AccountingPack } from './accounting-pack'
+import { AdmitPassButton } from './admit-pass-button'
 import { BookingActions } from './booking-actions'
 import { BookingHistory } from './booking-history'
 import { AddNote, BookingNotes } from './booking-notes'
@@ -189,10 +190,17 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const mayAmend = canAmend(booking.status) && hasPermission(actor.permissions, 'booking.amend')
   // One permission per move (N11, 13 September 2026) — see stay-actions.ts.
   // Which move is offered still comes from the state machine, never from a
-  // hand-written list of statuses.
+  // hand-written list of statuses; which of the two arrivals it is comes from
+  // the stream, because a day pass is admitted rather than checked in (N54).
+  const isDayPass = booking.stream === 'day_pass'
   const canCheckIn =
+    !isDayPass &&
     hasPermission(actor.permissions, 'booking.check_in') &&
     allowedEvents(booking.status).includes('check_in')
+  const canAdmit =
+    isDayPass &&
+    hasPermission(actor.permissions, 'day_pass.admit') &&
+    allowedEvents(booking.status).includes('admit')
   const canCheckOut =
     hasPermission(actor.permissions, 'booking.check_out') &&
     allowedEvents(booking.status).includes('check_out')
@@ -229,6 +237,19 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         }
         actions={
           <>
+            {canAdmit && booking.dayPass ? (
+              <AdmitPassButton
+                bookingId={booking.id}
+                reference={booking.reference}
+                guestName={booking.guestName}
+                passDate={booking.dayPass.date}
+                headcount={booking.dayPass.headcount}
+                today={todayInBrunei()}
+                // The same sum the Money card states and admit_day_pass()
+                // refuses on, so the dialog cannot promise what the write denies.
+                isOwed={balanceOf(booking.total, booking.paid).state === 'outstanding'}
+              />
+            ) : null}
             <StayButtons
               bookingId={booking.id}
               reference={booking.reference}

@@ -358,6 +358,58 @@ begin
     if v_result ->> 'ok' <> 'true' then
       raise exception 'Demo seed could not sell the day pass: %', v_result ->> 'error';
     end if;
+
+    -- ── And one paid, for the guard to admit (N54) ───────────────────────
+    --
+    -- Sold the same way, then paid in cash at the desk through
+    -- record_cash_payment(), which is what confirms a pass quoting no deposit
+    -- — `held --pay_in_full--> confirmed`, the pair the state machine derives.
+    -- On the guard's phone it reads Paid with an Admit button, and admitting it
+    -- keeps it on the list as Admitted for the rest of the day.
+    select create_public_day_pass_booking(
+      v_property_id,
+      'held',
+      v_today,
+      jsonb_build_array(jsonb_build_object('bandId', v_band.id, 'label', v_band.label, 'count', 2)),
+      2,
+      2,
+      0,
+      'DEMO — Day pass today, paid',
+      '+673 000 0010',
+      null,
+      array['BAJ 5566'],
+      false,
+      v_band.price_cents * 2,
+      jsonb_build_array(jsonb_build_object(
+        'type', 'day_pass',
+        'description', v_band.label || ' × 2',
+        'quantity', 2,
+        'unitPrice', v_band.price_cents,
+        'amount', v_band.price_cents * 2
+      )),
+      translate(
+        substr(encode(decode(md5(random()::text || clock_timestamp()::text), 'hex'), 'base64'), 1, 22),
+        '+/', '-_'
+      ),
+      3
+    ) into v_result;
+
+    if v_result ->> 'ok' <> 'true' then
+      raise exception 'Demo seed could not sell the paid day pass: %', v_result ->> 'error';
+    end if;
+
+    select record_cash_payment(
+      v_property_id,
+      (v_result ->> 'booking_id')::uuid,
+      v_band.price_cents * 2,
+      'held',
+      'confirmed',
+      'pay_in_full'
+    ) into v_result;
+
+    if v_result ->> 'ok' <> 'true' then
+      raise exception 'Demo seed could not take the day pass cash: %', v_result ->> 'error';
+    end if;
   end;
 
   -- ── The cash-up (capability E4) ────────────────────────────────────────

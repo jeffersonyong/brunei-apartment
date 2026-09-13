@@ -968,7 +968,12 @@ export interface CheckInBookingInput {
 }
 
 export type CheckInRefusalCode =
-  'not_found' | 'status_changed' | 'deposit_not_secured' | 'illegal_transition' | 'terminal_state'
+  | 'not_found'
+  | 'not_a_stay'
+  | 'status_changed'
+  | 'deposit_not_secured'
+  | 'illegal_transition'
+  | 'terminal_state'
 
 /**
  * Checks a guest in. It collects nothing.
@@ -1068,6 +1073,11 @@ function describeCheckInFailure(result: RpcRefusal): {
   message: string
 } {
   switch (result.error) {
+    case 'not_a_stay':
+      return {
+        code: result.error,
+        message: 'This booking is a day pass. A day pass is admitted, not checked in.',
+      }
     case 'status_changed':
       return {
         code: result.error,

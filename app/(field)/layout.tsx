@@ -4,7 +4,7 @@ import { signOutAction } from '@/app/(auth)/actions'
 import { FieldNav } from '@/components/field/field-nav'
 import { OperationsSurface } from '@/components/operations-surface'
 import { Button } from '@/components/ui/button'
-import { fieldJobsFor, landingPathFor } from '@/lib/auth/field-jobs'
+import { fieldJobsFor, landingPathFor, PORTAL_HOME } from '@/lib/auth/field-jobs'
 import { getActor } from '@/lib/auth/require-permission'
 
 /**
@@ -19,12 +19,14 @@ import { getActor } from '@/lib/auth/require-permission'
  * which can also check guests in — gets one link back to it.
  *
  * Somebody with more than one field job gets a switch between them under the
- * header; with one, there is nothing to switch to and no bar is drawn.
+ * header, on the screens themselves — the bar draws nothing on the chooser,
+ * which asks the same question (components/field/field-nav.tsx). With one job
+ * there is nothing to switch to and no bar is drawn.
  */
 export default async function FieldLayout({ children }: { children: React.ReactNode }) {
   const actor = await getActor()
   const worksInThePortal =
-    actor !== null && actor.permissions.size > 0 && landingPathFor(actor.permissions) === '/portal'
+    actor !== null && actor.permissions.size > 0 && landingPathFor(actor.permissions) === PORTAL_HOME
   const jobs = actor ? fieldJobsFor(actor.permissions) : []
 
   return (

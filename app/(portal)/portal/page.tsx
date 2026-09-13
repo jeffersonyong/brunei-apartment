@@ -19,7 +19,7 @@ import {
   TableHeaderRow,
   TableRow,
 } from '@/components/ui/table'
-import { landingPathFor } from '@/lib/auth/field-jobs'
+import { landingPathFor, PORTAL_HOME } from '@/lib/auth/field-jobs'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
 import { getDailySnapshot, type Booking } from '@/lib/db/bookings'
@@ -49,10 +49,12 @@ export default async function PortalOverviewPage() {
   const actor = await getActor()
 
   // A guard whose whole job is the gate never needs this screen. Sign-in sends
-  // them to the field screens directly; this catches the other ways in — an
+  // them to their field screen directly; this catches the other ways in — an
   // old bookmark, or the sign-in page bouncing a session that already exists.
-  if (actor && landingPathFor(actor.permissions) === '/field') {
-    redirect('/field')
+  const landing = actor ? landingPathFor(actor.permissions) : null
+
+  if (landing !== null && landing !== PORTAL_HOME) {
+    redirect(landing)
   }
 
   // Gated before the first read, like every other screen that shows a booking

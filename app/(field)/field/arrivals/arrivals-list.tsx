@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import type { GateBooking, GateList } from '@/lib/db/gate'
 import { matchesGateSearch } from '@/lib/domain/gate'
 
-import { GateCard } from './gate-card'
+import { GateCard, type GateMoves } from './gate-card'
 
 /**
  * Today's list, filtered as the guard types.
@@ -19,8 +19,9 @@ import { GateCard } from './gate-card'
  * the keyboard asks the server for every open booking matching the term,
  * which is how the car whose booking starts tomorrow is found.
  *
- * Three sections, because the guard's three questions differ: a car to let in,
- * a day visitor to wave through or send on, and a guest's car coming back.
+ * Three sections, because the guard's three questions differ: a stay to send
+ * on to the office for its keys, a day visitor to admit or turn away, and a
+ * guest's car coming back.
  */
 
 interface ArrivalsListProps {
@@ -31,11 +32,13 @@ interface ArrivalsListProps {
   found: readonly GateBooking[] | null
   /** "14:02" — when this list was read. */
   loadedAt: string
+  /** Which of the gate's two moves the reader holds. */
+  moves: GateMoves
 }
 
 const SEARCH_FORM_ID = 'gate-search'
 
-export function ArrivalsList({ list, query, found, loadedAt }: ArrivalsListProps) {
+export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsListProps) {
   const [term, setTerm] = useState(query)
 
   const typed = term.trim()
@@ -90,15 +93,28 @@ export function ArrivalsList({ list, query, found, loadedAt }: ArrivalsListProps
         id="gate-expected"
         title="Arriving"
         rows={expected}
+        moves={moves}
         empty={typed.length > 0 ? null : 'Nobody else is due to arrive today.'}
       />
 
       {list.dayPasses.length > 0 ? (
-        <GateSection id="gate-day-passes" title="Day passes" rows={dayPasses} empty={null} />
+        <GateSection
+          id="gate-day-passes"
+          title="Day passes"
+          rows={dayPasses}
+          moves={moves}
+          empty={null}
+        />
       ) : null}
 
       {list.inResidence.length > 0 ? (
-        <GateSection id="gate-in-residence" title="Already in" rows={inResidence} empty={null} />
+        <GateSection
+          id="gate-in-residence"
+          title="Already in"
+          rows={inResidence}
+          moves={moves}
+          empty={null}
+        />
       ) : null}
 
       {typed.length > 0 && !searchIsCurrent ? (
@@ -125,6 +141,7 @@ export function ArrivalsList({ list, query, found, loadedAt }: ArrivalsListProps
           id="gate-search-results"
           title={`All bookings matching “${query}”`}
           rows={found}
+          moves={moves}
           empty="No open booking matches. Send them to the office."
         />
       ) : null}
@@ -136,11 +153,12 @@ interface GateSectionProps {
   id: string
   title: string
   rows: readonly GateBooking[]
+  moves: GateMoves
   /** What to say when the section is empty, or null to say nothing. */
   empty: string | null
 }
 
-function GateSection({ id, title, rows, empty }: GateSectionProps) {
+function GateSection({ id, title, rows, moves, empty }: GateSectionProps) {
   if (rows.length === 0 && empty === null) {
     return null
   }
@@ -159,7 +177,7 @@ function GateSection({ id, title, rows, empty }: GateSectionProps) {
         <ul className="mt-md grid gap-md">
           {rows.map((row) => (
             <li key={row.id}>
-              <GateCard booking={row} />
+              <GateCard booking={row} moves={moves} />
             </li>
           ))}
         </ul>

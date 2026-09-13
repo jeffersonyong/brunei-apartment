@@ -2,12 +2,12 @@ import { describe, expect, test } from 'vitest'
 
 import type { Permission } from '@/lib/auth/permissions'
 
-import { fieldJobsFor, landingPathFor } from './field-jobs'
+import { fieldJobsFor, landingPathFor, mayWork } from './field-jobs'
 
 const set = (...permissions: Permission[]): ReadonlySet<Permission> => new Set(permissions)
 
 /** The seeded roles (supabase/seed.sql), as the session reads them. */
-const SECURITY = set('booking.view', 'booking.check_in')
+const SECURITY = set('booking.view', 'day_pass.admit')
 const HOUSEKEEPING = set('booking.view', 'booking.check_out', 'inspection.record', 'unit.manage')
 const FRONT_OFFICE = set(
   'booking.view',
@@ -15,12 +15,24 @@ const FRONT_OFFICE = set(
   'booking.amend',
   'booking.check_in',
   'booking.check_out',
+  'day_pass.admit',
   'payment.verify',
 )
 
 describe('fieldJobsFor', () => {
   test('a guard works the gate', () => {
     expect(fieldJobsFor(SECURITY).map((job) => job.id)).toEqual(['arrivals'])
+  })
+
+  test('either of the gate’s two moves opens it — checking a stay in, or admitting a day pass', () => {
+    // N54: the desk checks stays in and the guard admits passes, and a guard
+    // granted check-in after hours still has one screen, not two.
+    expect(fieldJobsFor(set('booking.view', 'booking.check_in')).map((job) => job.id)).toEqual([
+      'arrivals',
+    ])
+    expect(fieldJobsFor(set('booking.view', 'day_pass.admit')).map((job) => job.id)).toEqual([
+      'arrivals',
+    ])
   })
 
   test('viewing bookings alone opens no field screen', () => {
@@ -37,23 +49,43 @@ describe('fieldJobsFor', () => {
   })
 
   test('somebody holding both jobs gets both, gate first', () => {
-    const both = set('booking.view', 'booking.check_in', 'booking.check_out', 'inspection.record')
+    const both = set('booking.view', 'day_pass.admit', 'booking.check_out', 'inspection.record')
 
     expect(fieldJobsFor(both).map((job) => job.id)).toEqual(['arrivals', 'departures'])
   })
 })
 
+describe('mayWork', () => {
+  test('answers for one screen by its id', () => {
+    expect(mayWork(SECURITY, 'arrivals')).toBe(true)
+    expect(mayWork(SECURITY, 'departures')).toBe(false)
+    expect(mayWork(HOUSEKEEPING, 'departures')).toBe(true)
+  })
+})
+
 describe('landingPathFor', () => {
-  test('a guard signs in straight to the field screens', () => {
-    expect(landingPathFor(SECURITY)).toBe('/field')
+  test('a guard signs in straight to the gate, with no chooser in between', () => {
+    expect(landingPathFor(SECURITY)).toBe('/field/arrivals')
   })
 
-  test('the desk lands on the portal even though it can check guests in', () => {
+  test('housekeeping signs in straight to the departures', () => {
+    expect(landingPathFor(HOUSEKEEPING)).toBe('/field/departures')
+  })
+
+  test('somebody whose whole job is both field screens lands on the chooser', () => {
+    const both = set(
+      'booking.view',
+      'day_pass.admit',
+      'booking.check_out',
+      'inspection.record',
+      'unit.manage',
+    )
+
+    expect(landingPathFor(both)).toBe('/field')
+  })
+
+  test('the desk lands on the portal even though it works the gate', () => {
     expect(landingPathFor(FRONT_OFFICE)).toBe('/portal')
-  })
-
-  test('housekeeping signs in straight to the field screens', () => {
-    expect(landingPathFor(HOUSEKEEPING)).toBe('/field')
   })
 
   test('a field permission alone is not enough without a screen to work', () => {
@@ -61,7 +93,7 @@ describe('landingPathFor', () => {
   })
 
   test('one portal permission beside the gate keeps a person on the portal', () => {
-    expect(landingPathFor(set('booking.view', 'booking.check_in', 'report.view'))).toBe('/portal')
+    expect(landingPathFor(set('booking.view', 'day_pass.admit', 'report.view'))).toBe('/portal')
   })
 
   test('somebody holding nothing lands on the portal, which says so', () => {
