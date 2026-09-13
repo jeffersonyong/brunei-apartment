@@ -1,6 +1,12 @@
-import { deriveUnitStatus, type OccupancyStatus, type UnitStatus } from '@/lib/domain/unit-status'
-import type { RegistryPlan } from '@/lib/domain/unit-ref'
 import type { StayDate } from '@/lib/domain/dates'
+import type { InspectionOutcome } from '@/lib/domain/inspection'
+import type { RegistryPlan } from '@/lib/domain/unit-ref'
+import {
+  deriveUnitStatus,
+  type LastStayFacts,
+  type OccupancyStatus,
+  type UnitStatus,
+} from '@/lib/domain/unit-status'
 import { dataClient } from '@/lib/supabase/data'
 
 import { currentPropertyId } from './property'
@@ -40,6 +46,24 @@ export interface UnitOccupant {
   bookingReference: string | null
 }
 
+/**
+ * The most recent stay a guest actually arrived for — today only
+ * (20260925000100 §3). What the turnover is about.
+ */
+export interface UnitLastStay {
+  occupancyId: string
+  bookingId: string
+  reference: string
+  guestName: string
+  status: 'checked_in' | 'completed'
+  start: StayDate
+  /** The last day as booked. An early check-out does not move it. */
+  end: StayDate
+  inspection: { id: string; outcome: InspectionOutcome } | null
+  /** When the unit was marked ready after this stay, or null. */
+  readyAt: string | null
+}
+
 export interface UnitState {
   id: string
   ref: string
@@ -56,8 +80,19 @@ export interface UnitState {
    * architecture.md §5.3a gives about `Booking.stay`: they are one fact, and
    * one check should narrow all of them so no screen can read an occupant's
    * name while treating their dates as absent.
+   *
+   * **A guest still checked in is the occupant whatever the dates say.** On
+   * their last day nothing covers the unit, and past it an overstay covers
+   * nothing either; reading only `covering` would put "nobody is in this unit"
+   * beside an Occupied badge. On a changeover day this is the guest leaving,
+   * not the one arriving.
    */
   occupant: UnitOccupant | null
+  /**
+   * The occupancy covering the day as recorded — on a changeover day, the next
+   * guest's. Housekeeping reads it to know somebody arrives today.
+   */
+  covering: UnitOccupant | null
   /** The next stay's start, so a free unit can say when it stops being free. */
   nextStart: StayDate | null
   /**
@@ -65,6 +100,10 @@ export interface UnitState {
    * N18. Null when nobody has written one.
    */
   notes: string | null
+  /** Null on any day but today, and in a unit no guest has yet arrived in. */
+  lastStay: UnitLastStay | null
+  /** The day the building started keeping turnovers. */
+  turnoverTrackedSince: StayDate
 }
 
 interface UnitStateRow {
@@ -84,6 +123,17 @@ interface UnitStateRow {
   booking_id: string | null
   booking_reference: string | null
   next_start_date: string | null
+  turnover_tracked_since: string
+  last_occupancy_id: string | null
+  last_status: string | null
+  last_booking_id: string | null
+  last_reference: string | null
+  last_guest_name: string | null
+  last_start_date: string | null
+  last_end_date: string | null
+  last_inspection_id: string | null
+  last_inspection_outcome: string | null
+  last_ready_at: string | null
 }
 
 /**
@@ -128,7 +178,7 @@ function toUnitState(row: UnitStateRow): UnitState {
   // carries the others, because the lateral selects them from one row.
   // `end_date` is deliberately absent from the narrowing: an open-ended lease
   // has none, and requiring it here would drop the tenant off the board.
-  const occupant: UnitOccupant | null =
+  const covering: UnitOccupant | null =
     row.occupancy_id !== null && row.occupancy_status !== null && row.start_date !== null
       ? {
           occupancyId: row.occupancy_id,
@@ -140,6 +190,20 @@ function toUnitState(row: UnitStateRow): UnitState {
         }
       : null
 
+  const lastStay = lastStayOf(row)
+
+  const occupant: UnitOccupant | null =
+    lastStay?.status === 'checked_in'
+      ? {
+          occupancyId: lastStay.occupancyId,
+          status: 'checked_in',
+          name: lastStay.guestName,
+          start: lastStay.start,
+          end: lastStay.end,
+          bookingReference: lastStay.reference,
+        }
+      : covering
+
   return {
     id: row.unit_id,
     ref: row.ref,
@@ -147,13 +211,59 @@ function toUnitState(row: UnitStateRow): UnitState {
     unitTypeName: row.unit_type_name,
     status: deriveUnitStatus({
       outOfServiceSince: outOfService?.since ?? null,
-      covering: occupant === null ? null : { status: occupant.status },
+      covering: covering === null ? null : { status: covering.status },
+      lastStay: lastStayFactsOf(lastStay),
+      turnoverTrackedSince: row.turnover_tracked_since,
     }),
     outOfService,
     occupant,
+    covering,
     nextStart: row.next_start_date,
     notes: row.notes,
+    lastStay,
+    turnoverTrackedSince: row.turnover_tracked_since,
   }
+}
+
+/** The same narrowing as the covering occupancy: one id check carries the row. */
+function lastStayOf(row: UnitStateRow): UnitLastStay | null {
+  if (
+    row.last_occupancy_id === null ||
+    row.last_booking_id === null ||
+    row.last_reference === null ||
+    row.last_start_date === null ||
+    row.last_end_date === null ||
+    (row.last_status !== 'checked_in' && row.last_status !== 'completed')
+  ) {
+    return null
+  }
+
+  return {
+    occupancyId: row.last_occupancy_id,
+    bookingId: row.last_booking_id,
+    reference: row.last_reference,
+    guestName: row.last_guest_name ?? 'Unnamed',
+    status: row.last_status,
+    start: row.last_start_date,
+    end: row.last_end_date,
+    inspection:
+      row.last_inspection_id !== null && row.last_inspection_outcome !== null
+        ? { id: row.last_inspection_id, outcome: row.last_inspection_outcome as InspectionOutcome }
+        : null,
+    readyAt: row.last_ready_at,
+  }
+}
+
+/** A last stay as lib/domain reads it — the facts, without the names. */
+export function lastStayFactsOf(lastStay: UnitLastStay | null): LastStayFacts | null {
+  return lastStay === null
+    ? null
+    : {
+        status: lastStay.status,
+        end: lastStay.end,
+        inspected: lastStay.inspection !== null,
+        ready: lastStay.readyAt !== null,
+      }
 }
 
 // ── The registry (capability F6) ─────────────────────────────────────────────
@@ -416,6 +526,52 @@ export async function setUnitNotes(input: {
   }
 
   return { ok: true, changed: result.changed }
+}
+
+/**
+ * Marks a unit ready after a stay (capability C3).
+ *
+ * Keyed by booking, like `recordInspection()`, because the screens that offer it
+ * hold the stay the turnover follows. Readiness is a board status only (D-3):
+ * nothing about selling or checking in reads it.
+ */
+export async function markUnitReady(input: {
+  bookingId: string
+  actorId: string | null
+}): Promise<UnitWriteResult<{ unitRef: string }>> {
+  const propertyId = await currentPropertyId()
+
+  const { data, error } = await dataClient().rpc('mark_unit_ready', {
+    p_property_id: propertyId,
+    p_booking_id: input.bookingId,
+    p_actor_id: input.actorId,
+  })
+
+  if (error) {
+    throw new Error(`Could not mark the unit ready: ${error.message}`)
+  }
+
+  const result = data as { ok: true; unit_ref: string } | RpcRefusal
+
+  if (!result.ok) {
+    return { ok: false, error: describeReadyFailure(result.error) }
+  }
+
+  return { ok: true, unitRef: result.unit_ref }
+}
+
+function describeReadyFailure(code: string): UnitWriteError {
+  const messages: Record<string, string> = {
+    booking_not_completed: 'The guest has not checked out yet, so the unit cannot be marked ready.',
+    no_occupancy: 'This booking occupies no unit, so there is nothing to mark ready.',
+    not_inspected:
+      'Record the inspection first. A unit is marked ready after somebody has looked at it.',
+    already_ready: 'This unit has already been marked ready.',
+    superseded:
+      'The next guest has already checked in, so this stay no longer needs marking ready.',
+  }
+
+  return { code, message: messages[code] ?? 'That stay no longer exists.' }
 }
 
 export interface RegistryOutcome {

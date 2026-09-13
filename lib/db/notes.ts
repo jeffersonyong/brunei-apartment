@@ -2,6 +2,8 @@ import { currentPropertyId } from '@/lib/db/property'
 import type { NoteAudience } from '@/lib/domain/note'
 import { dataClient } from '@/lib/supabase/data'
 
+import { readAllRows } from './rows'
+
 /**
  * Booking notes — reads and the one write.
  *
@@ -80,6 +82,53 @@ export async function listBookingNotes(
   }
 
   return (data as unknown as BookingNoteRow[]).map(toNote)
+}
+
+/**
+ * The housekeeping notes on several bookings at once, newest first within each
+ * — for the cleaner's phone, which lists every turnover under way (D-7,
+ * open-questions.md N18).
+ *
+ * **Only the `housekeeping` audience, filtered here in the query**, never in a
+ * screen: an internal note is about money, disputes and the guest's phone
+ * number, and a filter a component forgot would put it on a phone left in a
+ * unit. One read for the whole list rather than one per card, through
+ * `readAllRows` so a long-lived booking's thread cannot silently stop at the
+ * row ceiling.
+ */
+export async function listHousekeepingNotesFor(
+  bookingIds: readonly string[],
+): Promise<ReadonlyMap<string, readonly BookingNote[]>> {
+  if (bookingIds.length === 0) {
+    return new Map()
+  }
+
+  const propertyId = await currentPropertyId()
+  const db = dataClient()
+
+  const rows = await readAllRows<BookingNoteRow & { booking_id: string }>(
+    (from, to) =>
+      db
+        .from('booking_note')
+        .select('id, booking_id, audience, body, author_id, created_at')
+        .eq('property_id', propertyId)
+        .eq('audience', 'housekeeping')
+        .in('booking_id', [...bookingIds])
+        .order('created_at', { ascending: false })
+        .order('id')
+        .range(from, to),
+    { label: 'the notes for housekeeping' },
+  )
+
+  const byBooking = new Map<string, BookingNote[]>()
+
+  for (const row of rows) {
+    const notes = byBooking.get(row.booking_id) ?? []
+
+    byBooking.set(row.booking_id, [...notes, toNote(row)])
+  }
+
+  return byBooking
 }
 
 export interface AddBookingNoteInput {

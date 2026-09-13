@@ -28,6 +28,12 @@ import { UNIT_STATUS_LABELS, type UnitStatus } from '@/lib/domain/unit-status'
  * because a unit nobody can be put in is the one state on this board that
  * costs money until somebody fixes it.
  *
+ * The turnover's two (capabilities C2–C3): `awaiting_inspection` takes
+ * **warning**, the reading the same words already have on a deposit — somebody
+ * owes this unit a visit. `cleaning` takes **active**, the in-progress pair: the
+ * visit has happened and the work is under way, which is neither outstanding
+ * nor done.
+ *
  * No fifth tone is introduced. design.md builds each chip as a 10% mix of a mid
  * hue under `*-deep` text, and there is no `info` pair to reach for; inventing
  * one for a status is exactly what §Color roles refuses.
@@ -38,6 +44,8 @@ const STATUS_TONES = {
   held: 'warning',
   booked: 'positive',
   occupied: 'active',
+  awaiting_inspection: 'warning',
+  cleaning: 'active',
   leased_long_term: 'neutral',
   out_of_service: 'negative',
 } as const satisfies Record<UnitStatus, StatusTone>

@@ -503,6 +503,7 @@ interface InspectionRow {
   outcome: string
   notes: string | null
   inspected_at: string
+  ready_at: string | null
   occupancy: { unit: { ref: string } | null; booking: { reference: string } | null } | null
 }
 
@@ -514,18 +515,19 @@ const inspections: ExportTable = {
   document: async () => {
     const rows = await allOf<InspectionRow>(
       'inspection',
-      'id, outcome, notes, inspected_at, occupancy(unit(ref), booking(reference))',
+      'id, outcome, notes, inspected_at, ready_at, occupancy(unit(ref), booking(reference))',
       'inspected_at',
     )
 
     return {
-      headers: ['Booking', 'Unit', 'Outcome', 'Notes', 'Inspected'],
+      headers: ['Booking', 'Unit', 'Outcome', 'Notes', 'Inspected', 'Marked ready'],
       rows: rows.map((row) => [
         text(row.occupancy?.booking?.reference),
         text(row.occupancy?.unit?.ref),
         row.outcome,
         text(row.notes),
         row.inspected_at,
+        text(row.ready_at),
       ]),
     }
   },
