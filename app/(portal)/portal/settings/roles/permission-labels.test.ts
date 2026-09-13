@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 
-import { PERMISSIONS } from '@/lib/auth/permissions'
+import { PERMISSIONS, type Permission } from '@/lib/auth/permissions'
 
-import { PERMISSION_GROUPS, PERMISSION_LABELS } from './permission-labels'
+import { heldPermissionGroups, PERMISSION_GROUPS, PERMISSION_LABELS } from './permission-labels'
 
 /**
  * The roles matrix renders a permission only when a group lists it, while the
@@ -22,5 +22,30 @@ describe('PERMISSION_GROUPS', () => {
     for (const permission of PERMISSIONS) {
       expect(PERMISSION_LABELS[permission]).toBeTruthy()
     }
+  })
+})
+
+/**
+ * What the Settings screen reads back to somebody about their own access: the
+ * matrix's groups, narrowed to what they hold.
+ */
+describe('heldPermissionGroups', () => {
+  test('keeps only what is held, in the matrix order, and drops empty groups', () => {
+    const held = new Set<Permission>([
+      'report.view',
+      'payment.verify',
+      'booking.create',
+      'booking.view',
+    ])
+
+    expect(heldPermissionGroups(held)).toEqual([
+      { label: 'Bookings', permissions: ['booking.view', 'booking.create'] },
+      { label: 'Payments & charges', permissions: ['payment.verify'] },
+      { label: 'Administration', permissions: ['report.view'] },
+    ])
+  })
+
+  test('is empty for somebody who holds nothing', () => {
+    expect(heldPermissionGroups(new Set())).toEqual([])
   })
 })

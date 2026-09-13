@@ -5,7 +5,14 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { dataClient } from '@/lib/supabase/data'
 
 import { currentPropertyId } from './property'
-import { deleteStaffAccount, setRolePermissions, setUserRoles } from './staff'
+import {
+  deleteStaffAccount,
+  recordOwnPasswordChange,
+  renameStaffAccount,
+  rolesForUser,
+  setRolePermissions,
+  setUserRoles,
+} from './staff'
 import { givenDisposableUser, pinnedUserId, testActorId } from './test/auth'
 
 /**
@@ -233,5 +240,104 @@ describe('deleteStaffAccount', () => {
     const { data } = await dataClient().auth.admin.getUserById(userId)
 
     expect(data?.user?.id).toBe(userId)
+  })
+})
+
+describe('renameStaffAccount', () => {
+  test('changes the name and records both sides', async () => {
+    const userId = await givenAuthUser()
+    const actorId = await testActorId()
+
+    await dataClient().auth.admin.updateUserById(userId, {
+      user_metadata: { display_name: 'Mary' },
+    })
+
+    expect(await renameStaffAccount(userId, 'Mary Tan', actorId)).toEqual({ changed: true })
+
+    const { data } = await dataClient().auth.admin.getUserById(userId)
+
+    expect(data.user?.user_metadata?.display_name).toBe('Mary Tan')
+
+    const { data: events } = await dataClient()
+      .from('audit_event')
+      .select('action, actor_id, before, after')
+      .eq('entity_id', userId)
+
+    expect(events).toEqual([
+      {
+        action: 'staff.renamed',
+        actor_id: actorId,
+        before: { display_name: 'Mary' },
+        after: { display_name: 'Mary Tan' },
+      },
+    ])
+  })
+
+  test('a name that did not change writes nothing and records nothing', async () => {
+    const userId = await givenAuthUser()
+    const actorId = await testActorId()
+
+    await dataClient().auth.admin.updateUserById(userId, {
+      user_metadata: { display_name: 'Mary' },
+    })
+
+    expect(await renameStaffAccount(userId, 'Mary', actorId)).toEqual({ changed: false })
+
+    const { data: events } = await dataClient()
+      .from('audit_event')
+      .select('id')
+      .eq('entity_id', userId)
+
+    expect(events).toHaveLength(0)
+  })
+})
+
+describe('recordOwnPasswordChange', () => {
+  test('records the change against the account, acted by its owner', async () => {
+    // The shared actor stands in for somebody changing their own password: the
+    // event pins whoever it names as actor, so a fresh account would linger in
+    // the staff list after every run (lib/db/test/auth.ts).
+    const userId = await testActorId()
+
+    async function changesRecorded(): Promise<number> {
+      const { count, error } = await dataClient()
+        .from('audit_event')
+        .select('id', { count: 'exact', head: true })
+        .eq('entity_id', userId)
+        .eq('actor_id', userId)
+        .eq('action', 'staff.password_changed')
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      return count ?? 0
+    }
+
+    const before = await changesRecorded()
+
+    await recordOwnPasswordChange(userId)
+
+    expect(await changesRecorded()).toBe(before + 1)
+  })
+})
+
+describe('rolesForUser', () => {
+  test('names the roles an account holds, and no others', async () => {
+    const userId = await givenAuthUser()
+    const actorId = await testActorId()
+    const held = await givenScratchRole()
+
+    // A role that exists and is not granted must not appear.
+    await givenScratchRole()
+    await setUserRoles(userId, [held], actorId)
+
+    expect((await rolesForUser(userId)).map((role) => role.id)).toEqual([held])
+  })
+
+  test('is empty for an account with no roles', async () => {
+    const userId = await givenAuthUser()
+
+    expect(await rolesForUser(userId)).toEqual([])
   })
 })

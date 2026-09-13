@@ -3,13 +3,15 @@
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '@/lib/auth/password-policy'
 import { getAuthenticatedUser } from '@/lib/auth/session'
+import { recordOwnPasswordChange } from '@/lib/db/staff'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
- * Session actions shared by the portal and field surfaces: leaving, and
- * changing your own password. Both need only authentication, not a
- * permission — every staff member holds their own session.
+ * Session actions shared by the portal and field surfaces: leaving, changing
+ * your own password, and ending your other sessions. None needs a permission,
+ * only a session — every staff member holds their own.
  */
 
 export async function signOutAction(): Promise<void> {
@@ -21,8 +23,7 @@ export async function signOutAction(): Promise<void> {
 
 const changePasswordSchema = z
   .object({
-    // Mirrors supabase/config.toml minimum_password_length.
-    password: z.string().min(6, 'Use at least 6 characters.'),
+    password: z.string().min(MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT),
     confirm: z.string(),
   })
   .refine((value) => value.password === value.confirm, {
@@ -42,6 +43,12 @@ export interface ChangePasswordState {
  * a nicety. Re-entering the current password first is deliberately skipped in
  * v1: the session proves possession, and a forgotten current password is
  * exactly the situation this flow exists to end.
+ *
+ * Made on the person's own session, which GoTrue keeps while ending every
+ * other one, so a password somebody else knew stops opening anything. It is
+ * recorded as `staff.password_changed`, so the trail shows an administrator's
+ * reset and its owner's change as two events. An administrator can still
+ * reset it at any time from Roles & staff.
  */
 export async function changeOwnPasswordAction(
   _previous: ChangePasswordState,
@@ -78,5 +85,42 @@ export async function changeOwnPasswordAction(
     return { status: 'error', message: error.message }
   }
 
+  await recordOwnPasswordChange(user.id)
+
   return { status: 'updated' }
+}
+
+export interface SignOutOtherDevicesState {
+  status: 'idle' | 'error' | 'done'
+  message?: string
+}
+
+/**
+ * Ends every session this person holds except the one asking — the front desk
+ * computer somebody forgot to leave, a phone that went missing. GoTrue revokes
+ * the other sessions outright: their refresh tokens are refused, and their
+ * access tokens stop verifying at once, because every gated render and action
+ * checks the session with the auth server (lib/auth/session.ts).
+ *
+ * Not audited. It changes nothing about the business's records or what anyone
+ * may do; the password change it often comes before is recorded.
+ */
+export async function signOutOtherDevicesAction(): Promise<SignOutOtherDevicesState> {
+  const user = await getAuthenticatedUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const { error } = await supabase.auth.signOut({ scope: 'others' })
+
+  if (error) {
+    return {
+      status: 'error',
+      message: 'Your other devices could not be signed out. Try again in a moment.',
+    }
+  }
+
+  return { status: 'done' }
 }

@@ -115,6 +115,8 @@ export const KNOWN_AUDIT_ACTIONS = [
   'staff.account_enabled',
   'staff.password_reset',
   'staff.account_deleted',
+  'staff.renamed',
+  'staff.password_changed',
   'cash.banked',
   'email.sent',
   'email.failed',
@@ -232,6 +234,7 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   'staff.account_enabled': 'Staff account re-enabled',
   'staff.password_reset': 'Password reset',
   'staff.account_deleted': 'Staff account deleted',
+  'staff.password_changed': 'Password changed',
   'day_pass_band.added': 'Age band added',
   'day_pass_band.removed': 'Age band removed',
   'day_pass_bundle.added': 'Family bundle added',
@@ -255,6 +258,7 @@ export function describeAuditEvent(event: AuditEventLike): string {
     describeBooking(event) ??
     describeDeposit(event) ??
     describeUnit(event) ??
+    describeStaff(event) ??
     describeEmail(event) ??
     describeSettings(event) ??
     describeSiteImage(event) ??
@@ -264,7 +268,29 @@ export function describeAuditEvent(event: AuditEventLike): string {
 }
 
 /**
- * The two emails a booking can send (capability A8).
+ * A staff member's change of name, with both sides — the audit log is read by
+ * name, so "renamed" alone would leave nobody able to place who last month's
+ * entries belonged to. An account created without a name went by its email,
+ * so there is no "from" to give.
+ */
+function describeStaff(event: AuditEventLike): string | null {
+  if (event.action !== 'staff.renamed') {
+    return null
+  }
+
+  const from = typeof event.before?.display_name === 'string' ? event.before.display_name : ''
+  const to = typeof event.after?.display_name === 'string' ? event.after.display_name : ''
+
+  if (from && to) {
+    return `Name changed from ${from} to ${to}`
+  }
+
+  return to ? `Name changed to ${to}` : 'Name changed'
+}
+
+/**
+ * The emails the product sends: a booking's two (capability A8), and a staff
+ * member's password reset link (capability F8), filed on the staff account.
  *
  * A branch rather than an `ACTION_LABELS` entry because the sentence depends
  * on which email it was, and a failure is worth naming as a failure: this is
@@ -278,12 +304,7 @@ function describeEmail(event: AuditEventLike): string | null {
   }
 
   const kind = typeof event.after?.kind === 'string' ? event.after.kind : null
-  const what =
-    kind === 'booking_confirmed'
-      ? 'Confirmation email'
-      : kind === 'booking_created'
-        ? 'Booking email'
-        : 'Email'
+  const what = (kind !== null ? EMAIL_KIND_LABELS[kind] : undefined) ?? 'Email'
 
   if (event.action === 'email.sent') {
     return `${what} sent`
@@ -294,6 +315,13 @@ function describeEmail(event: AuditEventLike): string | null {
   return failure === null
     ? `${what} could not be sent`
     : `${what} could not be sent — ${EMAIL_FAILURE_LABELS[failure] ?? failure.replace(/_/g, ' ')}`
+}
+
+/** Which email an `email.sent` or `email.failed` row is about, by its `kind`. */
+const EMAIL_KIND_LABELS: Readonly<Record<string, string>> = {
+  booking_created: 'Booking email',
+  booking_confirmed: 'Confirmation email',
+  password_reset: 'Password reset email',
 }
 
 /** Plain readings of `lib/email/send.ts`'s failure classes, for the history. */

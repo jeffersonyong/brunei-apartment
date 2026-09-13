@@ -143,6 +143,34 @@ describe('describeAuditEvent', () => {
     ).toBe('Renamed from SD-01 to Villa 1')
   })
 
+  test('names both sides of a change to a staff member’s name', () => {
+    expect(
+      describeAuditEvent(
+        event('staff.renamed', {
+          before: { display_name: 'Mary' },
+          after: { display_name: 'Mary Tan' },
+        }),
+      ),
+    ).toBe('Name changed from Mary to Mary Tan')
+    // An account created without a name went by its email until now.
+    expect(
+      describeAuditEvent(
+        event('staff.renamed', { before: { display_name: '' }, after: { display_name: 'Mary' } }),
+      ),
+    ).toBe('Name changed to Mary')
+  })
+
+  test('names a password reset email as one, sent or not', () => {
+    expect(describeAuditEvent(event('email.sent', { after: { kind: 'password_reset' } }))).toBe(
+      'Password reset email sent',
+    )
+    expect(
+      describeAuditEvent(
+        event('email.failed', { after: { kind: 'password_reset', failure: 'rejected' } }),
+      ),
+    ).toMatch(/^Password reset email could not be sent/)
+  })
+
   test('reads a settings change as the field that moved', () => {
     expect(
       describeAuditEvent(
