@@ -1,6 +1,6 @@
 import { getAuthenticatedUser } from '@/lib/auth/session'
 import { PortalAccount, type PortalAccountUser } from '@/components/portal/portal-account'
-import { PortalNav, PortalNavFooterLinks } from '@/components/portal/portal-nav'
+import { PortalNav } from '@/components/portal/portal-nav'
 import { PortalPanel } from '@/components/portal/portal-panel'
 import { OperationsSurface } from '@/components/operations-surface'
 import { PortalBrand } from '@/components/portal/portal-brand'
@@ -67,12 +67,15 @@ export default async function PortalLayout({ children }: { children: React.React
           <PortalNav />
         </div>
 
-        {/* Pushed to the bottom: who is signed in, and leaving the portal, are
-            chrome rather than navigation. */}
-        <div className="shrink-0 border-t border-divider px-sm pt-md pb-md">
-          {account ? <PortalAccount user={account} /> : null}
-          <PortalNavFooterLinks />
-        </div>
+        {/* Who is signed in closes the column, alone under the rule — chrome
+            rather than navigation, where an account menu is looked for. The
+            ways out of the portal are the nav's last rows, under Others
+            (Jeff, 13 September 2026). */}
+        {account ? (
+          <div className="shrink-0 border-t border-divider px-sm pt-md pb-md">
+            <PortalAccount user={account} />
+          </div>
+        ) : null}
       </aside>
 
       <PortalPanel account={account}>{children}</PortalPanel>

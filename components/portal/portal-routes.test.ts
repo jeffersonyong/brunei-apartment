@@ -80,6 +80,18 @@ describe('breadcrumbTrail', () => {
     expect(navGroups.at(-1)?.label).toBe('Others')
   })
 
+  test('ends Others with the ways out of the portal, which never light up or crumb', () => {
+    const others = navGroups.at(-1)
+
+    expect(others?.items.map((item) => item.label)).toEqual(['Settings'])
+    expect(others && 'exits' in others ? others.exits.map((item) => item.label) : []).toEqual([
+      'Public site',
+      'Field screens',
+    ])
+    expect(activeHref('/field')).toBeNull()
+    expect(breadcrumbTrail('/field')).toEqual([{ label: 'Portal' }])
+  })
+
   test('names the specific screen rather than its parent', () => {
     expect(breadcrumbTrail('/portal/bookings/new')).toEqual([
       { label: 'Portal', href: '/portal' },
