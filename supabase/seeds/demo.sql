@@ -100,7 +100,12 @@ begin
       ('DEMO — Paid by transfer, verified',   '+673 000 0007', '3B-05', -3, 2, 2, array['BAG 4455'],            false, 'bank_transfer', 'confirmed'),
       -- The car the gate must turn away (capability D4): due today, and the
       -- transfer that would secure it never checked.
-      ('DEMO — Arriving today, transfer unverified', '+673 000 0008', '3B-06', 0, 2, 2, array['BAH 1122'], false, 'bank_transfer', 'awaiting_payment_verification')
+      ('DEMO — Arriving today, transfer unverified', '+673 000 0008', '3B-06', 0, 2, 2, array['BAH 1122'], false, 'bank_transfer', 'awaiting_payment_verification'),
+      -- The cleaner's first card (capability C1): due out today and still in,
+      -- in the unit "Arriving today (cash)" moves into — a changeover, so the
+      -- card says the next guest arrives today. Its stay ends the day the
+      -- other's begins, which the exclusion constraint allows by construction.
+      ('DEMO — Due out today',                '+673 000 0010', '3B-01', -2, 2, 2, array['BAK 5566'],            false, 'cash',          'checked_in')
     ) as t (
       guest_name, phone, unit_ref, start_offset, nights,
       chargeable_guests, vehicles, no_vehicle, payment_method, settles_at
@@ -231,7 +236,7 @@ begin
     -- empty on a fresh stack — and so both audiences are visible at once. The
     -- in-house guest is the natural one: it is the case where housekeeping
     -- would actually be told something.
-    if spec.settles_at = 'checked_in' then
+    if spec.guest_name = 'DEMO — In residence' then
       insert into booking_note (property_id, booking_id, audience, body, author_id)
       values
         (
@@ -244,6 +249,34 @@ begin
           'DEMO — Extra towels on arrival, four guests rather than two.',
           null
         );
+    end if;
+
+    -- The departing guest carries both audiences too, so the phone screen can
+    -- be seen to show the office's note for housekeeping and never the
+    -- internal one beside it (D-7). The unit gets a standing note, written
+    -- through set_unit_notes() like the unit page does, and only if nobody has
+    -- written one — unit notes outlive the bookings a test run clears.
+    if spec.guest_name = 'DEMO — Due out today' then
+      insert into booking_note (property_id, booking_id, audience, body, author_id)
+      values
+        (
+          v_property_id, v_booking_id, 'internal',
+          'DEMO — Guest disputed the parking charge. Office to call back — not for housekeeping.',
+          null
+        ),
+        (
+          v_property_id, v_booking_id, 'housekeeping',
+          'DEMO — Guest mentioned a spill on the sofa. Check the cushions.',
+          null
+        );
+
+      if (select notes from unit where id = v_unit_id) is null then
+        perform set_unit_notes(
+          v_property_id, v_unit_id,
+          'DEMO — The balcony door sticks. Lift it slightly as you slide it.',
+          null
+        );
+      end if;
     end if;
 
     -- The deposit walk-through, so a fresh stack shows every stage of the
