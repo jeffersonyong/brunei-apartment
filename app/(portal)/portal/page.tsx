@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { BookingStatusBadge } from '@/components/portal/booking-status-badge'
@@ -18,6 +19,7 @@ import {
   TableHeaderRow,
   TableRow,
 } from '@/components/ui/table'
+import { landingPathFor } from '@/lib/auth/field-jobs'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
 import { getDailySnapshot, type Booking } from '@/lib/db/bookings'
@@ -45,6 +47,13 @@ export const dynamic = 'force-dynamic'
 
 export default async function PortalOverviewPage() {
   const actor = await getActor()
+
+  // A guard whose whole job is the gate never needs this screen. Sign-in sends
+  // them to the field screens directly; this catches the other ways in — an
+  // old bookmark, or the sign-in page bouncing a session that already exists.
+  if (actor && landingPathFor(actor.permissions) === '/field') {
+    redirect('/field')
+  }
 
   // Gated before the first read, like every other screen that shows a booking
   // (architecture.md §3). This one was the exception, and the exception was

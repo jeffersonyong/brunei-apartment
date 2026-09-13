@@ -93,3 +93,19 @@ export function hasVehicleAnswer(vehicles: readonly string[], noVehicle: boolean
 export function formatVehicles(vehicles: readonly string[]): string | null {
   return vehicles.length > 0 ? vehicles.join(' · ') : null
 }
+
+/**
+ * A plate reduced to its letters and digits, upper-cased — for comparing, and
+ * never stored.
+ *
+ * The one departure from "decided once, on the way in" above, and it is
+ * forced by where the typing happens. A guard at the barrier types what they
+ * read off a moving car on a phone keyboard: `baa1234`, `BAA 1234`,
+ * `baa-1234`. The stored plate keeps the desk's spacing because that is what
+ * a person wrote down; the gate compares both sides through this, exactly as
+ * `normalisePhoneForMatch` does for phone numbers (architecture.md §5.1).
+ * `gate_booking_search()` applies the same rule in SQL.
+ */
+export function plateKey(raw: string): string {
+  return raw.toUpperCase().replace(/[^0-9A-Z]/g, '')
+}

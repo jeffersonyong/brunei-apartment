@@ -187,12 +187,15 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
       : null
 
   const mayAmend = canAmend(booking.status) && hasPermission(actor.permissions, 'booking.amend')
-  // Both moves are gated by `booking.amend` until N11 settles who checks a
-  // guest in — see stay-actions.ts. Which one is offered comes from the state
-  // machine, never from a hand-written list of statuses.
-  const mayMoveStay = hasPermission(actor.permissions, 'booking.amend')
-  const canCheckIn = mayMoveStay && allowedEvents(booking.status).includes('check_in')
-  const canCheckOut = mayMoveStay && allowedEvents(booking.status).includes('check_out')
+  // One permission per move (N11, 13 September 2026) — see stay-actions.ts.
+  // Which move is offered still comes from the state machine, never from a
+  // hand-written list of statuses.
+  const canCheckIn =
+    hasPermission(actor.permissions, 'booking.check_in') &&
+    allowedEvents(booking.status).includes('check_in')
+  const canCheckOut =
+    hasPermission(actor.permissions, 'booking.check_out') &&
+    allowedEvents(booking.status).includes('check_out')
   const mayCancel =
     allowedEvents(booking.status).includes('cancel') &&
     hasPermission(actor.permissions, 'booking.cancel')
