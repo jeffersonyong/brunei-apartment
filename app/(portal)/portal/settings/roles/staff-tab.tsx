@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { MoreHorizontal } from 'lucide-react'
+import { Eye, EyeOff, MoreHorizontal } from 'lucide-react'
 
 import { EmptyState } from '@/components/portal/empty-state'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Pagination } from '@/components/ui/pagination'
 import { clampPage, pageCountFor } from '@/components/ui/pagination-range'
+import { PasswordInput } from '@/components/ui/password-input'
 import { toast } from '@/components/ui/toast-store'
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password-policy'
 import { generateTempPassword } from '@/lib/auth/temp-password'
@@ -278,13 +279,16 @@ function TempPasswordField({
           Generate
         </button>
       </div>
-      {/* Visible text on purpose: the admin reads it out or copies it to the
-          new staff member. */}
-      <Input
+      {/* Hidden until the eye is pressed, like every password field (Jeff,
+          13 September 2026): an admin setting one is as likely to have somebody
+          at their shoulder as the person who will use it. `new-password`
+          rather than `off`, because browsers ignore `off` on a password field
+          and would offer the admin's own saved password here. */}
+      <PasswordInput
         id={id}
         name="tempPassword"
         placeholder="Generate one, or type your own"
-        autoComplete="off"
+        autoComplete="new-password"
         required
         minLength={MIN_PASSWORD_LENGTH}
         value={value}
@@ -298,19 +302,24 @@ function TempPasswordField({
 }
 
 /**
- * The success panel after a create or reset: the password, visible one last
- * time, with a copy control so it can go straight into WhatsApp.
+ * The success panel after a create or reset: the password one last time, with
+ * a copy control so it can go straight into WhatsApp.
+ *
+ * Dots until the eye is pressed, like the field it was typed into (Jeff,
+ * 13 September 2026). Copy copies the password itself either way, so handing
+ * it over never needs it on screen.
  */
 function PasswordHandover({ note, password }: { note: string; password: string }) {
   const [isCopied, setIsCopied] = useState(false)
+  const [isShown, setIsShown] = useState(false)
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(password)
       setIsCopied(true)
     } catch {
-      // Clipboard refused (unusual browser context) — the password is visible
-      // and selectable right above the button, so nothing is lost.
+      // Clipboard refused (unusual browser context) — the eye shows the
+      // password and it is selectable, so nothing is lost.
     }
   }
 
@@ -318,10 +327,30 @@ function PasswordHandover({ note, password }: { note: string; password: string }
     <div className="grid gap-md">
       <Callout tone="positive">{note}</Callout>
       <div className="flex items-center justify-between gap-lg rounded-md border border-border px-md py-sm">
-        <code className="font-mono text-body-md text-foreground select-all">{password}</code>
-        <Button type="button" variant="secondary" onClick={copy}>
-          {isCopied ? 'Copied' : 'Copy'}
-        </Button>
+        <code
+          className="min-w-0 font-mono text-body-md break-all text-foreground select-all"
+          aria-label={isShown ? undefined : 'Temporary password, hidden'}
+        >
+          {isShown ? password : '•'.repeat(password.length)}
+        </code>
+        <div className="flex shrink-0 items-center gap-xs">
+          <button
+            type="button"
+            aria-label={isShown ? 'Hide password' : 'Show password'}
+            aria-pressed={isShown}
+            onClick={() => setIsShown((shown) => !shown)}
+            className="inline-flex size-control-sm items-center justify-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {isShown ? (
+              <EyeOff aria-hidden className="size-4" />
+            ) : (
+              <Eye aria-hidden className="size-4" />
+            )}
+          </button>
+          <Button type="button" variant="secondary" onClick={copy}>
+            {isCopied ? 'Copied' : 'Copy'}
+          </Button>
+        </div>
       </div>
     </div>
   )

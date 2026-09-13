@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { DateField } from '@/components/ui/date-field'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export const metadata: Metadata = {
@@ -435,6 +436,12 @@ export default function TokensPage() {
             <h3 className="micro-label text-muted-foreground">Inputs</h3>
             <div className="mt-md flex max-w-[420px] flex-col gap-sm">
               <Input placeholder="Guest name" />
+              {/* Every password field: dots until the eye inside it is pressed. */}
+              <PasswordInput
+                aria-label="Password example"
+                placeholder="Password"
+                defaultValue="palm-villa-demo"
+              />
               {/* The date field wears the same treatment: closed, it is an
                   Input with a calendar glyph — see Dropdowns for the panel. */}
               <DateField defaultValue="2026-09-12" className="w-[180px]" />
