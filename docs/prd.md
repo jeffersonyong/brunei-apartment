@@ -104,6 +104,7 @@ Indicative permission set:
 ```
 booking.view          booking.create        booking.amend
 booking.cancel        booking.override_hold booking.discount
+booking.check_in      booking.check_out
 payment.verify        payment.record_cash
 inspection.record     charge.create         charge.waive
 deposit.approve_release                     deposit.waive
@@ -116,11 +117,11 @@ site_image.manage
 
 **[A] `deposit.waive` is the second such permission** (5 September 2026, capability B15). It gates deciding at the desk that no security deposit is taken on a booking — see §11. Same construction and same default as the discount: separate from `booking.create` because it decides money is not taken, held by Front Office because the guest asking to stay another night is standing at the desk, and one click to withhold.
 
-**[A] `site_image.manage` is a departure, made on purpose** (23 September 2026, capability F7). It gates adding, replacing, reframing and removing the photographs on the public site. The unit registry below reused `config.manage` rather than mint a new string, because an administrator opens it twice a year; the photos are different in who does them — whoever runs the Instagram account refreshes the "Follow along" tiles — and `config.manage` would also hand that person pricing, roles and the audit log. Seeded to Admin only; any other role is one tick in the Roles matrix. The set now holds nineteen strings.
+**[A] `site_image.manage` is a departure, made on purpose** (23 September 2026, capability F7). It gates adding, replacing, reframing and removing the photographs on the public site. The unit registry below reused `config.manage` rather than mint a new string, because an administrator opens it twice a year; the photos are different in who does them — whoever runs the Instagram account refreshes the "Follow along" tiles — and `config.manage` would also hand that person pricing, roles and the audit log. Seeded to Admin only; any other role is one tick in the Roles matrix. The set held nineteen strings then, and holds twenty-one since `booking.check_in` and `booking.check_out` (below).
 
 **[C]** Deposit release approval sits at the end of the pipeline, with Finance or Jason, not with Housekeeping or Front Office. Housekeeping records the inspection; a separate role approves.
 
-**[A] Checking a guest in and out is gated by `booking.amend`**, added when the deposits slice made those two moves reachable at all (§11). There is no check-in permission in the set above — [N11](open-questions.md) is the question of who may check a guest in, and minting a string before it is answered would be this document deciding it. `booking.amend` is the nearest true thing: it already means "may move this booking on", and Front Office holds it, which is where an arriving guest is standing. **The consequence is that Security cannot check anyone in**, which is exactly what capability D3 will need, so N11 has to be answered before the arrivals screen is built rather than before this one shipped.
+**[A] Checking a guest in and checking one out are two permissions, `booking.check_in` and `booking.check_out`** (13 September 2026, answering the first half of [N11](open-questions.md) — **Jeff's decision, not yet confirmed by Jason**). From the deposits slice until then both moves borrowed `booking.amend`, which meant Security could not check anybody in — the one thing the gate screen exists for — and that granting it to a guard would also have let them change a booking's dates, unit and guest. Each move is now held by the role whose job it is: **Security checks guests in at the gate, Housekeeping checks them out when it finds the unit empty**, and Front Office and Admin hold both. Neither handles money — `check_in_booking()` refuses a booking whose deposit is not held in full (§11, §12) — which is what makes check-in a small thing to hand a guard. `booking.amend` keeps its own meaning: editing a booking.
 
 ### Predefined roles
 
@@ -130,13 +131,13 @@ site_image.manage
 |---|---|
 | **Admin** | All permissions, including `config.manage` and `document.view_identity` |
 | **Front Office** | `booking.*`, `payment.verify`, `payment.record_cash`, `charge.create`, `deposit.waive`, `unit.manage`, `tenancy.manage`, `document.view_identity` |
-| **Housekeeping** | `inspection.record`, `unit.manage` (status only), read-only booking view for today |
+| **Housekeeping** | `inspection.record`, `unit.manage` (status only), `booking.check_out`, read-only booking view for today |
 
 **[A] What "(status only)" means concretely**, settled when the units screens were built. `unit.manage` opens the units board and the two service actions — taking a unit out of service and returning it — which is exactly the cleaner's job. Two neighbouring things are deliberately *not* on it:
 
 - **Marking a unit let long-term is `tenancy.manage`.** Declaring a unit let to a tenant for six months is a commercial statement, not an operational one, and it should not sit with the person who reports that the shower door sticks. The permission already existed in the vocabulary and had never been held for anything; Front Office gains it.
 - **Naming and counting the units is `config.manage`** (the unit registry, F6). Renumbering the building is configuration, in the same class as pricing (F3). A seventeenth permission string was considered and rejected — it would cost a migration, a seed change and a role rework for a screen an administrator opens twice a year — at the price that Front Office cannot correct a typo'd door number.
-| **Security** | Today's arrivals view, check-in action, read-only booking summary. No document or payment access. |
+| **Security** | `booking.check_in` — today's arrivals and the check-in action at the gate (§12) — and a read-only booking view. No document or payment access. |
 | **Finance** | `payment.verify`, `deposit.approve_release`, `charge.waive`, `report.view`, read-only booking view |
 
 **Principle:** identity documents and payment verification are the two most sensitive capabilities. Neither is granted to Security or Housekeeping by default.
@@ -173,6 +174,8 @@ Booking calendar and list, manual booking creation, payment verification queue, 
 
 ### 5.3 Field screens (mobile web)
 Purpose-built single screens. Security: today's arrivals plus check-in. Housekeeping: today's checkouts, inspection, unit ready toggle. No app installation.
+
+**As built — the gate (capabilities D1, D2, D4 and check-in, 24 September 2026).** `/field/arrivals` is the guard's screen, and a guard signs in straight to it: somebody whose every permission is one the field screens use, and who has a field screen to work, lands on `/field` rather than the portal; the desk, which can also check guests in, lands on the portal as before. One page carries the whole day — stays open over today, today's day passes, and guests already checked in — and the guard filters it by plate, name or reference on the phone, so matching a car needs no request. A car that is not on the list is found by searching every open booking. What the screen decides about each car is §12's as-built block. The housekeeping half is the next slice. **[A]**
 
 ---
 
@@ -757,6 +760,22 @@ The slice above made the deposit the thing that secures a booking. What it did n
 The refusal names which of three it is, because the way out differs: nothing was ever taken, a transfer is promised and unverified, or a deposit arrived **short** of the quote (§11, 17 September 2026). The third is the one that must not be sent to the payments queue — that transfer was verified, and looking for a promise nobody made is how a shortfall goes uncollected a second time; it is topped up from the booking. A booking that was never confirmed because its deposit came up short is stopped a layer earlier, by the state machine, which has no legal move from `awaiting_payment_verification` to the door at all.
 
 This sharpens requirement 6 rather than changing it. The guard's screen still shows payment status so an unpaid arrival is routed to the office; what is now also true is that an arrival with no deposit cannot be checked in at all, by anybody, until the office has recorded one. The stay's own balance is unaffected — a deposit-secured guest owes the whole stay on arrival and settles it at the desk (§10.7), which is a payment against the booking and not a condition of checking in.
+
+### As built — the gate (24 September 2026)
+
+**Requirements 3, 5 and 6 are built; 1, 2, 4, 7 and 8 travel with the QR code**, which is its own slice after the email domain ([N42](open-questions.md)): a code issued on a temporary domain would have to be reissued the day the real one arrives. Plate and name lookup ships first, which requirement 5 already expected to carry most of the traffic.
+
+**The guard's screen answers one question per car — let them in, or send them to the office — and never shows a figure.** The rules, all **[A]** and Jeff's of 13 September 2026:
+
+- **A booking the office has not confirmed, or whose deposit is not held in full, is sent to the office.** That is `check_in_booking()`'s own refusal read ahead of the tap, so the button is never offered only to be refused.
+- **Money still owed on the stay is said, and does not stop the car.** The ordinary deposit-secured guest pays for the stay on arrival (§9.1); the card says the stay is paid at the office.
+- **A guest arriving before their booking starts is sent to the office; a guest a day late is let in.** Arriving early may mean a different unit or an amendment, which is the desk's call ([N31](open-questions.md)).
+- **A day pass is listed and never checked in** ([N40](open-questions.md)). Nothing closes a checked-in pass, so the guard sees whether it is paid and stops there.
+- **Guests already checked in are listed apart**, because their cars come and go all stay.
+
+**Who let the guest in is the session, not the screen** (requirement 3): the gate's check-in is the desk's `check_in_booking()` under `booking.check_in` (§4), so the booking's history names the guard.
+
+**[O] Signal at the guardhouse is still unconfirmed** (register C3). What is built assumes a weak signal rather than none: the list is one small page filtered on the phone, a search is one plain request, and a check-in that cannot reach the server says that nothing was recorded. There is no offline cache, deliberately — the list carries guests' names and plates, and a shared guardhouse phone is where yesterday's list should not survive. If the answer is *no signal at all*, that is a different build and a data-protection question.
 
 ---
 

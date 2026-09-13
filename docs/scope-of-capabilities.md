@@ -33,7 +33,7 @@ Everyone works from the same live data, so availability, payments, and booking s
 | A5 | Receive bank transfer instructions (BIBD / Baiduri) with a unique payment reference to include in the transfer |
 | A6 | Upload their transfer slip directly, instead of sending it over WhatsApp — **delivered 18 September 2026** |
 | A7 | Provide guest details and identity document as part of the booking, replacing the paper/WhatsApp collection step — **delivered 18 September 2026, see the notes below** |
-| A8 | Receive booking confirmation and an entry QR code by email — delivered as a forwardable image so staff can also send it in an existing WhatsApp conversation — **email half delivered 14 September 2026; the QR travels with the security screen (D3), see the notes below** |
+| A8 | Receive booking confirmation and an entry QR code by email — delivered as a forwardable image so staff can also send it in an existing WhatsApp conversation — **email half delivered 14 September 2026; the QR is its own slice after the email domain, see the notes below and under D** |
 | A9 | Look up their own booking any time using booking reference + phone number — **delivered 16 September 2026** |
 | A10 | Get answers to common questions from a self-serve FAQ page — **delivered 16 September 2026, see the notes below on what it cannot yet answer** |
 | A11 | Browse a public landing page presenting the day-pass facilities, the unit types and "from" rates, with an enquiry route for long-term lets — **(proposed 27 August 2026, pending client agreement — not yet part of the quoted delivery)** |
@@ -80,7 +80,7 @@ Everyone works from the same live data, so availability, payments, and booking s
 >
 > Five things worth saying plainly:
 >
-> - **The QR code is deliberately not in this half.** Nothing can read one yet: checking a guest in is still a desk action, because who may do it at the gate is unanswered (N11), and the security screen that would scan a code is unbuilt. A code issued now would also stop working the day the domain changes, so every guest who had one would need a new one. It arrives with the arrivals screen, and the emails say what to quote instead of promising a code that does nothing.
+> - **The QR code is deliberately not in this half.** Nothing could read one then: checking a guest in was a desk action, because who may do it at the gate was unanswered (N11), and the security screen that would scan a code was unbuilt. A code issued now would also stop working the day the domain changes, so every guest who had one would need a new one. The arrivals screen has since shipped without it (24 September 2026, see D); the code arrives once the email domain is chosen, and until then the emails say what to quote instead of promising a code that does nothing.
 > - **Nothing is being sent yet, and that is the domain question.** The mail service will only deliver to the developer's own address until a Palm Villa sending domain is verified, and no domain has been chosen. The feature is finished, tested and switched off; turning it on is one setting and a few DNS records, on the day the domain is decided. **This is now the thing the unanswered domain question is holding up.**
 > - **One email per booking, and only ever these two.** The booking form promises "we will not email you anything else", so it is a standing constraint rather than a preference: no reminders, no marketing, no receipts for each payment. A guest who pays in three instalments hears once.
 > - **The confirmation states what is actually left to pay**, which the booking page had been getting wrong. A guest who chose to send everything up front was still being told the whole stay was due on arrival. Both surfaces now read the same figure from the same place, so they cannot disagree — and a guest cannot be asked twice for money they have already sent.
@@ -150,6 +150,15 @@ Everyone works from the same live data, so availability, payments, and booking s
 
 A forwarded or leaked QR code grants nothing by itself — check-in authority comes from the logged-in staff member, and each code can be revoked and re-issued.
 
+> **D1, D2 and D4 delivered 24 September 2026, with checking a guest in at the gate. D3's QR code is still to come.** A guard signs in on their phone straight to today's arrivals: every stay due today, every day pass, and the guests already staying, each with the plates to match against the car. Four things worth saying plainly:
+>
+> - **Security can now check a guest in, and cannot take money doing it.** Checking in and checking out are now permissions of their own: the guard holds the first, housekeeping the second, the desk both. A guest whose deposit is not in is never offered to the guard as someone to let in; the screen says to send them to the office. This was open question N11, settled by Jeff on 13 September 2026 and in the register for you to confirm.
+> - **The guard never sees a figure.** The screen says *let them in* or *send them to the office*, and why in a sentence — including that the stay is paid at the office, which does not stop the car.
+> - **It is built for a weak signal, not for none.** The day's list loads once and the guard's typing filters it on the phone. Whether the guardhouse has signal at all is still a question for you (register C3).
+> - **The QR code waits for the email domain.** A code sent before Palm Villa's domain exists would have to be sent again when it does, so D3's scan arrives with A8's QR half once the domain is chosen. Plate and name lookup — which the requirements always expected to carry most of the traffic — ships now.
+>
+> **Decided on your behalf, for you to confirm:** a guest who turns up before their booking starts is sent to the office rather than let in, and a day pass is shown to the guard but never checked in.
+
 ---
 
 ## E. What Finance can do (portal)
@@ -176,7 +185,7 @@ Four things worth saying plainly, because they are the decisions behind the figu
 **E1–E3 delivered 6 September 2026.** The ledger answers what is held right now, a deposit has its own screen carrying the inspection, its itemised charges and the release approval, and a released deposit prints a statement to send on.
 
 - **Photographs on an inspection arrived on 7 September 2026** with document storage, closing the gap this entry flagged. C2's evidence is now real: any number of photographs per inspection, stored privately, deleted automatically after two years.
-- **Checking a guest in and out became possible along the way**, because a deposit is collected on arrival and inspected after departure, and neither moment existed in the product before. It is a desk action under the same permission as amending a booking; **Security still cannot check anyone in**, which is what D3 needs and what open question N11 has to settle.
+- **Checking a guest in and out became possible along the way**, because a deposit is collected on arrival and inspected after departure, and neither moment existed in the product before. It was a desk action under the same permission as amending a booking until 24 September 2026, when checking in and checking out became permissions of their own and Security was given the first (see D).
 
 **B8 is unchanged.** Awaiting inspection and cleaning are still the two unit states this build cannot show — what has changed is that the inspection they depend on is now a fact somebody records, so C2–C3 have something to derive from.
 
