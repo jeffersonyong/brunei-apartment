@@ -30,6 +30,26 @@ export const PERMISSIONS = [
    * takes bookings all day.
    */
   'booking.discount',
+  /**
+   * Checking a guest in, at the gate or at the desk (capability D3's check-in,
+   * without the QR).
+   *
+   * Its own string, and one of two rather than one for both moves (N11,
+   * 13 September 2026). It used to borrow `booking.amend`, which kept Security
+   * from checking anybody in and would have let a guard edit a booking had it
+   * been granted. It handles no money: `check_in_booking()` refuses a booking
+   * whose deposit is not held, so a guard can only let in a guest the office
+   * has already secured. Security, Front Office and Admin.
+   */
+  'booking.check_in',
+  /**
+   * Checking a guest out — the cleaner's "the guest has left", or the desk's.
+   *
+   * Separate from `booking.check_in` so each role holds the move that is its
+   * job: the guard never checks a guest out and the cleaner never checks one
+   * in. Housekeeping, Front Office and Admin.
+   */
+  'booking.check_out',
   'payment.verify',
   'payment.record_cash',
   'inspection.record',

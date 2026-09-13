@@ -1,8 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { revalidateStayScreens } from '@/app/revalidate-stay-screens'
 import { requirePermission } from '@/lib/auth/require-permission'
 import { getBookingById, transitionBooking } from '@/lib/db/bookings'
 import { checkInBooking } from '@/lib/db/deposits'
@@ -28,19 +28,19 @@ import type { Cents } from '@/lib/domain/money'
  * this reports the refusal after it, in the same words, for the clerk who
  * opened the dialog a second before a colleague verified the transfer.
  *
- * ── Why `booking.amend` gates both, and what that assumes ─────────────────
+ * ── Two permissions, one per move ─────────────────────────────────────────
  *
- * **[A]**, recorded in prd.md §4 and added to open-questions.md N11, which
- * already asks the client who may check a guest in. There is no `check_in`
- * permission in the PRD's canonical set — the seed refuses to mint one
- * (supabase/seed.sql), on the same reasoning that kept `payment.record_cash`
- * from being split — so this borrows the permission that already means "may
- * move this booking on". The consequence is stated rather than hidden:
- * **Security cannot check a guest in**, which is what D3 will need and what
- * N11 has to answer before the arrivals screen is built.
+ * `booking.check_in` and `booking.check_out`, answering open-questions.md N11
+ * (13 September 2026, Jeff — [A] in prd.md §4 until Jason confirms). Both moves
+ * used to borrow `booking.amend`, which kept Security from checking anyone in
+ * and would have handed a guard the power to change a booking's dates had it
+ * been granted to them. The guard checks guests in at the gate and the cleaner
+ * checks them out when the unit is empty, so each of those roles holds its own
+ * move and not the other; Front Office and Admin hold both, because the desk
+ * is where a guest is standing when either happens there.
  *
- * Front Office and Admin hold it, which is the desk, and the desk is where an
- * arriving guest is standing.
+ * The gate's own check-in is app/(field)/field/arrivals/actions.ts, under the
+ * same permission and through the same `checkInBooking()`.
  *
  * Check-out moves the booking and nothing else, so it is an ordinary
  * transition. The deposit stays held: what releases it is an inspection and an
@@ -67,7 +67,7 @@ export async function checkInAction(
   formData: FormData,
 ): Promise<StayActionState> {
   // architecture.md §4: every mutation passes the permission check first.
-  const actor = await requirePermission('booking.amend')
+  const actor = await requirePermission('booking.check_in')
 
   const parsed = stayActionSchema.safeParse(Object.fromEntries(formData))
 
@@ -104,7 +104,7 @@ export async function checkOutAction(
   _previous: StayActionState,
   formData: FormData,
 ): Promise<StayActionState> {
-  const actor = await requirePermission('booking.amend')
+  const actor = await requirePermission('booking.check_out')
 
   const parsed = stayActionSchema.safeParse(Object.fromEntries(formData))
 
@@ -129,25 +129,4 @@ export async function checkOutAction(
   revalidateStayScreens(booking.reference, booking.stay?.unitRef ?? null)
 
   return { status: 'done' }
-}
-
-/**
- * Everything that shows a booking's state, a unit's state, or a deposit.
- *
- * Longer than the other revalidation lists in this feature because checking in
- * is the one act that touches all three registers at once: the booking moves,
- * the unit becomes occupied, and the deposit's stage moves with the guest.
- */
-function revalidateStayScreens(reference: string, unitRef: string | null): void {
-  revalidatePath('/portal/bookings')
-  revalidatePath(`/portal/bookings/${reference}`)
-  revalidatePath('/portal/deposits')
-  revalidatePath(`/portal/deposits/${reference}`)
-  revalidatePath('/portal/units')
-
-  if (unitRef) {
-    revalidatePath(`/portal/units/${unitRef}`)
-  }
-
-  revalidatePath('/portal')
 }

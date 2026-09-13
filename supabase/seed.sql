@@ -154,10 +154,11 @@ select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
   'booking.view', 'booking.create', 'booking.amend', 'booking.cancel',
-  'booking.override_hold', 'booking.discount', 'payment.verify',
-  'payment.record_cash', 'inspection.record', 'charge.create', 'charge.waive',
-  'deposit.approve_release', 'deposit.waive', 'unit.manage', 'tenancy.manage',
-  'config.manage', 'report.view', 'document.view_identity', 'site_image.manage'
+  'booking.override_hold', 'booking.discount', 'booking.check_in', 'booking.check_out',
+  'payment.verify', 'payment.record_cash', 'inspection.record', 'charge.create',
+  'charge.waive', 'deposit.approve_release', 'deposit.waive', 'unit.manage',
+  'tenancy.manage', 'config.manage', 'report.view', 'document.view_identity',
+  'site_image.manage'
 ]) as permission
 where r.slug = 'admin';
 
@@ -170,19 +171,21 @@ select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
   'booking.view', 'booking.create', 'booking.amend', 'booking.cancel',
-  'booking.override_hold', 'booking.discount', 'payment.verify',
-  'payment.record_cash', 'charge.create', 'deposit.waive', 'unit.manage',
-  'tenancy.manage', 'document.view_identity'
+  'booking.override_hold', 'booking.discount', 'booking.check_in', 'booking.check_out',
+  'payment.verify', 'payment.record_cash', 'charge.create', 'deposit.waive',
+  'unit.manage', 'tenancy.manage', 'document.view_identity'
 ]) as permission
 where r.slug = 'front-office';
 
 -- Housekeeping records the inspection; a separate role approves the release
--- (prd.md §4 [C]). Its booking view is read-only, which `booking.view` is.
+-- (prd.md §4 [C]). Its booking view is read-only, which `booking.view` is. It
+-- checks a departing guest out, because the cleaner is the one who finds the
+-- unit empty (N11, 13 September 2026) — and never checks one in.
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
-  'booking.view', 'inspection.record', 'unit.manage'
+  'booking.view', 'booking.check_out', 'inspection.record', 'unit.manage'
 ]) as permission
 where r.slug = 'housekeeping';
 
@@ -190,15 +193,17 @@ where r.slug = 'housekeeping';
 -- prd.md §4 describes this role as "today's arrivals view, check-in action,
 -- read-only booking summary. No document or payment access."
 --
--- FLAGGED: the canonical permission set in prd.md §4 has no string for the
--- check-in action. Security therefore holds `booking.view` alone, and the
--- check-in permission is NOT invented here — a gap in the PRD is a question for
--- the client, not a permission string minted in a seed file. Raised in the PR
--- alongside the other open items; adding it later is one row and one migration
--- widening the check constraint.
+-- The check-in action is `booking.check_in`, minted by
+-- 20260924000100_the_guard_checks_a_guest_in.sql when N11 was answered
+-- (13 September 2026). It handles no money: check_in_booking() refuses a
+-- booking whose deposit is not held, so the guard only ever lets in a guest the
+-- office has secured. No check-out — that is Housekeeping's.
 insert into role_permission (property_id, role_id, permission)
-select r.property_id, r.id, 'booking.view'
+select r.property_id, r.id, permission
 from staff_role r
+cross join unnest(array[
+  'booking.view', 'booking.check_in'
+]) as permission
 where r.slug = 'security';
 
 insert into role_permission (property_id, role_id, permission)
