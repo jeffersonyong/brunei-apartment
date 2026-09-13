@@ -97,7 +97,10 @@ begin
       ('DEMO — In residence',                 '+673 000 0004', 'SD-01', -1, 3, 8, array['BAC 9012'],            false, 'cash',          'checked_in'),
       ('DEMO — Departed last week',           '+673 000 0005', '3B-03', -5, 3, 2, array['BAE 7788'],            false, 'cash',          'completed'),
       ('DEMO — Left today, not inspected',    '+673 000 0006', '3B-04', -2, 2, 3, array['BAF 2244'],            false, 'cash',          'completed'),
-      ('DEMO — Paid by transfer, verified',   '+673 000 0007', '3B-05', -3, 2, 2, array['BAG 4455'],            false, 'bank_transfer', 'confirmed')
+      ('DEMO — Paid by transfer, verified',   '+673 000 0007', '3B-05', -3, 2, 2, array['BAG 4455'],            false, 'bank_transfer', 'confirmed'),
+      -- The car the gate must turn away (capability D4): due today, and the
+      -- transfer that would secure it never checked.
+      ('DEMO — Arriving today, transfer unverified', '+673 000 0008', '3B-06', 0, 2, 2, array['BAH 1122'], false, 'bank_transfer', 'awaiting_payment_verification')
     ) as t (
       guest_name, phone, unit_ref, start_offset, nights,
       chargeable_guests, vehicles, no_vehicle, payment_method, settles_at
@@ -275,6 +278,54 @@ begin
       );
     end if;
   end loop;
+
+  -- ── A day pass for today (capability A3; the gate's list, N40) ─────────
+  --
+  -- Sold the way a customer buys one — through the public writer, held until
+  -- the transfer is checked — which is the shape a guard most needs to see: on
+  -- today's list, and sent to the office. Priced from the open-ended age band
+  -- in Property settings rather than by hand, like every stay above.
+  declare
+    v_band record;
+  begin
+    select id, label, price_cents into strict v_band
+    from day_pass_age_band
+    where property_id = v_property_id and max_age_exclusive is null;
+
+    select create_public_day_pass_booking(
+      v_property_id,
+      'held',
+      v_today,
+      jsonb_build_array(jsonb_build_object('bandId', v_band.id, 'label', v_band.label, 'count', 2)),
+      2,
+      2,
+      0,
+      'DEMO — Day pass today, transfer unverified',
+      '+673 000 0009',
+      null,
+      array['BAJ 3344'],
+      false,
+      v_band.price_cents * 2,
+      jsonb_build_array(jsonb_build_object(
+        'type', 'day_pass',
+        'description', v_band.label || ' × 2',
+        'quantity', 2,
+        'unitPrice', v_band.price_cents,
+        'amount', v_band.price_cents * 2
+      )),
+      -- A booking link of the shape every online booking carries: 22
+      -- characters of base64url.
+      translate(
+        substr(encode(decode(md5(random()::text || clock_timestamp()::text), 'hex'), 'base64'), 1, 22),
+        '+/', '-_'
+      ),
+      3
+    ) into v_result;
+
+    if v_result ->> 'ok' <> 'true' then
+      raise exception 'Demo seed could not sell the day pass: %', v_result ->> 'error';
+    end if;
+  end;
 
   -- ── The cash-up (capability E4) ────────────────────────────────────────
   --
