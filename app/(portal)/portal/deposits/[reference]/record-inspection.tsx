@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ClipboardCheck } from 'lucide-react'
 
 import { FileField } from '@/components/portal/file-field'
+import { preparePhoto } from '@/components/prepare-photo'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,7 +27,8 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast-store'
-import { oversizedFiles } from '@/lib/domain/document'
+import { acceptAttributeFor, MAX_DOCUMENT_BYTES, oversizedFiles } from '@/lib/domain/document'
+import { MAX_PHOTO_ORIGINAL_BYTES } from '@/lib/domain/image-size'
 import {
   INSPECTION_OUTCOME_LABELS,
   MAX_INSPECTION_NOTES_LENGTH,
@@ -77,15 +79,23 @@ import { recordInspectionAction } from './actions'
  * `inspection.record`, the string that gates this dialog — so anybody who can
  * open it can attach, and there is no half-usable state to design for.
  *
- * **This is still not the phone screen.** C2 proper is a housekeeping field
- * surface and belongs to phase two; what this does is give the fact somewhere
- * to live, and give that screen a write path shaped the way it will need it.
+ * **The phone screen is app/(field)/field/departures**, and runs the same
+ * sequence. This dialog stays for the desk and for the unit's page, where a
+ * stay is inspected from a laptop. Both shrink each photograph in the browser
+ * before sending it (components/prepare-photo.ts), so a camera original is not
+ * refused for its size.
  */
 
 interface RecordInspectionProps {
   bookingId: string
   reference: string
   unitRef: string | null
+  /**
+   * What the toast says comes next. The deposit's page says the release; the
+   * unit's page says the unit can be marked ready — a stay may quote no
+   * deposit at all.
+   */
+  nextStep?: string
 }
 
 export function RecordInspection(props: RecordInspectionProps) {
@@ -114,6 +124,7 @@ function InspectionDialog({
   bookingId,
   reference,
   unitRef,
+  nextStep = 'The deposit can now be released.',
   onClose,
 }: RecordInspectionProps & { onClose: () => void }) {
   // Controlled throughout. The submit is orchestrated here rather than by
@@ -133,7 +144,9 @@ function InspectionDialog({
   const unit = unitRef ?? reference
   const needsNotes = outcome === 'issues_found'
   const isRecorded = inspectionId !== null
-  const oversized = oversizedFiles(files)
+  // The original's ceiling, not the upload's: each photograph is shrunk below
+  // 4 MiB before it is sent.
+  const oversized = oversizedFiles(files, MAX_PHOTO_ORIGINAL_BYTES)
 
   /**
    * Closes, refreshing first if anything was written.
@@ -189,7 +202,7 @@ function InspectionDialog({
       const { attached, refused } = await attachPhotographs(files, bookingId, id)
 
       setStep('idle')
-      announce({ recordedNow: !wasRecorded, unit, attached, refused })
+      announce({ recordedNow: !wasRecorded, unit, nextStep, attached, refused })
 
       if (refused.length === 0) {
         router.refresh()
@@ -278,7 +291,10 @@ function InspectionDialog({
               rule the client has not been asked for. */}
           <FileField
             id="inspection-photographs"
-            kind="inspection_photo"
+            accept={acceptAttributeFor('inspection_photo')}
+            maxBytes={MAX_PHOTO_ORIGINAL_BYTES}
+            formats="JPEG, PNG or WebP"
+            hint="JPEG, PNG or WebP. Each is made smaller before it is sent."
             label="Photographs (optional)"
             files={files}
             multiple
@@ -357,9 +373,17 @@ async function attachPhotographs(
   let attached = 0
 
   for (const file of files) {
+    // Shrunk here, one at a time, so only one decoded original is in memory.
+    const prepared = await preparePhoto(file, { maxBytes: MAX_DOCUMENT_BYTES })
+
+    if (!prepared.ok) {
+      refused.push(`${file.name} — ${prepared.message}`)
+      continue
+    }
+
     const data = formDataOf({ kind: 'inspection_photo', bookingId, inspectionId })
 
-    data.set('file', file)
+    data.set('file', prepared.photo.file)
 
     const result = await attachDocumentAction({ status: 'idle' }, data)
 
@@ -386,11 +410,13 @@ async function attachPhotographs(
 function announce({
   recordedNow,
   unit,
+  nextStep,
   attached,
   refused,
 }: {
   recordedNow: boolean
   unit: string
+  nextStep: string
   attached: number
   refused: readonly string[]
 }): void {
@@ -413,7 +439,7 @@ function announce({
         ? 'Photograph attached'
         : `${attached} photographs attached`,
     description: recordedNow
-      ? `The deposit can now be released.${photographs}${refused.length > 0 ? ' Some photographs were not attached — see the dialog.' : ''}`
+      ? `${nextStep}${photographs}${refused.length > 0 ? ' Some photographs were not attached — see the dialog.' : ''}`
       : refused.length > 0
         ? 'Some photographs were not attached — see the dialog.'
         : undefined,

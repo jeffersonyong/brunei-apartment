@@ -1,33 +1,41 @@
-import { MAX_SITE_IMAGE_BYTES, fitWithin } from '@/lib/domain/site-image'
+import { fitWithin } from '@/lib/domain/image-size'
 
 /**
- * A photograph made ready for the public site, in the browser (capability F7).
+ * A photograph made small enough to send, in the browser (capabilities F7, C2).
  *
- * A camera original is routinely larger than the 4 MB a server action can
- * receive on Vercel, and far larger than the site ever shows. So before it is
- * sent it is drawn onto a canvas at no more than 2400px on its long edge and
- * re-encoded as a JPEG — which does three things at once, with no dependency:
+ * A phone camera's original is routinely larger than the 4 MB a server action
+ * can receive on Vercel (architecture.md §8.1), and far larger than anything
+ * shows it. So before it is sent it is drawn onto a canvas at no more than
+ * 2400px on its long edge and re-encoded as a JPEG — which does three things at
+ * once, with no dependency:
  *
  * - it fits under the ceiling, for any photograph a phone or camera produces;
  * - it is turned the right way up, because the browser applies the EXIF
  *   orientation when it decodes;
  * - it carries **no EXIF at all** afterwards — no GPS position, no camera
- *   serial — which matters for a file that is about to be public.
+ *   serial — which matters for a file that is about to be public, and for one
+ *   taken inside somebody's home.
  *
- * The server still reads the bytes' own header and refuses anything that is not
- * an image (lib/domain/site-image.ts): this is a convenience for the person
- * uploading, never a control.
+ * The last is a trade on an inspection photograph worth stating: the capture
+ * time goes with the rest. What dates the evidence is the document row's own
+ * upload time and uploader, written by the server and not by the phone
+ * (prd.md §11).
+ *
+ * Shared by the public site's photographs (F7) and an inspection's (C2), which
+ * is why it lives outside components/portal: the housekeeping phone screen uses
+ * it too. The server still reads the bytes' own header and refuses anything
+ * that is not an image — this is a convenience for the person sending, never a
+ * control.
  */
 
-export interface PreparedSitePhoto {
+export interface PreparedPhoto {
   file: File
   /** The size the photograph was chosen at, for the "may look soft" note. */
   originalWidth: number
   originalHeight: number
 }
 
-export type PrepareSitePhotoResult =
-  { ok: true; photo: PreparedSitePhoto } | { ok: false; message: string }
+export type PreparePhotoResult = { ok: true; photo: PreparedPhoto } | { ok: false; message: string }
 
 /** Tried in order: the first that fits under the ceiling is used. */
 const JPEG_QUALITIES = [0.85, 0.72] as const
@@ -35,7 +43,10 @@ const JPEG_QUALITIES = [0.85, 0.72] as const
 const UNREADABLE =
   'That photo could not be opened in this browser. Save it as a JPEG and choose it again.'
 
-export async function prepareSitePhoto(file: File): Promise<PrepareSitePhotoResult> {
+export async function preparePhoto(
+  file: File,
+  options: { maxBytes: number },
+): Promise<PreparePhotoResult> {
   const source = await decode(file)
 
   if (!source) {
@@ -66,11 +77,16 @@ export async function prepareSitePhoto(file: File): Promise<PrepareSitePhotoResu
   for (const quality of JPEG_QUALITIES) {
     const blob = await toJpeg(canvas, quality)
 
-    if (blob && blob.size <= MAX_SITE_IMAGE_BYTES) {
+    if (blob && blob.size <= options.maxBytes) {
+      // The canvas is only a view of the pixels; emptying it hands a phone its
+      // memory back before the next photograph is decoded.
+      canvas.width = 0
+      canvas.height = 0
+
       return {
         ok: true,
         photo: {
-          file: new File([blob], 'photo.jpg', { type: 'image/jpeg' }),
+          file: new File([blob], jpegNameFor(file.name), { type: 'image/jpeg' }),
           originalWidth: original.width,
           originalHeight: original.height,
         },
@@ -80,8 +96,19 @@ export async function prepareSitePhoto(file: File): Promise<PrepareSitePhotoResu
 
   return {
     ok: false,
-    message: 'That photo is still larger than 4 MB after resizing. Try a smaller one.',
+    message: `That photo is still larger than ${Math.round(options.maxBytes / (1024 * 1024))} MB after resizing. Try a smaller one.`,
   }
+}
+
+/**
+ * The chosen file's own name with a `.jpg` ending, so a list of an inspection's
+ * photographs still reads as the ones somebody chose — `IMG_2041.jpg`, not five
+ * copies of `photo.jpg`.
+ */
+function jpegNameFor(name: string): string {
+  const base = name.replace(/\.[^./\\]+$/, '').trim()
+
+  return `${base.length > 0 ? base : 'photo'}.jpg`
 }
 
 /**

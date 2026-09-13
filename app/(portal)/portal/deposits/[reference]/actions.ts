@@ -334,17 +334,19 @@ export async function settleOwedAction(
  * Every screen that shows this deposit or the booking it belongs to.
  *
  * The statement is included because a release is exactly what makes it
- * renderable, and the units board because an inspection is the fact C2–C3 will
- * derive `awaiting_inspection` from — harmless today, and one less thing to
- * remember when that lands.
+ * renderable. The units board, every unit's page and the cleaner's phone are
+ * included because an inspection moves a unit from awaiting inspection to
+ * cleaning (capabilities C2–C3) — the layout form, because this action knows
+ * the booking and not which unit's page shows it.
  */
 function revalidateDepositScreens(reference: string): void {
   revalidatePath('/portal/deposits')
   revalidatePath(`/portal/deposits/${reference}`)
   revalidatePath(`/portal/deposits/${reference}/statement`)
   revalidatePath(`/portal/bookings/${reference}`)
-  revalidatePath('/portal/units')
+  revalidatePath('/portal/units', 'layout')
   revalidatePath('/portal')
+  revalidatePath('/field/departures')
 }
 
 /** The first message per field, which is all a form can show at once. */

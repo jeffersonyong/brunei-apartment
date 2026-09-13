@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { FileField } from '@/components/portal/file-field'
-import { prepareSitePhoto, type PreparedSitePhoto } from '@/components/portal/prepare-site-photo'
+import { preparePhoto, type PreparedPhoto } from '@/components/prepare-photo'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,8 +16,10 @@ import {
 } from '@/components/ui/dialog'
 import { FieldError } from '@/components/ui/field-error'
 import { toast } from '@/components/ui/toast-store'
+import { MAX_PHOTO_ORIGINAL_BYTES } from '@/lib/domain/image-size'
 import {
   DEFAULT_FOCUS,
+  MAX_SITE_IMAGE_BYTES,
   SITE_IMAGE_ACCEPT,
   isSoftPhoto,
   type SiteImageFocus,
@@ -28,15 +30,6 @@ import { DescriptionField } from './description-field'
 import { FocusPicker } from './focus-picker'
 import { PhotoFrame } from './photo-frame'
 import type { PhotoSlotView } from './photo-sections'
-
-/**
- * The largest original a browser is asked to open and shrink.
- *
- * Not the 4 MB the server accepts — that applies to what is sent, after the
- * shrink (lib/domain/site-image.ts). This bounds only what a phone is asked to
- * decode, and a photograph from any camera sits under it.
- */
-const MAX_ORIGINAL_BYTES = 25 * 1024 * 1024
 
 /**
  * Adding a photograph to an empty place, or replacing the one there
@@ -50,7 +43,7 @@ const MAX_ORIGINAL_BYTES = 25 * 1024 * 1024
  */
 export function PlacePhotoDialog({ slot, onClose }: { slot: PhotoSlotView; onClose: () => void }) {
   const [files, setFiles] = useState<File[]>([])
-  const [prepared, setPrepared] = useState<{ photo: PreparedSitePhoto; url: string } | null>(null)
+  const [prepared, setPrepared] = useState<{ photo: PreparedPhoto; url: string } | null>(null)
   const [isPreparing, setIsPreparing] = useState(false)
   const [altText, setAltText] = useState('')
   const [focus, setFocus] = useState<SiteImageFocus>(DEFAULT_FOCUS)
@@ -83,13 +76,13 @@ export function PlacePhotoDialog({ slot, onClose }: { slot: PhotoSlotView; onClo
     setResult({ status: 'idle' })
     forgetPreview()
 
-    if (!file || file.size > MAX_ORIGINAL_BYTES) {
+    if (!file || file.size > MAX_PHOTO_ORIGINAL_BYTES) {
       // Nothing chosen, or too large to open — the picker says which.
       return
     }
 
     setIsPreparing(true)
-    const outcome = await prepareSitePhoto(file)
+    const outcome = await preparePhoto(file, { maxBytes: MAX_SITE_IMAGE_BYTES })
 
     if (thisAttempt !== attempt.current) {
       return
@@ -155,7 +148,7 @@ export function PlacePhotoDialog({ slot, onClose }: { slot: PhotoSlotView; onClo
             id="site-photo-file"
             label="Photo"
             accept={SITE_IMAGE_ACCEPT}
-            maxBytes={MAX_ORIGINAL_BYTES}
+            maxBytes={MAX_PHOTO_ORIGINAL_BYTES}
             formats="JPEG, PNG or WebP"
             files={files}
             onChange={(chosen) => void choose(chosen)}

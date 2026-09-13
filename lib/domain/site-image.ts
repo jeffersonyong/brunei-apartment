@@ -341,40 +341,11 @@ export function siteImageStorageKey(input: {
   return `${input.propertyId}/${input.imageId}.${input.extension}`
 }
 
-/* ── The shrink in the browser ────────────────────────────────────────────── */
+/* ── How the photograph looks once shrunk ─────────────────────────────────── */
 
-/**
- * The longest edge a photograph is stored at.
- *
- * The widest slot on the site is the hero, a little over 540px across on a
- * desktop and full width on a phone — 2400 covers either at three times the
- * pixel density, and a JPEG that size sits comfortably under the 4 MB ceiling.
- */
-export const SHRINK_LONG_EDGE = 2400
-
-/**
- * The size a photograph is shrunk to: its own shape, with the long edge no
- * longer than the ceiling, and never enlarged.
- *
- * Null for an image with no usable size, which is a decode that failed rather
- * than a photograph.
- */
-export function fitWithin(
-  width: number,
-  height: number,
-  maxLongEdge: number = SHRINK_LONG_EDGE,
-): { width: number; height: number } | null {
-  if (!(Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0)) {
-    return null
-  }
-
-  const scale = Math.min(1, maxLongEdge / Math.max(width, height))
-
-  return {
-    width: Math.max(1, Math.round(width * scale)),
-    height: Math.max(1, Math.round(height * scale)),
-  }
-}
+// The shrink itself — the long edge a photograph is sent at, and `fitWithin` —
+// moved to lib/domain/image-size.ts when inspection photographs began sharing
+// it (capability C2).
 
 /**
  * Below this on the long edge, a photograph looks soft across the hero on a
