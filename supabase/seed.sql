@@ -45,7 +45,8 @@ insert into property (
   check_in_time,
   check_out_time,
   security_deposit_cents,
-  max_advance_booking_days
+  max_advance_booking_days,
+  turnover_tracked_since
 )
 values (
   'Palm Villa',
@@ -64,7 +65,10 @@ values (
   '14:00',
   '12:00',
   10000,
-  62
+  62,
+  -- [A] The day turnovers start being kept (20260925000100): a stay that ended
+  -- before it never reads as awaiting inspection. Today, on a fresh database.
+  (now() at time zone 'Asia/Brunei')::date
 );
 
 -- Unit types (prd.md §7.1, all rates [C]).

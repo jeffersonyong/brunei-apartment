@@ -125,12 +125,12 @@ export function acceptAttributeFor(kind: DocumentKind): string {
  * allowance would work on a laptop and fail in production, which is the worst
  * shape a limit can have.
  *
- * It costs little today: phase-one files are WhatsApp screenshots and phone
- * photographs of an IC, which land far below this. What it will not survive is
- * a camera-original photograph from the housekeeping field screen (C2), and the
- * upgrade path is recorded in architecture.md §8 — a signed upload URL issued
- * after the permission check, with the browser sending the bytes to Storage
- * directly and the server sniffing what arrived.
+ * It costs little: WhatsApp screenshots and photographs of an IC land far below
+ * it. A camera original does not — so a photograph is shrunk in the browser
+ * before it is sent (components/prepare-photo.ts), the public site's and an
+ * inspection's alike, and lands at a JPEG well under this. That replaced the
+ * signed-upload path architecture.md §8.1 once planned for C2: no second write
+ * path, and the server still sniffs every byte that arrives.
  */
 export const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024
 

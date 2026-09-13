@@ -5,6 +5,7 @@ import {
   bruneiWindowBounds,
   dateInBrunei,
   elapsedMinutes,
+  formatClockTime,
   formatElapsed,
   formatInstantAsDate,
   formatStayDates,
@@ -203,5 +204,21 @@ describe('bruneiWindowBounds', () => {
     expect(() => bruneiWindowBounds({ from: '2026-09-07', to: '2026-09-01' })).toThrow(
       /ends before it starts/,
     )
+  })
+})
+
+/**
+ * A field screen's "Updated 14:02". In Brunei time, so the guard's phone and
+ * the server agree about when the list was read.
+ */
+describe('formatClockTime', () => {
+  test('renders the time of day in Asia/Brunei, 24-hour', () => {
+    // 06:02 UTC is 14:02 in Brunei (UTC+8).
+    expect(formatClockTime(new Date('2026-09-25T06:02:00Z'))).toBe('14:02')
+  })
+
+  test('crosses midnight into Brunei time, not the reader’s', () => {
+    // 16:30 UTC is 00:30 the next day in Brunei.
+    expect(formatClockTime(new Date('2026-09-25T16:30:00Z'))).toBe('00:30')
   })
 })

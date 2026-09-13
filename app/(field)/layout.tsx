@@ -1,9 +1,10 @@
 import Link from 'next/link'
 
 import { signOutAction } from '@/app/(auth)/actions'
+import { FieldNav } from '@/components/field/field-nav'
 import { OperationsSurface } from '@/components/operations-surface'
 import { Button } from '@/components/ui/button'
-import { landingPathFor } from '@/lib/auth/field-jobs'
+import { fieldJobsFor, landingPathFor } from '@/lib/auth/field-jobs'
 import { getActor } from '@/lib/auth/require-permission'
 
 /**
@@ -16,11 +17,15 @@ import { getActor } from '@/lib/auth/require-permission'
  * A guard's whole job is here, so they get no way to the portal they would
  * only find nothing to do in. Somebody whose day is the portal — the desk,
  * which can also check guests in — gets one link back to it.
+ *
+ * Somebody with more than one field job gets a switch between them under the
+ * header; with one, there is nothing to switch to and no bar is drawn.
  */
 export default async function FieldLayout({ children }: { children: React.ReactNode }) {
   const actor = await getActor()
   const worksInThePortal =
     actor !== null && actor.permissions.size > 0 && landingPathFor(actor.permissions) === '/portal'
+  const jobs = actor ? fieldJobsFor(actor.permissions) : []
 
   return (
     <div className="min-h-dvh">
@@ -46,6 +51,9 @@ export default async function FieldLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </header>
+      {jobs.length > 1 ? (
+        <FieldNav jobs={jobs.map(({ id, label, href }) => ({ id, label, href }))} />
+      ) : null}
       <main className="mx-auto w-full max-w-[640px] px-lg pt-lg pb-3xl">{children}</main>
     </div>
   )

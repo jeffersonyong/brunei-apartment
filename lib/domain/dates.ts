@@ -170,6 +170,23 @@ export function formatInstantAsDate(timestamp: string): string {
   }).format(new Date(timestamp))
 }
 
+/**
+ * The time of day, e.g. `14:02`, in the property's timezone.
+ *
+ * A field screen's "Updated 14:02". Formatted on the server rather than in the
+ * browser, so the server and a phone set to another timezone cannot render two
+ * different times for the same list — and 24-hour for `formatTimestamp`'s
+ * reason.
+ */
+export function formatClockTime(instant: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: PROPERTY_TIME_ZONE,
+  }).format(instant)
+}
+
 const MINUTES_PER_HOUR = 60
 const MINUTES_PER_DAY = 1440
 

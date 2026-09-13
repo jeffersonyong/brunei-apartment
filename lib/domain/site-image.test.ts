@@ -12,7 +12,6 @@ import {
   aspectFor,
   checkAltText,
   checkSiteImageUpload,
-  fitWithin,
   isSiteImageFocus,
   isSoftPhoto,
   objectPositionFor,
@@ -235,28 +234,9 @@ describe('siteImageStorageKey', () => {
   })
 })
 
-/* ── The shrink in the browser ────────────────────────────────────────────── */
+/* ── How the photograph looks once shrunk ─────────────────────────────────── */
 
-describe('fitWithin', () => {
-  test('scales a phone photograph down to 2400 on its long edge, keeping its shape', () => {
-    expect(fitWithin(4032, 3024)).toEqual({ width: 2400, height: 1800 })
-    expect(fitWithin(3024, 4032)).toEqual({ width: 1800, height: 2400 })
-  })
-
-  test('never enlarges a photograph that is already small enough', () => {
-    expect(fitWithin(1600, 1200)).toEqual({ width: 1600, height: 1200 })
-    expect(fitWithin(2400, 2400)).toEqual({ width: 2400, height: 2400 })
-  })
-
-  test('never rounds a thin edge away to nothing', () => {
-    expect(fitWithin(10_000, 3)).toEqual({ width: 2400, height: 1 })
-  })
-
-  test('has no answer for an image with no size', () => {
-    expect(fitWithin(0, 1200)).toBeNull()
-    expect(fitWithin(Number.NaN, 1200)).toBeNull()
-  })
-})
+// fitWithin's tests moved with it, to ./image-size.test.ts.
 
 describe('isSoftPhoto', () => {
   test('a photograph under 1200 on its long edge will look soft across the hero', () => {

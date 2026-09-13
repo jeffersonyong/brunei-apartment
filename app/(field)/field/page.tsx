@@ -35,7 +35,8 @@ export default async function FieldHomePage() {
         <h1 className="text-display-sm text-foreground">Field screens</h1>
         <p className="mt-sm text-body-md text-muted-foreground">
           There is nothing on the field screens for your account. They are for checking guests in at
-          the gate — ask an administrator if that is part of your job.
+          the gate and for inspecting units after guests leave — ask an administrator if either is
+          part of your job.
         </p>
       </>
     )

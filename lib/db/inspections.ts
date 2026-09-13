@@ -5,7 +5,8 @@ import { currentPropertyId } from './property'
 import type { DepositWriteError, DepositWriteResult } from './deposits'
 
 /**
- * Unit inspections (capability C2, portal half).
+ * Unit inspections (capability C2 — the portal's dialog and the housekeeping
+ * phone screen both write through here).
  *
  * prd.md §11 [C]: "Housekeeping inspects the unit after check-out. Once
  * condition is confirmed, deposit release is authorised by the approving
@@ -23,6 +24,11 @@ import type { DepositWriteError, DepositWriteResult } from './deposits'
  * a release was approved against it. Correcting one should be a deliberate
  * addition to this module rather than something a screen can already do.
  *
+ * One column is written afterwards, and only once: `ready_at`, when
+ * housekeeping marks the unit ready (capability C3). That write is
+ * `markUnitReady()` in ./units.ts, because readiness is a fact the units board
+ * reads, and it never touches what was found.
+ *
  * **Notes arrive already trimmed and length-checked**, by
  * `checkInspectionNotes()` in lib/domain/inspection.ts — called by the server
  * action, where the refusal can be shown against the field that failed. The
@@ -30,7 +36,8 @@ import type { DepositWriteError, DepositWriteResult } from './deposits'
  * `checkPaymentMatch()` has with the payments layer. The database refuses last
  * either way (`inspection_issues_need_notes`, `inspection_notes_length`).
  *
- * No photographs. See the note on the table.
+ * Photographs are not here: they are `document` rows of kind
+ * `inspection_photo` pointing at the inspection (lib/db/documents.ts).
  */
 
 export interface Inspection {

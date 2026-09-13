@@ -25,8 +25,12 @@ import { cn } from '@/lib/utils'
  * A **status** dot, which is what these figures count — unlike the bookings
  * strip, whose tiles count records of one *kind* and therefore take the stream
  * register instead. The counts are of the whole building, not of the filtered
- * list: six figures that all changed when you clicked one of them would stop
+ * list: eight figures that all changed when you clicked one of them would stop
  * being the answer to "what is the state of the building this morning".
+ *
+ * Eight tiles sit as four over four from a tablet up, and two by two on a
+ * phone — never a row of eight, whose labels ("Awaiting inspection") would not
+ * fit a tile an eighth of the panel wide.
  */
 
 interface UnitStatusTilesProps {
@@ -39,14 +43,15 @@ interface UnitStatusTilesProps {
 
 export function UnitStatusTiles({ counts, selected, otherParams }: UnitStatusTilesProps) {
   return (
-    <div className="mt-xl grid grid-cols-2 gap-md sm:grid-cols-3 lg:grid-cols-6">
+    <div className="mt-xl grid grid-cols-2 gap-md sm:grid-cols-4">
       {UNIT_STATUSES.map((status) => {
         const isSelected = selected.includes(status)
         const params = new URLSearchParams(otherParams)
 
         // Selecting one status replaces the selection rather than adding to
         // it. The chip in the filter row is the plural control; a tile is
-        // "show me these".
+        // "show me these". (Clearing on a second click keeps every tile from
+        // being a one-way door.)
         if (!isSelected) {
           params.set('status', status)
         }

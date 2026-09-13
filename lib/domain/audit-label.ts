@@ -92,6 +92,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'unit.note_added',
   'unit.note_changed',
   'unit.note_cleared',
+  'unit.marked_ready',
   'unit_registry.updated',
   'unit_type.updated',
   'property.policy_updated',
@@ -529,6 +530,15 @@ function describeUnit(event: AuditEventLike): string | null {
     const to = typeof event.after?.ref === 'string' ? event.after.ref : null
 
     return from && to ? `Renamed from ${from} to ${to}` : 'Renamed'
+  }
+
+  // The unit's history is where "why was 3B-04 cleaning all afternoon" is
+  // asked, so the event names the stay it followed (20260925000100).
+  if (event.action === 'unit.marked_ready') {
+    const reference =
+      typeof event.after?.booking_reference === 'string' ? event.after.booking_reference : null
+
+    return reference ? `Marked ready after ${reference}` : 'Marked ready'
   }
 
   if (event.action === 'unit_registry.updated') {

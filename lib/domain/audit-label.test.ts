@@ -143,6 +143,16 @@ describe('describeAuditEvent', () => {
     ).toBe('Renamed from SD-01 to Villa 1')
   })
 
+  test('names the stay a unit was made ready after', () => {
+    expect(
+      describeAuditEvent(
+        event('unit.marked_ready', {
+          after: { booking_reference: 'PV-4821', outcome: 'clean', unit_ref: '3B-04' },
+        }),
+      ),
+    ).toBe('Marked ready after PV-4821')
+  })
+
   test('names both sides of a change to a staff member’s name', () => {
     expect(
       describeAuditEvent(

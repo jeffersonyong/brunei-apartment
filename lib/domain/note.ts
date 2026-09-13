@@ -13,14 +13,15 @@
  * member writing down something about this stay that no field on the booking
  * carries — differing only in who needs to read it. One table with an audience
  * tag means one place to write, one place to read, and one filter for the
- * housekeeping field screen when that screen exists. Two tables would be two
- * of everything, and would have to be reconciled the first time somebody wrote
- * the same sentence in both.
+ * housekeeping field screen. Two tables would be two of everything, and would
+ * have to be reconciled the first time somebody wrote the same sentence in
+ * both.
  *
- * A note about the UNIT rather than the stay — "the shower door sticks" —
- * is deliberately not modelled here. It outlives every booking, so hanging it
- * off one would lose it the moment the guest leaves. It belongs to the
- * inspections slice (prd.md §11) and is nobody's guess to make today.
+ * A note about the UNIT rather than the stay — "the shower door sticks" — is
+ * not one of these. It outlives every booking, so hanging it off one would lose
+ * it the moment the guest leaves; it is `unit.notes`, a single block on the
+ * unit (capability B14). The cleaner's phone shows both, read-only: the unit's
+ * note and this stay's housekeeping notes (open-questions.md N18, D-7).
  */
 
 /**

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LogIn } from 'lucide-react'
 
+import { DID_NOT_GO_THROUGH } from '@/components/field/did-not-go-through'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -35,9 +36,6 @@ import { checkInAtGateAction, type GateCheckInState } from './actions'
  */
 
 const initialState: GateCheckInState = { status: 'idle' }
-
-const DID_NOT_GO_THROUGH =
-  'That did not go through, so nothing was recorded. Check the phone has signal and try again.'
 
 interface CheckInButtonProps {
   bookingId: string

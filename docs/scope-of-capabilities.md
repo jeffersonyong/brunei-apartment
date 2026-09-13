@@ -123,7 +123,7 @@ Everyone works from the same live data, so availability, payments, and booking s
 >
 > **Two questions for you, neither blocking** (register N49 and N50): whether giving a deposit back on a cancellation should need a second person, and whether a no-show should wait until the day after the guest was due.
 
-**B8 is delivered across two slices.** Four of the six states — available, held, booked, occupied — are live now, alongside out of service and leased long-term from B9. **Awaiting inspection** and **cleaning** are the two the housekeeping flow writes, so they arrive with **C2–C3** and B8 is not complete until those screens land. Said here rather than left to be noticed: until then the board can tell you a unit is empty, but not whether it has been cleaned.
+**B8 is complete (25 September 2026).** All eight states are live: available, held, booked and occupied from the bookings; **awaiting inspection** and **cleaning** from the housekeeping phone screen (C1–C3); and out of service and leased long-term from B9. The board also stopped calling a unit available on a guest's last day while the guest is still in it.
 
 **B1's calendar half delivered 8 September 2026.** Every stay, hold and lease is laid out by unit and by night, one month at a time, coloured by state; an empty night starts a booking with the night and the unit type filled in (B2). Day passes are not on the grid: they occupy no unit and nothing writes one yet — they appear in the list view, and arrive on their own terms with the day-pass flow in phase two.
 
@@ -135,7 +135,16 @@ Everyone works from the same live data, so availability, payments, and booking s
 |---|---|
 | C1 | See today's check-outs on a single phone screen |
 | C2 | Record a unit inspection: outcome, notes, and photographs as evidence |
-| C3 | Mark a unit as ready, returning it to bookable availability |
+| C3 | Mark a unit as ready once it is clean, so the units board and the office can see it. **Reworded 25 September 2026:** this read "returning it to bookable availability", but a unit is never taken out of availability for cleaning — so marking it ready changes what the board says, not what can be sold. Whether it should hold back the next guest's check-in is a question for you (register N53). |
+
+> **C1–C3 delivered 25 September 2026, and with them B8.** A cleaner signs in on their phone straight to today's departures: the guests due out, the units waiting to be inspected and the units being cleaned, with any unit somebody arrives in today at the top. Four things worth saying plainly:
+>
+> - **The cleaner checks the guest out.** When the unit is empty on the guest's last day, *Guest has left* checks them out from the phone and the unit moves to inspection. The button appears on the last day and not before, so a guest who is only out for the day cannot be checked out this way; a guest who leaves early is checked out at the desk.
+> - **Ready is a status, not a gate.** Marking a unit ready tells the office it is clean. Check-in and availability never waited on it before and do not now.
+> - **The cleaner sees what the office wrote for them, and nothing else.** Each unit shows its own standing note and the booking's notes marked for housekeeping. Notes for the office never reach the phone. This answers the first half of register N18 (Details to confirm, #12).
+> - **Photographs taken on the phone now go up.** Each is made smaller on the phone first, so a camera photograph is no longer refused for its size. The smaller copy carries no location and no camera timestamp; the system records when it arrived and who sent it.
+>
+> **Decided on your behalf, for you to confirm:** on the day one guest leaves and the next arrives, the board shows the unit as awaiting inspection or cleaning rather than booked; and a unit marked ready cannot be un-marked.
 
 ---
 
@@ -187,7 +196,7 @@ Four things worth saying plainly, because they are the decisions behind the figu
 - **Photographs on an inspection arrived on 7 September 2026** with document storage, closing the gap this entry flagged. C2's evidence is now real: any number of photographs per inspection, stored privately, deleted automatically after two years.
 - **Checking a guest in and out became possible along the way**, because a deposit is collected on arrival and inspected after departure, and neither moment existed in the product before. It was a desk action under the same permission as amending a booking until 24 September 2026, when checking in and checking out became permissions of their own and Security was given the first (see D).
 
-**B8 is unchanged.** Awaiting inspection and cleaning are still the two unit states this build cannot show — what has changed is that the inspection they depend on is now a fact somebody records, so C2–C3 have something to derive from.
+**B8 is complete as of 25 September 2026** — awaiting inspection and cleaning arrived with the housekeeping phone screen, which derives them from the inspection this entry introduced (see C).
 
 ---
 
@@ -303,7 +312,7 @@ None of these block starting; each is needed before its specific screen is final
 9. Whether guests may choose a bed configuration, or staff assign it.
 10. Whether a staff discount needs a ceiling, or a second person's approval above some figure. It is currently uncapped and fully recorded rather than gated.
 11. Whether part payments should be possible at all — see X11 above.
-12. What, if anything, the office needs to tell housekeeping about a particular guest, once the phone screens are built.
+12. What, if anything, the office needs to tell housekeeping about a particular guest, once the phone screens are built. **Built on an assumption, 25 September 2026:** the cleaner's phone shows the notes the office marks for housekeeping, and the unit's own note — worth your confirmation that the office will write them (register N18).
 
 ---
 

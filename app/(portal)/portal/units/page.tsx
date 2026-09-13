@@ -28,6 +28,7 @@ import { countByStatus, isUnitStatus, UNIT_STATUSES } from '@/lib/domain/unit-st
 
 import { clampPage, pageCountFor } from '@/components/ui/pagination-range'
 
+import { nextStayStartOf, turnoverStayOf } from './board-row'
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from './page-size'
 import { UnitStatusTiles } from './status-tiles'
 import { UnitsFilters } from './units-filters'
@@ -46,17 +47,17 @@ export const metadata: Metadata = {
  * already answers that, on the booking screen, for a specific set of dates. It
  * is "what is going on with 3B-04", which needs the occupant's name and the day
  * they leave, and a grid of coloured tiles has room for neither. So it is the
- * portal's ordinary register, and the six tiles above it carry the at-a-glance
- * half.
+ * portal's ordinary register, and the eight tiles above it carry the
+ * at-a-glance half.
  *
- * ── Four of the six states are derived ─────────────────────────────────────
+ * ── Every state is derived ─────────────────────────────────────────────────
  *
- * available, held, booked and occupied are computed from the occupancy rows
- * that already exist (`deriveUnitStatus`); out of service and leased are the
- * two facts a person puts on a unit, and the only two this build stores.
- * prd.md §6.4 names two more — awaiting inspection and cleaning — which the
- * inspection flow (C2–C3) writes and this build cannot show. B8 is therefore
- * delivered across two slices, and scope-of-capabilities.md says so.
+ * available, held, booked and occupied are computed from the occupancy rows;
+ * awaiting inspection and cleaning from the last stay's inspection and whether
+ * housekeeping has marked the unit ready (capabilities C2–C3); out of service
+ * and leased from the two facts a person puts on a unit. `deriveUnitStatus`
+ * holds all eight rules. The turnover's two are for this board and the
+ * cleaner's phone only — nothing about selling reads them (D-3).
  *
  * ── Filtering happens here, in TypeScript ──────────────────────────────────
  *
@@ -144,7 +145,12 @@ export default async function UnitsPage({ searchParams }: PageProps) {
       (statuses.length === 0 || statuses.includes(unit.status)) &&
       (types.length === 0 || types.includes(unit.unitTypeId)) &&
       (search === null ||
-        matchesSearch(search, [unit.ref, unit.occupant?.name, unit.unitTypeName])),
+        matchesSearch(search, [
+          unit.ref,
+          unit.occupant?.name,
+          turnoverStayOf(unit)?.guestName,
+          unit.unitTypeName,
+        ])),
   )
 
   const isFiltered = statuses.length > 0 || types.length > 0 || search !== null
@@ -295,6 +301,11 @@ export default async function UnitsPage({ searchParams }: PageProps) {
 }
 
 function UnitRow({ unit }: { unit: UnitState }) {
+  // Mid-turnover the row is about the stay that left, not the booking arriving
+  // today — see board-row.ts.
+  const turnoverStay = turnoverStayOf(unit)
+  const nextStart = nextStayStartOf(unit)
+
   return (
     <TableRow interactive className="group">
       <TableCell className="font-mono text-foreground tabular-nums">
@@ -316,6 +327,13 @@ function UnitRow({ unit }: { unit: UnitState }) {
       <TableCell>
         {unit.outOfService ? (
           <span className="text-foreground">{unit.outOfService.reason}</span>
+        ) : turnoverStay ? (
+          <>
+            <span className="block text-foreground">{turnoverStay.guestName}</span>
+            <span className="mt-xxs block font-mono text-caption text-muted-foreground tabular-nums">
+              {turnoverStay.reference}
+            </span>
+          </>
         ) : unit.occupant ? (
           <>
             <span className="block text-foreground">{unit.occupant.name}</span>
@@ -342,6 +360,12 @@ function UnitRow({ unit }: { unit: UnitState }) {
           <span className="text-muted-foreground">
             Since {formatStayDate(unit.outOfService.since)}
           </span>
+        ) : turnoverStay ? (
+          nextStart ? (
+            <span className="text-muted-foreground">Next stay {formatStayDate(nextStart)}</span>
+          ) : (
+            <Absent title="Nothing booked" />
+          )
         ) : unit.occupant ? (
           // An open-ended lease has no date to put here, and an em dash would
           // read as "we don't know". It is a fact about the tenancy, not a
