@@ -4,7 +4,10 @@ import type { Route } from 'next'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
+import { landingPathFor } from '@/lib/auth/field-jobs'
 import { safeNextPath } from '@/lib/auth/next-path'
+import { toPermissionSet } from '@/lib/auth/permissions'
+import { permissionsForUser } from '@/lib/db/permissions'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
@@ -50,7 +53,7 @@ export async function signInAction(
   }
 
   const supabase = await createSupabaseServerClient()
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   })
@@ -61,7 +64,18 @@ export async function signInAction(
     return { status: 'error', message: 'Email or password is incorrect.' }
   }
 
-  // Typed routes cannot see through safeNextPath's runtime validation — the
-  // helper guarantees an in-app operations path, so the assertion is sound.
-  redirect(safeNextPath(parsed.data.next) as Route)
+  // A page somebody was headed for wins. Otherwise they land where their work
+  // is — a guard on the gate screen, everyone else on the portal — decided
+  // here rather than by a redirect from the portal home, because the gate may
+  // be on one bar of signal and a second round trip is a second wait
+  // (lib/auth/field-jobs.ts).
+  if (parsed.data.next) {
+    // Typed routes cannot see through safeNextPath's runtime validation — the
+    // helper guarantees an in-app operations path, so the assertion is sound.
+    redirect(safeNextPath(parsed.data.next) as Route)
+  }
+
+  const permissions = toPermissionSet(await permissionsForUser(data.user.id))
+
+  redirect(landingPathFor(permissions) as Route)
 }
