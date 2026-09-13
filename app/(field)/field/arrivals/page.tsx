@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
 import { listGateBookings, searchGateBookings, type GateBooking } from '@/lib/db/gate'
-import { formatStayDate, PROPERTY_TIME_ZONE, todayInBrunei } from '@/lib/domain/dates'
+import { formatClockTime, formatStayDate, todayInBrunei } from '@/lib/domain/dates'
 
 import { ArrivalsList } from './arrivals-list'
 
@@ -72,20 +72,8 @@ export default async function ArrivalsPage({ searchParams }: PageProps) {
         list={list}
         query={query}
         found={found as readonly GateBooking[] | null}
-        loadedAt={clockTime(new Date())}
+        loadedAt={formatClockTime(new Date())}
       />
     </>
   )
-}
-
-/**
- * "14:02", in the property's timezone — formatted here rather than in the
- * browser, so the server and the phone cannot render two different times.
- */
-function clockTime(instant: Date): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: PROPERTY_TIME_ZONE,
-  }).format(instant)
 }

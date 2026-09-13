@@ -27,8 +27,19 @@ describe('fieldJobsFor', () => {
     expect(fieldJobsFor(set('booking.view'))).toEqual([])
   })
 
-  test('housekeeping has no field screen until theirs is built', () => {
-    expect(fieldJobsFor(HOUSEKEEPING)).toEqual([])
+  test('housekeeping works the departures', () => {
+    expect(fieldJobsFor(HOUSEKEEPING).map((job) => job.id)).toEqual(['departures'])
+  })
+
+  test('the desk can check guests out but is handed no cleaning list', () => {
+    // Departures answers to inspection.record, which the desk does not hold.
+    expect(fieldJobsFor(FRONT_OFFICE).map((job) => job.id)).toEqual(['arrivals'])
+  })
+
+  test('somebody holding both jobs gets both, gate first', () => {
+    const both = set('booking.view', 'booking.check_in', 'booking.check_out', 'inspection.record')
+
+    expect(fieldJobsFor(both).map((job) => job.id)).toEqual(['arrivals', 'departures'])
   })
 })
 
@@ -41,8 +52,12 @@ describe('landingPathFor', () => {
     expect(landingPathFor(FRONT_OFFICE)).toBe('/portal')
   })
 
+  test('housekeeping signs in straight to the field screens', () => {
+    expect(landingPathFor(HOUSEKEEPING)).toBe('/field')
+  })
+
   test('a field permission alone is not enough without a screen to work', () => {
-    expect(landingPathFor(HOUSEKEEPING)).toBe('/portal')
+    expect(landingPathFor(set('booking.view', 'unit.manage'))).toBe('/portal')
   })
 
   test('one portal permission beside the gate keeps a person on the portal', () => {

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { RefreshCw, Search } from 'lucide-react'
+import { useState } from 'react'
+import { Search } from 'lucide-react'
 
+import { RefreshLine } from '@/components/field/refresh-line'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { GateBooking, GateList } from '@/lib/db/gate'
@@ -37,8 +37,6 @@ const SEARCH_FORM_ID = 'gate-search'
 
 export function ArrivalsList({ list, query, found, loadedAt }: ArrivalsListProps) {
   const [term, setTerm] = useState(query)
-  const [isRefreshing, startRefresh] = useTransition()
-  const router = useRouter()
 
   const typed = term.trim()
   const matching = (rows: readonly GateBooking[]) =>
@@ -80,19 +78,7 @@ export function ArrivalsList({ list, query, found, loadedAt }: ArrivalsListProps
         />
       </form>
 
-      <div className="flex items-center justify-between gap-md">
-        <p className="text-caption text-muted-foreground">Updated {loadedAt}</p>
-        <Button
-          type="button"
-          variant="ghost"
-          size="touch"
-          disabled={isRefreshing}
-          onClick={() => startRefresh(() => router.refresh())}
-        >
-          <RefreshCw aria-hidden />
-          {isRefreshing ? 'Refreshing…' : 'Refresh'}
-        </Button>
-      </div>
+      <RefreshLine loadedAt={loadedAt} />
 
       {typed.length > 0 && onTodaysList === 0 ? (
         <p className="mt-lg text-body-md text-foreground">

@@ -13,6 +13,13 @@ import type { Permission } from '@/lib/auth/permissions'
  * `booking.check_in` rather than to `booking.view` — a screen whose one
  * action a person may not take is a screen they have no reason to open.
  *
+ * The departures screen answers to `inspection.record` **[A]**. It has three
+ * acts — seeing a guest off, inspecting, marking the unit ready — and the
+ * inspection is the one only housekeeping does: the desk also checks guests
+ * out and also manages units, and would otherwise be handed a cleaning list
+ * it has nobody to work. Each card still checks its own step's permission
+ * (lib/domain/turnover.ts).
+ *
  * ── Who lands on the phone screens ────────────────────────────────────────
  *
  * Somebody whose whole job is a field job: every permission they hold is one
@@ -27,14 +34,20 @@ import type { Permission } from '@/lib/auth/permissions'
  */
 
 export interface FieldJob {
-  id: 'arrivals'
+  id: 'arrivals' | 'departures'
   label: string
-  href: '/field/arrivals'
+  href: '/field/arrivals' | '/field/departures'
   permission: Permission
 }
 
 export const FIELD_JOBS: readonly FieldJob[] = [
   { id: 'arrivals', label: 'Arrivals', href: '/field/arrivals', permission: 'booking.check_in' },
+  {
+    id: 'departures',
+    label: 'Departures',
+    href: '/field/departures',
+    permission: 'inspection.record',
+  },
 ]
 
 /**

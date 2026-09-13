@@ -3,11 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { revalidateStayScreens } from '@/app/revalidate-stay-screens'
 import { requirePermission } from '@/lib/auth/require-permission'
+import { getBookingById } from '@/lib/db/bookings'
 import {
   endUnitLease,
   markUnitLeased,
   markUnitOutOfService,
+  markUnitReady,
   returnUnitToService,
   setUnitNotes,
   type LeaseEnding,
@@ -15,7 +18,7 @@ import {
 import { isStayDate } from '@/lib/domain/dates'
 
 /**
- * The four things a person can do to a unit (capability B9).
+ * The things a person can do to a unit (capabilities B9 and C3).
  *
  * ── Two permissions, deliberately ─────────────────────────────────────────
  *
@@ -293,6 +296,50 @@ const notesSchema = z.object({
   ref: z.string().min(1),
   notes: z.string().max(2000, 'Keep the note under 2000 characters.'),
 })
+
+/**
+ * Marks a unit ready after a stay (capability C3).
+ *
+ * `unit.manage`, like the service actions beside it: saying a unit is clean is
+ * the same operational statement as saying it is broken, and prd.md §4 gives
+ * Housekeeping exactly that. One action for both surfaces — the cleaner's phone
+ * (app/(field)/field/departures) and this unit's page — so the two cannot
+ * drift about what readiness requires.
+ *
+ * Readiness is a board status only (D-3): the revalidation is the stay's
+ * screens, because nothing that sells a unit reads it.
+ */
+const markReadySchema = z.object({
+  bookingId: z.string().uuid(),
+})
+
+export async function markUnitReadyAction(
+  _previous: UnitActionState,
+  formData: FormData,
+): Promise<UnitActionState> {
+  const actor = await requirePermission('unit.manage')
+  const parsed = markReadySchema.safeParse(Object.fromEntries(formData))
+
+  if (!parsed.success) {
+    return { status: 'error', message: 'That stay could not be identified. Refresh and try again.' }
+  }
+
+  const booking = await getBookingById(parsed.data.bookingId)
+
+  if (!booking) {
+    return { status: 'error', message: 'That stay no longer exists.' }
+  }
+
+  const result = await markUnitReady({ bookingId: booking.id, actorId: actor.userId })
+
+  if (!result.ok) {
+    return { status: 'error', message: result.error.message }
+  }
+
+  revalidateStayScreens(booking.reference, result.unitRef)
+
+  return { status: 'done' }
+}
 
 export async function saveUnitNotesAction(
   _previous: UnitActionState,
