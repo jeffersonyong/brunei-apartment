@@ -4,8 +4,8 @@ import { useState } from 'react'
 
 import type { ChangePasswordState } from '@/app/(auth)/actions'
 import { FieldError } from '@/components/ui/field-error'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password-policy'
 
 /**
@@ -43,10 +43,9 @@ export function NewPasswordFields({ state }: { state: ChangePasswordState }) {
     <>
       <div className="grid max-w-[360px] gap-sm">
         <Label htmlFor="new-password">New password</Label>
-        <Input
+        <PasswordInput
           id="new-password"
           name="password"
-          type="password"
           autoComplete="new-password"
           placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
           required
@@ -60,10 +59,9 @@ export function NewPasswordFields({ state }: { state: ChangePasswordState }) {
 
       <div className="grid max-w-[360px] gap-sm">
         <Label htmlFor="confirm-password">Repeat it</Label>
-        <Input
+        <PasswordInput
           id="confirm-password"
           name="confirm"
-          type="password"
           autoComplete="new-password"
           placeholder="Type it again"
           required

@@ -40,7 +40,25 @@ export interface NavGroup {
   /** Rendered as a micro label above the group. */
   label: string
   items: readonly NavItem[]
+  /**
+   * Links out of the portal, drawn after the group's own items. Not portal
+   * screens, so `activeHref` never matches them and no breadcrumb names them.
+   */
+  exits?: readonly NavItem[]
 }
+
+/**
+ * The ways out of the portal: the public site and the field screens.
+ *
+ * Escape hatches to the other two surfaces rather than portal destinations, so
+ * they never take the active chip. They close the Others group, under Settings
+ * (Jeff, 13 September 2026) — they sat in the sidebar footer beside the account
+ * until then, where they read as part of who is signed in.
+ */
+export const portalExitLinks = [
+  { href: '/', label: 'Public site', icon: Globe },
+  { href: '/field', label: 'Field screens', icon: Smartphone },
+] as const satisfies readonly NavItem[]
 
 // `as const` keeps the hrefs as literals so Next's typed routes can check them;
 // `satisfies` still enforces the shape.
@@ -117,20 +135,19 @@ export const navGroups = [
    *
    * Addressed `/portal/account`, not `/portal/settings`: the admin screens
    * share that prefix, and a person's own account is not their parent.
+   *
+   * It ends with the ways out of the portal, for the same reason it holds
+   * Settings: they belong to no area of the work.
    */
-  { label: 'Others', items: [{ href: '/portal/account', label: 'Settings', icon: Settings }] },
+  {
+    label: 'Others',
+    items: [{ href: '/portal/account', label: 'Settings', icon: Settings }],
+    exits: portalExitLinks,
+  },
 ] as const satisfies readonly NavGroup[]
 
-/**
- * Links out of the portal. Kept apart from the groups above because they are
- * escape hatches to the other two surfaces, not portal destinations — so they
- * sit in the sidebar footer and never take the active chip.
- */
-export const portalExitLinks = [
-  { href: '/', label: 'Public site', icon: Globe },
-  { href: '/field', label: 'Field screens', icon: Smartphone },
-] as const satisfies readonly NavItem[]
-
+// Items only: a group's exits are not portal screens, so they never light up
+// and never appear in a breadcrumb.
 const allHrefs = navGroups.flatMap((group) => group.items.map((item) => item.href))
 
 /**

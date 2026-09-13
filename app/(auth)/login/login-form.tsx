@@ -8,6 +8,7 @@ import { Callout } from '@/components/ui/callout'
 import { FieldError } from '@/components/ui/field-error'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { AuthScreen, TEXT_ACTION_CLASSES } from '../auth-screen'
@@ -62,10 +63,9 @@ export function LoginForm({ next, canResetByEmail }: LoginFormProps) {
             <Label htmlFor="password">Password</Label>
             <ForgotPassword isAvailable={canResetByEmail} />
           </div>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             required

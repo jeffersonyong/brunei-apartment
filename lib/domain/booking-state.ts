@@ -3,6 +3,7 @@
  *
  *   draft → held → awaiting_payment_verification → confirmed → checked_in
  *         → completed
+ *   confirmed → completed (a day pass, admitted at the gate)
  *         ↘ expired (hold lapsed)
  *         ↘ cancelled
  *         ↘ no_show
@@ -37,6 +38,7 @@ export type BookingEvent =
   | 'secure_with_deposit'
   | 'check_in'
   | 'check_out'
+  | 'admit'
   | 'expire'
   | 'cancel'
   | 'mark_no_show'
@@ -122,6 +124,12 @@ const TRANSITIONS: Readonly<Record<BookingStatus, Partial<Record<BookingEvent, B
   },
   confirmed: {
     check_in: 'checked_in',
+    // A day pass is admitted rather than checked in, and admitting closes it:
+    // a pass has no unit to leave, so nothing would close it later (N40, N54).
+    // The machine cannot see the stream. `admit_day_pass()` refuses a stay and
+    // `check_in_booking()` refuses a pass — the arrangement the confirmation
+    // rule above already has with the deposit.
+    admit: 'completed',
     cancel: 'cancelled',
     mark_no_show: 'no_show',
   },
@@ -225,7 +233,8 @@ export function canAmend(status: BookingStatus): boolean {
  *
  * Three of the four terminal states, and the fourth is left out on purpose:
  * `completed` is a stay that happened, so its deposit waits on an inspection
- * and a release (prd.md §11). These three settle the deposit as they close —
+ * and a release (prd.md §11) — or a day pass that was admitted, which quotes
+ * no deposit and so has nothing to wait on. These three settle the deposit as they close —
  * kept or given back, prd.md §9.5 — and a promised transfer still unverified
  * when one of them lands is no longer awaited by anybody.
  */

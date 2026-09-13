@@ -29,9 +29,10 @@ import { readAllRows } from './rows'
  * joins the list when it is **open and covers today** — arriving today, due
  * yesterday and still coming, or held on a transfer nobody has checked
  * (prd.md §12 requirement 6) — or when the guest is **checked in**, whose car
- * comes and goes all stay. A day pass joins on its pass date (N40, answered
- * 13 September 2026). A booking starting on a later day is not expected; the
- * search finds it, and the verdict sends it to the office.
+ * comes and goes all stay. A day pass joins on its pass date (N40) and stays
+ * once it is admitted, which closes it (N54): day visitors go out and come
+ * back. A booking starting on a later day is not expected; the search finds
+ * it, and the verdict sends it to the office.
  *
  * The list is bounded by the building — one open stay per unit per day, plus
  * the day's passes — and is still read through `readAllRows`, because an
@@ -133,7 +134,9 @@ export async function listGateBookings(today: StayDate): Promise<GateList> {
           .eq('property_id', propertyId)
           .eq('stream', 'day_pass')
           .eq('pass_date', today)
-          .in('status', [...OPEN_STATUSES])
+          // `completed` too: admitting closes a pass, and a visitor who went
+          // out for lunch is still today's visitor when the car comes back.
+          .in('status', [...OPEN_STATUSES, 'completed'])
           .order('reference')
           .range(from, to),
       { label: "today's day passes" },

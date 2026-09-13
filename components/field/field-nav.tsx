@@ -12,7 +12,10 @@ import { cn } from '@/lib/utils'
  * both guard the gate and turn the rooms.
  *
  * Rendered only when there are two or more: with one job a guard or a cleaner
- * lands straight on their screen, and a tab bar of one is chrome.
+ * lands straight on their screen, and a tab bar of one is chrome. And only on
+ * one of those screens — never on the chooser at `/field`, whose cards already
+ * ask the same question, so a bar with nothing selected above them was the
+ * choice offered twice (Jeff, 13 September 2026).
  *
  * The segmented construction `components/ui/tabs.tsx` uses — a muted track
  * with the current place lifted out of it as a chip carrying `shadow-lift` —
@@ -22,12 +25,17 @@ import { cn } from '@/lib/utils'
  */
 export function FieldNav({ jobs }: { jobs: readonly Pick<FieldJob, 'id' | 'label' | 'href'>[] }) {
   const pathname = usePathname()
+  const isCurrentPage = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
+
+  if (!jobs.some((job) => isCurrentPage(job.href))) {
+    return null
+  }
 
   return (
     <nav aria-label="Field screens" className="mx-auto w-full max-w-[640px] px-lg pt-md">
       <ul className="flex gap-xxs rounded-md bg-muted p-xxs">
         {jobs.map((job) => {
-          const isCurrent = pathname === job.href || pathname.startsWith(`${job.href}/`)
+          const isCurrent = isCurrentPage(job.href)
 
           return (
             <li key={job.id} className="flex flex-1">

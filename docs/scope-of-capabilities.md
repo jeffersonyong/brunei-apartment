@@ -154,19 +154,19 @@ Everyone works from the same live data, so availability, payments, and booking s
 |---|---|
 | D1 | See today's expected arrivals on a single phone screen, built to remain usable on poor signal |
 | D2 | Look up an arriving guest by **vehicle registration** or name |
-| D3 | Check a guest in by scanning their QR code with the phone's normal camera — no app, no special scanner |
+| D3 | Open an arriving guest's booking at the gate by scanning their QR code with the phone's normal camera — no app, no special scanner. **Reworded 26 September 2026:** this read "Check a guest in by scanning their QR code", but a stay is checked in at the counter where the keys are, and a day pass is admitted at the gate — so the scan finds the booking, and what can be done with it is the move the staff member's role holds. Who hands over the keys is a question for you (register N54). |
 | D4 | See the booking's payment status at the gate, so an unpaid arrival is flagged and routed to the office rather than waved through |
 
 A forwarded or leaked QR code grants nothing by itself — check-in authority comes from the logged-in staff member, and each code can be revoked and re-issued.
 
-> **D1, D2 and D4 delivered 24 September 2026, with checking a guest in at the gate. D3's QR code is still to come.** A guard signs in on their phone straight to today's arrivals: every stay due today, every day pass, and the guests already staying, each with the plates to match against the car. Four things worth saying plainly:
+> **D1, D2 and D4 delivered 24 September 2026, and admitting day passes at the gate on 26 September. D3's QR code is still to come.** A guard signs in on their phone straight to today's arrivals: every stay due today, every day pass, and the guests already staying, each with the plates to match against the car. Four things worth saying plainly:
 >
-> - **Security can now check a guest in, and cannot take money doing it.** Checking in and checking out are now permissions of their own: the guard holds the first, housekeeping the second, the desk both. A guest whose deposit is not in is never offered to the guard as someone to let in; the screen says to send them to the office. This was open question N11, settled by Jeff on 13 September 2026 and in the register for you to confirm.
+> - **The guard admits day passes; the desk checks stays in.** A guard sees every stay due today and sends the car on to the office, where the guest collects the keys and is checked in. A day pass never goes near the counter, so the guard admits it at the gate — only when it is paid in full, and only on its own date — and admitting it closes the pass. If your guard hands over keys in the evening, ticking "Check guests in" for Security in Roles & staff gives the gate that button too. Neither move takes money. This revises open questions N11 and N40 (26 September 2026), and who hands over the keys is in the register for you (N54).
 > - **The guard never sees a figure.** The screen says *let them in* or *send them to the office*, and why in a sentence — including that the stay is paid at the office, which does not stop the car.
 > - **It is built for a weak signal, not for none.** The day's list loads once and the guard's typing filters it on the phone. Whether the guardhouse has signal at all is still a question for you (register C3).
 > - **The QR code waits for the email domain.** A code sent before Palm Villa's domain exists would have to be sent again when it does, so D3's scan arrives with A8's QR half once the domain is chosen. Plate and name lookup — which the requirements always expected to carry most of the traffic — ships now.
 >
-> **Decided on your behalf, for you to confirm:** a guest who turns up before their booking starts is sent to the office rather than let in, and a day pass is shown to the guard but never checked in.
+> **Decided on your behalf, for you to confirm:** a guest who turns up before their booking starts is sent to the office rather than let in; a stay is checked in at the office rather than the gate; and a day pass is admitted at the gate, which closes it, only when it is paid in full and on its own date.
 
 ---
 

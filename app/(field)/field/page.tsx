@@ -14,11 +14,15 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 /**
- * The field home: where a phone lands, and never a screen anybody stays on.
+ * The field home: the chooser for somebody with more than one field job, and
+ * never a screen anybody stays on.
  *
- * One job — a guard — goes straight to it, because a menu of one is a tap
- * standing between a car and the barrier. Several jobs get one large card each.
- * None gets a sentence saying so, rather than an empty screen.
+ * Sign-in sends somebody with one job straight to it (lib/auth/field-jobs.ts),
+ * so one job only reaches this page by a bookmark or a typed address — and is
+ * sent on, because a menu of one is a tap standing between a car and the
+ * barrier. Several jobs get one large card each, and no tab bar above them
+ * (components/field/field-nav.tsx). None gets a sentence saying so, rather than
+ * an empty screen.
  */
 export default async function FieldHomePage() {
   const actor = await getActor()
@@ -34,9 +38,8 @@ export default async function FieldHomePage() {
       <>
         <h1 className="text-display-sm text-foreground">Field screens</h1>
         <p className="mt-sm text-body-md text-muted-foreground">
-          There is nothing on the field screens for your account. They are for checking guests in at
-          the gate and for inspecting units after guests leave — ask an administrator if either is
-          part of your job.
+          There is nothing on the field screens for your account. They are for the gate and for
+          inspecting units after guests leave — ask an administrator if either is part of your job.
         </p>
       </>
     )

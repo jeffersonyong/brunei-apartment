@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-import { activeHref, navGroups, portalExitLinks } from '@/components/portal/portal-routes'
+import { activeHref, navGroups } from '@/components/portal/portal-routes'
 import { cn } from '@/lib/utils'
 
 /**
@@ -82,29 +82,23 @@ export function PortalNav() {
                   </Link>
                 </li>
               ))}
+              {/* The ways out of the portal, closing Others: links to the other
+                  two surfaces rather than portal screens, so they never take
+                  the active chip. */}
+              {'exits' in group
+                ? group.exits.map((item) => (
+                    <li key={item.href}>
+                      <Link href={item.href} className={cn(linkClasses, idleClasses)}>
+                        <item.icon aria-hidden />
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))
+                : null}
             </ul>
           </div>
         ))}
       </div>
     </nav>
-  )
-}
-
-/**
- * Links out of the portal — escape hatches to the other two surfaces, not
- * portal destinations, so they never take the active chip.
- */
-export function PortalNavFooterLinks() {
-  return (
-    <ul className="space-y-xxs">
-      {portalExitLinks.map((item) => (
-        <li key={item.href}>
-          <Link href={item.href} className={cn(linkClasses, idleClasses)}>
-            <item.icon aria-hidden />
-            {item.label}
-          </Link>
-        </li>
-      ))}
-    </ul>
   )
 }

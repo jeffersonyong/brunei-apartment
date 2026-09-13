@@ -159,10 +159,10 @@ from staff_role r
 cross join unnest(array[
   'booking.view', 'booking.create', 'booking.amend', 'booking.cancel',
   'booking.override_hold', 'booking.discount', 'booking.check_in', 'booking.check_out',
-  'payment.verify', 'payment.record_cash', 'inspection.record', 'charge.create',
-  'charge.waive', 'deposit.approve_release', 'deposit.waive', 'unit.manage',
-  'tenancy.manage', 'config.manage', 'report.view', 'document.view_identity',
-  'site_image.manage'
+  'day_pass.admit', 'payment.verify', 'payment.record_cash', 'inspection.record',
+  'charge.create', 'charge.waive', 'deposit.approve_release', 'deposit.waive',
+  'unit.manage', 'tenancy.manage', 'config.manage', 'report.view',
+  'document.view_identity', 'site_image.manage'
 ]) as permission
 where r.slug = 'admin';
 
@@ -170,14 +170,17 @@ where r.slug = 'admin';
 -- long-term (capability B9) is a commercial statement rather than an
 -- operational one, and prd.md §4 gives Housekeeping `unit.manage` "(status
 -- only)" — the desk marks a lease, the cleaner does not.
+--
+-- It checks stays in, because the keys are at the counter (N54), and admits
+-- day passes too, for the visitor who paid at the office rather than ahead.
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
   'booking.view', 'booking.create', 'booking.amend', 'booking.cancel',
   'booking.override_hold', 'booking.discount', 'booking.check_in', 'booking.check_out',
-  'payment.verify', 'payment.record_cash', 'charge.create', 'deposit.waive',
-  'unit.manage', 'tenancy.manage', 'document.view_identity'
+  'day_pass.admit', 'payment.verify', 'payment.record_cash', 'charge.create',
+  'deposit.waive', 'unit.manage', 'tenancy.manage', 'document.view_identity'
 ]) as permission
 where r.slug = 'front-office';
 
@@ -197,16 +200,17 @@ where r.slug = 'housekeeping';
 -- prd.md §4 describes this role as "today's arrivals view, check-in action,
 -- read-only booking summary. No document or payment access."
 --
--- The check-in action is `booking.check_in`, minted by
--- 20260924000100_the_guard_checks_a_guest_in.sql when N11 was answered
--- (13 September 2026). It handles no money: check_in_booking() refuses a
--- booking whose deposit is not held, so the guard only ever lets in a guest the
--- office has secured. No check-out — that is Housekeeping's.
+-- The gate's action is admitting a day pass, `day_pass.admit`, minted by
+-- 20260926000100_the_gate_admits_a_day_pass.sql. A stay is checked in at the
+-- counter, where the keys are (N54), so the guard does not hold
+-- `booking.check_in` — one tick in Roles gives it back if the guard hands
+-- over keys after hours. Neither handles money: admit_day_pass() refuses a
+-- pass not paid in full. No check-out — that is Housekeeping's.
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
-  'booking.view', 'booking.check_in'
+  'booking.view', 'day_pass.admit'
 ]) as permission
 where r.slug = 'security';
 

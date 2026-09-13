@@ -7,11 +7,15 @@ import type { Permission } from '@/lib/auth/permissions'
  * the permissions, and this decides what they mean for navigation, where a
  * unit test can reach it without a session.
  *
- * ── A job is a screen, reached by the permission that acts on it ──────────
+ * ── A job is a screen, reached by the permissions that act on it ──────────
  *
- * The gate screen exists to check guests in, so it answers to
- * `booking.check_in` rather than to `booking.view` — a screen whose one
- * action a person may not take is a screen they have no reason to open.
+ * The gate answers to either of its two moves: `booking.check_in` or
+ * `day_pass.admit` (N54, 26 September 2026). The desk checks stays in, because
+ * the keys are taken to be at the counter; the guard admits day passes, which
+ * never go near it. A guard also given check-in — after hours, say — still has
+ * one screen, and each card offers only the move its reader holds. A screen
+ * none of whose moves a person may make is a screen they have no reason to
+ * open.
  *
  * The departures screen answers to `inspection.record` **[A]**. It has three
  * acts — seeing a guest off, inspecting, marking the unit ready — and the
@@ -20,13 +24,16 @@ import type { Permission } from '@/lib/auth/permissions'
  * it has nobody to work. Each card still checks its own step's permission
  * (lib/domain/turnover.ts).
  *
- * ── Who lands on the phone screens ────────────────────────────────────────
+ * ── Who lands where ───────────────────────────────────────────────────────
  *
  * Somebody whose whole job is a field job: every permission they hold is one
- * the field surface uses, and at least one field screen is built for them. A
- * guard (booking.view + booking.check_in) signs in straight to the gate. The
- * desk, which also holds check-in, lands on the portal as before — its day is
- * the portal, and the gate screen is one link away.
+ * the field surface uses, and at least one field screen is built for them.
+ * With exactly one screen they sign in straight to it — the guard to the gate,
+ * the cleaner to the departures — because the chooser in between would be a
+ * second round trip on the guardhouse's one bar of signal, to show a menu of
+ * one (Jeff, 13 September 2026). With two they land on the chooser at
+ * `/field`. The desk, which also works the gate, lands on the portal as
+ * before: its day is the portal, and the gate is one link away.
  *
  * Decided from permissions rather than role slugs, because roles are data an
  * administrator edits (architecture.md §4) and a renamed or merged role must
@@ -37,16 +44,22 @@ export interface FieldJob {
   id: 'arrivals' | 'departures'
   label: string
   href: '/field/arrivals' | '/field/departures'
-  permission: Permission
+  /** Holding any one of these opens the screen. */
+  permissions: readonly Permission[]
 }
 
 export const FIELD_JOBS: readonly FieldJob[] = [
-  { id: 'arrivals', label: 'Arrivals', href: '/field/arrivals', permission: 'booking.check_in' },
+  {
+    id: 'arrivals',
+    label: 'Arrivals',
+    href: '/field/arrivals',
+    permissions: ['booking.check_in', 'day_pass.admit'],
+  },
   {
     id: 'departures',
     label: 'Departures',
     href: '/field/departures',
-    permission: 'inspection.record',
+    permissions: ['inspection.record'],
   },
 ]
 
@@ -59,6 +72,7 @@ const FIELD_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
   'booking.view',
   'booking.check_in',
   'booking.check_out',
+  'day_pass.admit',
   'inspection.record',
   'unit.manage',
 ])
@@ -66,9 +80,16 @@ const FIELD_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
 export const PORTAL_HOME = '/portal'
 export const FIELD_HOME = '/field'
 
+export type LandingPath = typeof PORTAL_HOME | typeof FIELD_HOME | FieldJob['href']
+
 /** The field screens this person can work, in display order. */
 export function fieldJobsFor(permissions: ReadonlySet<Permission>): readonly FieldJob[] {
-  return FIELD_JOBS.filter((job) => permissions.has(job.permission))
+  return FIELD_JOBS.filter((job) => job.permissions.some((permission) => permissions.has(permission)))
+}
+
+/** Whether this person may open one field screen, named by its id. */
+export function mayWork(permissions: ReadonlySet<Permission>, id: FieldJob['id']): boolean {
+  return fieldJobsFor(permissions).some((job) => job.id === id)
 }
 
 /**
@@ -78,12 +99,16 @@ export function fieldJobsFor(permissions: ReadonlySet<Permission>): readonly Fie
  * them they have no access — the field home would say the same thing with
  * less to go on.
  */
-export function landingPathFor(
-  permissions: ReadonlySet<Permission>,
-): typeof PORTAL_HOME | typeof FIELD_HOME {
+export function landingPathFor(permissions: ReadonlySet<Permission>): LandingPath {
+  const jobs = fieldJobsFor(permissions)
   const worksOnlyInTheField =
-    fieldJobsFor(permissions).length > 0 &&
-    [...permissions].every((permission) => FIELD_PERMISSIONS.has(permission))
+    jobs.length > 0 && [...permissions].every((permission) => FIELD_PERMISSIONS.has(permission))
 
-  return worksOnlyInTheField ? FIELD_HOME : PORTAL_HOME
+  if (!worksOnlyInTheField) {
+    return PORTAL_HOME
+  }
+
+  const [onlyJob] = jobs
+
+  return jobs.length === 1 && onlyJob ? onlyJob.href : FIELD_HOME
 }

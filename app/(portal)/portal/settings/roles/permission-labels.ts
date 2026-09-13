@@ -15,6 +15,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'booking.discount': 'Discount bookings',
   'booking.check_in': 'Check guests in',
   'booking.check_out': 'Check guests out',
+  'day_pass.admit': 'Admit day passes',
   'payment.verify': 'Verify payments',
   'payment.record_cash': 'Record cash payments',
   'inspection.record': 'Record inspections',
@@ -39,6 +40,9 @@ export const PERMISSION_GROUPS: readonly { label: string; permissions: readonly 
       'booking.amend',
       'booking.check_in',
       'booking.check_out',
+      // Beside the two moves it sits between: a day pass is let in at the gate
+      // rather than checked in (N54).
+      'day_pass.admit',
       'booking.cancel',
       'booking.discount',
       'booking.override_hold',

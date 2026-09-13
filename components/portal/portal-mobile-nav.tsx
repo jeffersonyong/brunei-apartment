@@ -5,7 +5,7 @@ import { Menu } from 'lucide-react'
 
 import { PortalAccount, type PortalAccountUser } from '@/components/portal/portal-account'
 import { PortalBrand } from '@/components/portal/portal-brand'
-import { PortalNav, PortalNavFooterLinks } from '@/components/portal/portal-nav'
+import { PortalNav } from '@/components/portal/portal-nav'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 /**
@@ -54,10 +54,13 @@ export function PortalMobileNav({ account }: { account: PortalAccountUser | null
         <div className="flex flex-1 flex-col overflow-y-auto" onClick={closeIfNavigating}>
           <PortalNav />
 
-          <div className="mt-auto border-t border-divider px-sm pt-md pb-lg">
-            {account ? <PortalAccount user={account} /> : null}
-            <PortalNavFooterLinks />
-          </div>
+          {/* As in the desktop sidebar: the account alone under the rule, and
+              the ways out of the portal as the nav's last rows. */}
+          {account ? (
+            <div className="mt-auto border-t border-divider px-sm pt-md pb-lg">
+              <PortalAccount user={account} />
+            </div>
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>

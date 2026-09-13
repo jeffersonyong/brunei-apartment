@@ -37,8 +37,9 @@ describe('toPermissionSet', () => {
     // with the seeded roles long before a screen does.
     const set = toPermissionSet([...PERMISSIONS])
 
-    // 21 since `booking.check_in` and `booking.check_out` (20260924000100, N11).
-    expect(set.size).toBe(21)
+    // 21 since `booking.check_in` and `booking.check_out` (20260924000100, N11);
+    // 22 since `day_pass.admit` (20260926000100, N54).
+    expect(set.size).toBe(22)
   })
 })
 

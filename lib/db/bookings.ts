@@ -941,10 +941,15 @@ export type TransitionBookingResult =
  * `cancelBooking` and `markBookingNoShow` in ./close-booking.ts — and
  * `transition_booking()` refuses them, so the type here is the first of two
  * places saying so rather than the only one.
+ *
+ * **Not admitting a day pass either.** Admission is refused on another day or
+ * with money owed, which only `admit_day_pass()` can check under its lock, so
+ * it goes through `admitDayPass` in ./day-pass-admission.ts and
+ * `transition_booking()` refuses it the same way (N54).
  */
 export async function transitionBooking(
   bookingId: string,
-  event: Exclude<BookingEvent, 'cancel' | 'mark_no_show'>,
+  event: Exclude<BookingEvent, 'cancel' | 'mark_no_show' | 'admit'>,
   actorId: string | null = null,
   reason: string | null = null,
 ): Promise<TransitionBookingResult> {
