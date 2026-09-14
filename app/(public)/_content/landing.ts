@@ -145,8 +145,9 @@ export const pendingDayPassDetails = ['Opening hours']
  * a harmless leftover: it puts two contradictory claims on one site, where
  * one page says a thing is unknown and another quotes the figure.
  *
- * `app/(public)/_content/faq.ts` is now the other renderer of these same open
- * items. When one is answered, both lists lose it.
+ * The FAQ no longer carries open items at all (capability F9, 14 September
+ * 2026): a question the business cannot answer is left off it, and staff add
+ * it from the portal once it is.
  */
 export const pendingStayDetails = [
   'Cancellation notice period',
