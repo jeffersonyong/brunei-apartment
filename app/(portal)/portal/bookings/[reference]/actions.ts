@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { permissionsToRecordMoneySeen } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require-permission'
 import { getBookingById } from '@/lib/db/bookings'
 import { listDocumentsForBooking } from '@/lib/db/documents'
@@ -388,6 +389,14 @@ export async function topUpDepositAction(
       message: 'Check the highlighted fields.',
       fieldErrors: { amount: parsed.error.issues[0]?.message ?? 'Enter the amount that arrived.' },
     }
+  }
+
+  // A top-up by transfer writes the money down as already in the bank, so it
+  // also takes `payment.verify` (N54): the guard, who records cash, never says
+  // a transfer landed. Thrown rather than answered — the dialog offers the
+  // transfer only to a reader who holds it.
+  for (const permission of permissionsToRecordMoneySeen(parsed.data.method)) {
+    await requirePermission(permission)
   }
 
   const booking = await getBookingById(parsed.data.bookingId)

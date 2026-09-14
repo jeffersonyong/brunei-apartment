@@ -48,7 +48,9 @@ import { topUpDepositAction, type TopUpDepositState } from './actions'
  * stopped being a promise when somebody collected it, and a second pending
  * state on one row is the ledger shape this slice deliberately did not build.
  * So the labels say *counted* and *seen in the bank*, and nothing here joins a
- * queue.
+ * queue. **Seen in the bank is offered only to a reader who checks the bank**
+ * (`payment.verify`): a guard taking cash may record cash, and never says a
+ * transfer landed (N54, `permissionsToRecordMoneySeen`).
  */
 
 const initialState: TopUpDepositState = { status: 'idle' }
@@ -64,6 +66,8 @@ interface TopUpDepositProps {
   shortfall: Cents
   /** Whether completing the deposit is what confirms this booking. */
   securesBooking: boolean
+  /** Whether this reader may say a transfer arrived — `payment.verify`. */
+  mayRecordTransfer: boolean
 }
 
 export function TopUpDeposit(props: TopUpDepositProps) {
@@ -91,6 +95,7 @@ function TopUpDepositDialog({
   held,
   shortfall,
   securesBooking,
+  mayRecordTransfer,
   onClose,
 }: TopUpDepositProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(topUpDepositAction, initialState)
@@ -158,22 +163,28 @@ function TopUpDepositDialog({
             <FieldError message={state.fieldErrors?.amount} />
           </div>
 
-          <div className="grid gap-sm">
-            <Label htmlFor="top-up-method">How was it taken?</Label>
-            <Select
-              name="method"
-              value={method}
-              onValueChange={(next) => setMethod(next as PaymentMethod)}
-            >
-              <SelectTrigger id="top-up-method">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">Cash — counted now</SelectItem>
-                <SelectItem value="bank_transfer">Bank transfer — seen in the bank</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {mayRecordTransfer ? (
+            <div className="grid gap-sm">
+              <Label htmlFor="top-up-method">How was it taken?</Label>
+              <Select
+                name="method"
+                value={method}
+                onValueChange={(next) => setMethod(next as PaymentMethod)}
+              >
+                <SelectTrigger id="top-up-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash — counted now</SelectItem>
+                  <SelectItem value="bank_transfer">Bank transfer — seen in the bank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            // Nothing to choose: without `payment.verify` the money can only be
+            // cash counted in hand.
+            <input type="hidden" name="method" value="cash" />
+          )}
 
           <Notice>
             {leaves !== null && leaves > 0 ? (

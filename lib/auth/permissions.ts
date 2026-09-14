@@ -1,3 +1,5 @@
+import type { PaymentMethod } from '@/lib/domain/payment'
+
 /**
  * The permission vocabulary and the pure set logic over it.
  *
@@ -61,7 +63,20 @@ export const PERMISSIONS = [
    * for today. Security, Front Office and Admin.
    */
   'day_pass.admit',
+  /**
+   * Checking the bank: confirming that a transfer landed, for a deposit or for
+   * the stay. Since N54 it is also what recording a transfer as already arrived
+   * takes (`permissionsToRecordMoneySeen`). Front Office, Finance and Admin.
+   */
   'payment.verify',
+  /**
+   * Recording money taken against a booking — the cash counted at the office or
+   * at the gate (N54), the security deposit, a short deposit's rest, what a
+   * guest owed beyond it — and raising a transfer for the queue to verify, which
+   * records nothing as arrived. A transfer written down as already seen takes
+   * `payment.verify` as well, so the guard takes cash and never says a transfer
+   * landed. Security, Front Office and Admin.
+   */
   'payment.record_cash',
   'inspection.record',
   'charge.create',
@@ -116,4 +131,23 @@ export function hasPermission(
   permission: Permission,
 ): boolean {
   return permissions.has(permission)
+}
+
+/**
+ * What recording money as already arrived takes, by how it arrived.
+ *
+ * `payment.record_cash` says money is in hand: notes counted at the office or
+ * the gate. A bank transfer written down as already seen — the rest of a
+ * deposit that arrived short, or what a guest owed beyond their deposit — makes
+ * the same claim about money only somebody reading the bank can check, so it
+ * takes `payment.verify` as well (N54). The guard holds the first and not the
+ * second. Front Office and Admin hold both, so nothing changed for them.
+ *
+ * Raising a transfer for the verification queue is not this: a promise records
+ * nothing as arrived, and verifying it is what `payment.verify` already gates.
+ */
+export function permissionsToRecordMoneySeen(method: PaymentMethod): readonly Permission[] {
+  return method === 'bank_transfer'
+    ? ['payment.record_cash', 'payment.verify']
+    : ['payment.record_cash']
 }
