@@ -323,9 +323,9 @@ Pricing is a line-item calculation, never a single stored price. Every booking p
 **[C]** Family bundles: 2 adults + 1 child = 20. 2 adults + 2 children = 25.
 
 **[O]** Pricing for under age 1 is undefined. Free by inference from the stays rule that guests aged 3 and below are not counted — an inference, not a stated rule. The overlap at 12 that used to sit here is resolved above.
-**[O]** Bundles are defined only for two combinations. Any other family shape (1 adult + 2 children, 2 adults + 3 children) has no stated rule.
+**[C] A bundle applies as many times as it fits, and everyone left over pays per person** (14 September 2026, answering [N4](open-questions.md) and C9). Two adults and three children are BND 30 — the 2 + 2 bundle and a child, which is Jason's own example — and four adults and two children are BND 40 for two 2 + 1 bundles, not BND 45 for one bundle and two adults at the per-person rate. One adult and two children fit no bundle and pay per person; that follows from the rule rather than being stated.
 
-**[A] Implementation.** Price per person by age band, then apply the best matching bundle override automatically. The customer is never charged more than the cheapest applicable combination. This avoids a self-declared "family" category that cannot be verified and removes the need for two parallel pricing modes.
+**[A] Implementation.** Price per person by age band, then apply the best matching bundle override automatically. The customer is never charged more than the cheapest applicable combination. This avoids a self-declared "family" category that cannot be verified and removes the need for two parallel pricing modes. It executes the [C] above rather than reading it: at the seeded prices each bundle takes BND 5 off the per-person price, so the cheapest arrangement is always the one with the most bundles.
 
 ### 8.2 Short stays
 
@@ -351,7 +351,9 @@ total = (base_rate × nights)
 
 **[C] Late check-out is BND 15 per hour**, confirmed on the same date — unchanged from the formula above.
 
-**[O] The client's own example does not agree with the rate he gave.** *"There is a late fee of 15/hour. For example, they want to check out at 3pm instead, that's another 15."* Three hours past 12:00 at BND 15 an hour is 45, not 15. Either the rate is per hour and the example is loose, or a late check-out is a flat BND 15 however long it runs. The engine prices it per hour, which is what the words say and what the price list has always said; the arithmetic is [N30](open-questions.md) and one line settles it.
+**[C] Per hour, and the example was loose** (14 September 2026, answering [N30](open-questions.md)). His first answer illustrated the rate with *"they want to check out at 3pm instead, that's another 15"*, where three hours past 12:00 is BND 45; asked whether late check-out really is charged by the hour, he said yes. Nothing changed — the engine, both booking forms and the FAQ already charge per hour.
+
+**Late hours are priced with the booking, never at the door.** They are chosen when a booking is made or amended, and a booking stops being amendable once the guest is checked in (§9.6, [N12](open-questions.md)) — so hours a guest asks for on the morning they leave cannot yet be charged through the system.
 
 **[A] Early check-in requires an availability check, not just a charge.** Check-out is 12:00 and units target readiness by 14:00. Early check-in is only sellable when the unit was vacant the previous night or has passed inspection. Selling it as a simple paid extra will place guests in units still being cleaned. Jason's answer is that same position from the other side — *"usually it's up for discussion as we may or may not have room ready"* — so it is a desk judgement, not a checkbox on a form.
 

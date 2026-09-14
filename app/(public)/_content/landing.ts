@@ -128,7 +128,7 @@ export { contact } from '@/lib/domain/contact'
  * the page surfaces the questions instead of hiding them. Each entry is
  * deleted once the answer lands in the PRD.
  */
-export const pendingDayPassDetails = ['What the family bundles cover', 'Opening hours']
+export const pendingDayPassDetails = ['Opening hours']
 
 /**
  * The last three were per-unit markers on the landing grid until 2026-08-27.

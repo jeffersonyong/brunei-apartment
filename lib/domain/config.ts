@@ -119,12 +119,10 @@ export interface PropertyConfig {
   earlyCheckInPerHour: Cents
 
   /**
-   * [C] BND 15 per hour (prd.md §8.2), reconfirmed 10 September 2026.
-   *
-   * The client's illustration of it did not match the rate he gave — a 15:00
-   * check-out was described as "another 15", where three hours at this rate
-   * is 45. Priced per hour, which is what the rate and the price list say;
-   * open-questions.md N30 settles whether it is really a flat fee.
+   * [C] BND 15 per hour (prd.md §8.2), reconfirmed 10 September 2026, and per
+   * hour rather than a flat fee (open-questions.md N30, answered 14 September
+   * 2026) — so a 15:00 check-out is 45. The client's first illustration called
+   * it "another 15", which was loose wording.
    */
   lateCheckOutPerHour: Cents
 
@@ -188,9 +186,10 @@ export interface PropertyConfig {
   dayPassAgeBands: readonly DayPassAgeBand[]
 
   /**
-   * TODO(client): prd.md §18 N4 — bundles are defined only for 2 adults + 1
-   * child and 2 adults + 2 children. Any other family shape has no stated rule.
-   * See `priceDayPass` for how the gap is handled and what needs confirming.
+   * [C] 2 adults + 1 child and 2 adults + 2 children, and a booking takes as
+   * many as it fits, with whoever is left over paying per person
+   * (open-questions.md N4 and C9, answered 14 September 2026). `priceDayPass`
+   * applies them.
    */
   dayPassBundles: readonly DayPassBundle[]
 }
