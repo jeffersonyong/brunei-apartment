@@ -7,10 +7,12 @@ import { bandForAge, partyFromAges, priceDayPass } from './day-pass'
 /**
  * Day-pass pricing tests.
  *
- * The confirmed rates from prd.md §8.1 are asserted as facts. The behaviour
- * governed by open questions N3 and N4 is asserted as *the current provisional
- * reading*, labelled as such, so that when Jason answers, the failing test
- * names the decision rather than a mystery regression.
+ * The confirmed rates from prd.md §8.1 are asserted as facts, and since
+ * 14 September 2026 so is how bundles combine (N4, C9). The one behaviour still
+ * governed by an open question — the price under age 1, N3 — is asserted as
+ * *the current provisional reading*, labelled as such, so that when Jason
+ * answers, the failing test names the decision rather than a mystery
+ * regression.
  */
 
 describe('confirmed rates (prd.md §8.1 [C])', () => {
@@ -73,15 +75,26 @@ describe('the §8.1 [A] promise: never above the cheapest applicable combination
   })
 })
 
-describe('TODO(client) prd.md §18 N4 — shapes with no stated rule', () => {
-  // These assert the CURRENT INTERPRETATION documented in day-pass.ts: bundles
-  // may repeat and combine with a per-person remainder. If Jason says a bundle
-  // applies once per booking, these are the tests that should change.
+describe('bundles repeat, and whoever is left over pays per person (N4, C9 [C])', () => {
+  // Jason, 14 September 2026: the two bundles are the only ones, a booking
+  // takes as many as it fits, and anyone beyond them pays per head.
 
-  test('2 adults + 3 children = one 2+2 bundle plus one child (30), not per-person (35)', () => {
+  test("2 adults + 3 children = one 2+2 bundle plus a child (30), Jason's own example", () => {
     const result = priceDayPass({ adult: 2, child: 3 }, palmVillaConfig)
 
     expect(result.ok && result.total).toBe(bnd(30))
+  })
+
+  test('4 adults + 2 children = two 2+1 bundles (40), not a bundle plus two adults (45)', () => {
+    // C9 as it was put to him: the bundle applies twice.
+    const result = priceDayPass({ adult: 4, child: 2 }, palmVillaConfig)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    expect(result.total).toBe(bnd(40))
+    expect(result.lines).toHaveLength(1)
+    expect(result.lines[0]).toMatchObject({ quantity: 2, unitPrice: bnd(20) })
   })
 
   test('4 adults + 4 children = two 2+2 bundles (50), not per-person (60)', () => {
@@ -95,7 +108,8 @@ describe('TODO(client) prd.md §18 N4 — shapes with no stated rule', () => {
     expect(result.lines[0]).toMatchObject({ quantity: 2, unitPrice: bnd(25) })
   })
 
-  test('1 adult + 2 children has no bundle and falls back to per-person (20)', () => {
+  test('1 adult + 2 children fits no bundle and pays per person (20)', () => {
+    // Read from his rule rather than stated: every bundle needs two adults.
     const result = priceDayPass({ adult: 1, child: 2 }, palmVillaConfig)
 
     expect(result.ok && result.total).toBe(bnd(20))
