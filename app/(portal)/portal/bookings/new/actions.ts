@@ -4,12 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { requirePermission } from '@/lib/auth/require-permission'
-import { createWalkInBooking } from '@/lib/db/bookings'
+import { createWalkInBooking, type WalkInPayment } from '@/lib/db/bookings'
 import { getPropertyConfig } from '@/lib/db/property-config'
-import { isStayDate } from '@/lib/domain/dates'
+import { isStayDate, todayInBrunei } from '@/lib/domain/dates'
 import { parseDepositWaiver, MAX_DEPOSIT_WAIVER_REASON_LENGTH } from '@/lib/domain/deposit-waiver'
 import { parseDiscount, MAX_DISCOUNT_REASON_LENGTH } from '@/lib/domain/discount'
-import type { PaymentMethod } from '@/lib/domain/payment'
 import { priceStay } from '@/lib/domain/pricing/stay'
 import {
   hasVehicleAnswer,
@@ -33,6 +32,14 @@ import {
  * the regular ringing ahead — or the deposit and the stay together, which is
  * the walk-in standing at the counter. A booking quoting no deposit has
  * nothing else to secure it, so the stay is always taken there.
+ *
+ * **Or nothing now, and the guard takes it at the gate** (capability B17,
+ * N54). The guard is the front desk but cannot make a booking, so for a guest
+ * waiting at the barrier he calls the office, and the office books them with
+ * nothing taken. The unit is held; the guard takes the deposit and then the
+ * stay when the guest drives up, under his own name. Only for a stay starting
+ * today and never with a waiver [A] — a booking dated ahead with nothing
+ * against it is what §9.1 rules out.
  *
  * The one asterisk, recorded in createWalkInBooking()'s own doc block and in
  * prd.md §9.1: a transfer booking does hold its unit before the money lands,
@@ -68,11 +75,12 @@ const walkInBookingSchema = z.object({
   vehicles: z.array(z.string().max(MAX_VEHICLE_REGISTRATION_LENGTH)).max(MAX_VEHICLES_PER_BOOKING),
   /** The deliberate exception, submitted as a value on every save. */
   noVehicle: z.enum(['true', 'false']).transform((value) => value === 'true'),
-  paymentMethod: z.enum(['cash', 'bank_transfer']),
+  paymentMethod: z.enum(['cash', 'bank_transfer', 'at_gate']),
   /**
    * What is being paid now: the deposit alone, or the deposit and the stay.
    * The customer's two answers (prd.md §10.3), submitted on every save. Where
-   * no deposit is quoted the write path takes the stay whatever this says.
+   * no deposit is quoted the write path takes the stay whatever this says, and
+   * at the gate nothing is taken now whatever it says.
    */
   payingNow: z.enum(['deposit_only', 'everything']).default('everything'),
   /**
@@ -109,7 +117,7 @@ export interface WalkInBookingState {
     /** Nothing is owed at all; the receipt says so rather than printing 0.00. */
     depositWaived: boolean
     /** Decides what the confirmation panel says, and which badge it wears. */
-    paymentMethod: PaymentMethod
+    paymentMethod: WalkInPayment
     /** Whether the stay was paid with the deposit, or is settled on arrival. */
     payStayNow: boolean
   }
@@ -206,6 +214,29 @@ export async function createWalkInBookingAction(
     await requirePermission('deposit.waive')
   }
 
+  // The form offers "At the gate" only for today and only without a waiver,
+  // and `create_walk_in_booking()` refuses both too. This is the sentence beside
+  // the field for a request that got past the form anyway.
+  if (input.paymentMethod === 'at_gate') {
+    if (input.checkIn !== todayInBrunei()) {
+      return {
+        status: 'error',
+        message: 'Check the highlighted fields.',
+        fieldErrors: { paymentMethod: 'Only a stay starting today can be paid at the gate.' },
+      }
+    }
+
+    if (waiver.reason !== null) {
+      return {
+        status: 'error',
+        message: 'Check the highlighted fields.',
+        fieldErrors: {
+          paymentMethod: 'A booking with its deposit waived cannot be paid at the gate.',
+        },
+      }
+    }
+  }
+
   // Re-priced server-side. The client island computes the same total for live
   // display, but no submitted total is ever trusted — the price charged is the
   // one the server derives from the inputs. The discount is an INPUT to that,
@@ -247,7 +278,7 @@ export async function createWalkInBookingAction(
     depositWaiverReason: waiver.reason,
     discount: discount.discount,
     paymentMethod: input.paymentMethod,
-    payStayNow: input.payingNow === 'everything',
+    payStayNow: input.paymentMethod !== 'at_gate' && input.payingNow === 'everything',
     actorId: actor.userId,
   })
 
@@ -263,6 +294,9 @@ export async function createWalkInBookingAction(
   // A transfer booking lands in the queue and on the dashboard's counter.
   revalidatePath('/portal/payments')
   revalidatePath('/portal')
+  // And every booking starting today is on the guard's list — the one paid at
+  // the gate most of all, because the guest is at the barrier.
+  revalidatePath('/field/arrivals')
 
   return {
     status: 'created',

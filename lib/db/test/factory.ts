@@ -10,6 +10,7 @@ import {
   transitionBooking,
   type Booking,
   type CreateWalkInBookingInput,
+  type WalkInPayment,
 } from '../bookings'
 import { checkInBooking, getDepositByBookingId, verifyDeposit, type Deposit } from '../deposits'
 import { attachDocument } from '../documents'
@@ -18,7 +19,6 @@ import { listPaymentsForBooking, type Payment } from '../payments'
 import { markUnitLeased, markUnitOutOfService } from '../units'
 import type { DocumentKind } from '@/lib/domain/document'
 import type { InspectionOutcome } from '@/lib/domain/inspection'
-import type { PaymentMethod } from '@/lib/domain/payment'
 import { currentPropertyId } from '../property'
 
 /**
@@ -74,9 +74,10 @@ export interface BookingSpec {
    * Defaults to cash, which confirms the booking outright — so every test
    * written before payments existed keeps producing exactly the booking it
    * used to. A transfer booking is the payment tests' business; see
-   * `givenTransferBooking`.
+   * `givenTransferBooking`. `at_gate` holds the unit with nothing taken, and
+   * only for a stay starting today (N54).
    */
-  paymentMethod?: PaymentMethod
+  paymentMethod?: WalkInPayment
   /**
    * Defaults to true: the fixture is a walk-in, and a walk-in pays for the
    * stay as well as the deposit. False is the advance booking taken over the

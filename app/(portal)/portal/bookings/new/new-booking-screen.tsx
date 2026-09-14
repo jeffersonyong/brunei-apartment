@@ -42,6 +42,8 @@ interface NewBookingScreenProps {
   mayDiscount: boolean
   /** Whether this staff member holds `deposit.waive`. Decided by the page. */
   mayWaiveDeposit: boolean
+  /** Today in Brunei — the one day a booking may be left for the gate to collect. */
+  today: string
 }
 
 export function NewBookingScreen({ chrome, ...form }: NewBookingScreenProps) {

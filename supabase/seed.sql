@@ -200,17 +200,20 @@ where r.slug = 'housekeeping';
 -- ── Security ───────────────────────────────────────────────────────────────
 -- The guard is the front desk (N54, answered by Jason on 14 September 2026):
 -- the guard hands the keys over, so checks a stay in, and takes them back, so
--- checks it out. The gate admits day passes too (20260926000100). None of the
--- three handles money: check_in_booking() refuses a booking whose deposit is
--- not held in full, and admit_day_pass() a pass not paid in full.
--- Housekeeping keeps check-out as well, for the guest who leaves the keys in
--- the unit. No document access, and nothing here creates or edits a booking:
--- the guard calls the office for that.
+-- checks it out. The gate admits day passes too (20260926000100), and takes
+-- the cash a guest still owes — the deposit, the stay, a day pass — recorded
+-- under the guard's name (20260927000200). No move takes money on its own:
+-- check_in_booking() refuses a booking whose deposit is not held in full, and
+-- admit_day_pass() a pass not paid in full. No `payment.verify`, so the guard
+-- never says a transfer landed; no document access; and nothing here creates
+-- or edits a booking — the guard calls the office for that. Housekeeping keeps
+-- check-out as well, for the guest who leaves the keys in the unit.
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
-  'booking.view', 'booking.check_in', 'booking.check_out', 'day_pass.admit'
+  'booking.view', 'booking.check_in', 'booking.check_out', 'day_pass.admit',
+  'payment.record_cash'
 ]) as permission
 where r.slug = 'security';
 

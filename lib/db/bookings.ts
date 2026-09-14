@@ -736,15 +736,20 @@ export interface CreateWalkInBookingInput {
    * Required, not defaulted, for the same reason `actorId` is: whether a
    * booking is paid or merely promised is the most consequential fact about
    * it, and a caller with no opinion should have to say so out loud.
+   *
+   * `at_gate` takes nothing now: the guard takes the deposit and then the stay
+   * when the guest arrives (N54). Only for a stay starting today, and never with
+   * a waiver — `create_walk_in_booking()` refuses both.
    */
-  paymentMethod: PaymentMethod
+  paymentMethod: WalkInPayment
   /**
    * Whether the stay is paid now as well as the deposit — the desk giving the
    * customer's own answer on their behalf (prd.md §10.3: the deposit only, or
    * the full amount with the deposit). A walk-in pays everything; an advance
    * booking taken over the phone secures the unit with the deposit and settles
    * the stay on arrival. Forced true where the booking quotes no deposit, since
-   * the stay is then the only thing there is to pay for.
+   * the stay is then the only thing there is to pay for — except at the gate,
+   * where nothing is paid now either way.
    */
   payStayNow: boolean
   /**
@@ -754,6 +759,14 @@ export interface CreateWalkInBookingInput {
    */
   actorId: string | null
 }
+
+/**
+ * How the desk says a new booking is being paid: counted now, promised by
+ * transfer, or taken by the guard when the guest arrives. Kept out of
+ * lib/domain/payment.ts, whose lists mirror the `payment` table's CHECK
+ * constraints — `at_gate` is never a payment's method, it is the absence of one.
+ */
+export type WalkInPayment = PaymentMethod | 'at_gate'
 
 export type CreateBookingResult =
   | {
@@ -810,10 +823,16 @@ export async function createWalkInBooking(
 ): Promise<CreateBookingResult> {
   const propertyId = await currentPropertyId()
 
+  // Paid at the gate, nothing is taken now (N54): the guard takes the deposit
+  // and then the stay when the guest arrives, through the writers the desk
+  // uses. So the booking is only held, and the function writes neither a
+  // deposit row nor a payment.
+  const atGate = input.paymentMethod === 'at_gate'
+
   // What the booking will quote once the function has applied the waiver —
   // the deposit is taken exactly when that is more than nothing.
-  const takesDeposit = input.depositWaiverReason === null && input.securityDeposit > 0
-  const payStayNow = input.payStayNow || !takesDeposit
+  const takesDeposit = !atGate && input.depositWaiverReason === null && input.securityDeposit > 0
+  const payStayNow = !atGate && (input.payStayNow || !takesDeposit)
 
   // Cash confirms the booking in the same action; a transfer has been sent
   // but not seen, so it goes to the verification queue instead. Which event
@@ -823,8 +842,9 @@ export async function createWalkInBooking(
   // it, which is `pay_in_full`. Both come out of the machine rather than being
   // written down here — architecture.md §5.3 keeps the transition table in
   // exactly one place.
-  const event: BookingEvent =
-    input.paymentMethod === 'cash'
+  const event: BookingEvent = atGate
+    ? 'hold'
+    : input.paymentMethod === 'cash'
       ? takesDeposit
         ? 'secure_with_deposit'
         : 'pay_in_full'

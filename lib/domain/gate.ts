@@ -1,20 +1,20 @@
-import { balanceOf } from './balance'
+import { balanceOf, canSettle } from './balance'
 import { isTerminal, type BookingStatus } from './booking-state'
 import { formatStayDate, type StayDate } from './dates'
-import { depositSecuresBooking } from './deposit'
+import { depositSecuresBooking, depositShortfallOf } from './deposit'
 import type { Cents } from './money'
 import type { BookingStream } from './stream'
 import { isDueOut } from './turnover'
 import { plateKey } from './vehicle'
 
 /**
- * What the guard does with each booking at the gate (capabilities D1–D5).
+ * What the guard does with each booking at the gate (capabilities D1–D6).
  *
  * The guard is the front desk (N54, answered by Jason on 14 September 2026):
- * he hands the keys over, takes them back and admits day visitors, and he
- * cannot make a booking — he calls the office. So the screen answers one
- * question per booking, what happens next and who does it, and says why in a
- * sentence.
+ * he hands the keys over, takes them back, admits day visitors and takes the
+ * cash a guest still owes, and he cannot make a booking — he calls the office.
+ * So the screen answers one question per booking, what happens next and who
+ * does it, and says why in a sentence.
  *
  * The verdict is decided from the booking's facts alone. What the person
  * holding the phone may do about it is their permission, which changes the
@@ -49,10 +49,16 @@ import { plateKey } from './vehicle'
  * - **Paid means paid in full.** Admitting closes the booking, and nobody meets
  *   a day visitor again to collect what is owed.
  *
+ * ── Cash ──────────────────────────────────────────────────────────────────
+ *
+ * What the gate may take is `gateCashDueOf`, from the same facts. It is only
+ * ever shown to a reader who holds `payment.record_cash`, and lib/db/gate.ts
+ * only reads it for one.
+ *
  * The SQL is the authority for what is enforced — `check_in_booking()`,
- * `admit_day_pass()` and `transition_booking()` — and this is the courtesy
- * that keeps the guard from pressing a button that will refuse him. Who does
- * what is Jason's [C]; the rest is [A] in prd.md §12.
+ * `admit_day_pass()`, `transition_booking()` and the money functions — and
+ * this is the courtesy that keeps the guard from pressing a button that will
+ * refuse him. Who does what is Jason's [C]; the rest is [A] in prd.md §12.
  */
 
 export interface GateDepositFacts {
@@ -206,6 +212,119 @@ function stayMoneyOf(facts: GateFacts): StayMoney {
   return facts.transferPending ? 'awaiting_transfer' : 'owed'
 }
 
+/**
+ * What the gate may take in cash for a booking (capability D6, N54).
+ *
+ * The guard is handed pending cash, and the card decides what it is for so he
+ * never has to tell a deposit from a payment. These are the portal's rules at
+ * the barrier, not new ones:
+ *
+ * - **The deposit first**, because it is what secures a booking (prd.md §9.1).
+ *   One not taken, or only promised, is taken whole — cash against a standing
+ *   promise fulfils it, in `record_booking_deposit()`. One that arrived short is
+ *   topped up by what is missing.
+ * - **Then the stay**, for whatever is owed on it. A guest already checked in
+ *   still owes it, and pays before being checked out: a checked-out booking
+ *   takes no payment at all.
+ * - **Never while a transfer waits to be checked.** It may already be in the
+ *   bank, and a payment cannot be withdrawn once recorded — the booking's Money
+ *   card refuses the same way. A deposit is still taken while a transfer for the
+ *   *stay* waits, because cash for the deposit settles a different row.
+ * - **Nothing for an early arrival or a pass for another day**, which are the
+ *   office's, and nothing for a closed booking.
+ */
+export type GateCashDue =
+  /** The whole deposit. `promised` says the guest claimed to have transferred it. */
+  | { kind: 'deposit'; amount: Cents; promised: boolean }
+  /** What is missing off a deposit that arrived short. */
+  | { kind: 'deposit_shortfall'; amount: Cents }
+  /** What is still owed on the stay. */
+  | { kind: 'stay'; amount: Cents }
+  /** What is still owed on a day pass. */
+  | { kind: 'pass'; amount: Cents }
+
+/** What each kind of cash is called beside its figure. */
+export const GATE_CASH_LABELS: Readonly<Record<GateCashDue['kind'], string>> = {
+  deposit: 'Security deposit',
+  deposit_shortfall: 'Rest of the deposit',
+  stay: 'The stay',
+  pass: 'Day pass',
+}
+
+export function gateCashDueOf(facts: GateFacts): GateCashDue | null {
+  if (isTerminal(facts.status)) {
+    return null
+  }
+
+  const balance = balanceOf(facts.total, facts.paid)
+
+  if (facts.stream === 'day_pass') {
+    // A pass checked in the old way is in use, and one for another day is the
+    // office's.
+    if (facts.status === 'checked_in' || facts.arrival !== facts.today || facts.transferPending) {
+      return null
+    }
+
+    return canSettle(balance) ? { kind: 'pass', amount: balance.outstanding } : null
+  }
+
+  if (facts.status !== 'checked_in') {
+    // ISO dates compare as strings.
+    if (facts.arrival === null || facts.arrival > facts.today) {
+      return null
+    }
+
+    if (!depositSecuresBooking(facts.deposit)) {
+      return facts.deposit.collected
+        ? {
+            kind: 'deposit_shortfall',
+            amount: depositShortfallOf(facts.deposit.quoted, facts.deposit.held, true),
+          }
+        : { kind: 'deposit', amount: facts.deposit.quoted, promised: facts.deposit.promised }
+    }
+  }
+
+  if (facts.transferPending) {
+    return null
+  }
+
+  return canSettle(balance) ? { kind: 'stay', amount: balance.outstanding } : null
+}
+
+/**
+ * Whether the cash a guard confirmed is still the cash owed, asked again just
+ * before it is recorded.
+ *
+ * The guard against taking the same money twice. A guard who presses again
+ * after an answer was lost on one bar of signal finds it already recorded, and
+ * one looking at a card a colleague has since settled is told it moved. The
+ * database refuses a second deposit or an overshooting top-up on its own; it
+ * records a second stay payment happily once a reason is typed, which is why
+ * this is asked first rather than left to the amount rule.
+ */
+export function gateCashStalenessOf(
+  opened: { kind: GateCashDue['kind']; amount: Cents },
+  now: GateCashDue | null,
+): 'already_recorded' | 'changed' | null {
+  if (now === null) {
+    return 'already_recorded'
+  }
+
+  if (now.kind === opened.kind) {
+    if (now.amount === opened.amount) {
+      return null
+    }
+
+    return now.amount < opened.amount ? 'already_recorded' : 'changed'
+  }
+
+  // A deposit taken moves the card on to the stay, and nothing moves it back.
+  const tookTheDeposit =
+    (opened.kind === 'deposit' || opened.kind === 'deposit_shortfall') && now.kind === 'stay'
+
+  return tookTheDeposit ? 'already_recorded' : 'changed'
+}
+
 /** The two days a sentence may name. A `GateBooking` is one. */
 export interface GateDates {
   arrival: StayDate | null
@@ -217,11 +336,17 @@ export interface GateSentenceOptions {
   mayCheckIn: boolean
   /** Whether the reader may check a stay out (`booking.check_out`). */
   mayCheckOut: boolean
+  /**
+   * Whether the reader may take cash **and** this card has cash due. The
+   * sentence then says what is missing and leaves what to do to the money
+   * beside it, instead of sending the guard to the office.
+   */
+  takesCash: boolean
 }
 
 /**
- * The guard's sentence under the badge: what to do, and why, in plain words
- * and without a figure.
+ * The guard's sentence under the badge: what to do, and why, in plain words.
+ * Never a figure — what is owed is shown beside it, to whoever may take it.
  */
 export function gateVerdictSentence(
   verdict: GateVerdict,
@@ -234,7 +359,7 @@ export function gateVerdictSentence(
         return 'All in order. Call the office to check them in.'
       }
 
-      return checkInSentence(verdict.stay)
+      return checkInSentence(verdict.stay, options.takesCash)
     case 'leaving':
       return leavingSentence(verdict, dates.departure, options)
     case 'admit':
@@ -242,7 +367,7 @@ export function gateVerdictSentence(
     case 'admitted':
       return 'Admitted today. They may come and go.'
     case 'office':
-      return officeSentence(verdict.reason, dates.arrival)
+      return officeSentence(verdict.reason, dates.arrival, options.takesCash)
     case 'in_residence':
       return 'Already checked in.'
     case 'closed':
@@ -250,12 +375,14 @@ export function gateVerdictSentence(
   }
 }
 
-function checkInSentence(stay: StayMoney): string {
+function checkInSentence(stay: StayMoney, takesCash: boolean): string {
   switch (stay) {
     case 'paid':
       return 'Deposit is in and the stay is paid.'
     case 'owed':
-      return 'Deposit is in. The office takes payment for the stay.'
+      return takesCash
+        ? 'Deposit is in. The stay is not paid yet.'
+        : 'Deposit is in. The office takes payment for the stay.'
     case 'awaiting_transfer':
       return 'Deposit is in. A transfer for the stay is waiting to be checked.'
   }
@@ -280,32 +407,45 @@ function leavingSentence(
     case 'owed':
       // A checked-out booking takes no more payments, so this is the last
       // moment the stay's money can be recorded against it.
-      return `${due} The stay is not paid. Call the office before they leave.`
+      return options.takesCash
+        ? `${due} Take the stay payment before they leave. ${keys}`
+        : `${due} The stay is not paid. Call the office before they leave.`
     case 'awaiting_transfer':
       return `${due} ${keys} A transfer for the stay is still waiting to be checked.`
   }
 }
 
-function officeSentence(reason: OfficeReason, arrival: StayDate | null): string {
+function officeSentence(
+  reason: OfficeReason,
+  arrival: StayDate | null,
+  takesCash: boolean,
+): string {
+  // What is missing, and — unless the guard can take it himself — who to call.
+  const unlessTaken = (fact: string): string => (takesCash ? fact : `${fact} Call the office.`)
+
   switch (reason) {
     case 'not_confirmed':
       return 'This booking is not confirmed yet. Call the office.'
     case 'deposit_promised':
-      return 'The deposit transfer has not been checked. Call the office.'
+      return unlessTaken(
+        takesCash
+          ? 'They say the deposit was sent by bank transfer, and nobody has checked it.'
+          : 'The deposit transfer has not been checked.',
+      )
     case 'deposit_not_in':
-      return 'No deposit has been taken. Call the office.'
+      return unlessTaken('No deposit has been taken yet.')
     case 'deposit_short':
-      return 'Only part of the deposit is in. Call the office.'
+      return unlessTaken('Only part of the deposit is in.')
     case 'early':
       return arrival
         ? `Booked from ${formatStayDate(arrival)}. Call the office.`
         : 'This booking starts on a later day. Call the office.'
     case 'stay_unpaid':
-      return 'Nothing has been paid for this stay yet. Call the office.'
+      return unlessTaken('Nothing has been paid for this stay yet.')
     case 'transfer_pending':
       return 'A transfer for this booking is waiting to be checked. Call the office.'
     case 'pass_unpaid':
-      return 'Day pass is not paid yet. Call the office.'
+      return unlessTaken('Day pass is not paid yet.')
     case 'pass_other_day':
       return arrival
         ? `Day pass is for ${formatStayDate(arrival)}. Call the office.`
@@ -351,6 +491,12 @@ export function gateRefusalSentence(code: string, options: GateRefusalOptions = 
       return 'Day pass is not paid yet. Call the office.'
     case 'not_due_out':
       return 'They are not due to leave today. Call the office.'
+    case 'already_recorded':
+      return 'Already recorded. Refresh the list before taking any more money.'
+    case 'changed':
+      return 'What is owed changed a moment ago. Refresh the list and look again.'
+    case 'booking_closed':
+      return 'This booking is closed, so no money can be taken against it. Call the office.'
     case 'not_found':
       return 'That booking no longer exists. Refresh the list.'
     default:

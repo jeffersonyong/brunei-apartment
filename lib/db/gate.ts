@@ -1,6 +1,12 @@
 import type { BookingStatus } from '@/lib/domain/booking-state'
 import type { StayDate } from '@/lib/domain/dates'
-import { gateVerdictOf, type GateFacts, type GateVerdict } from '@/lib/domain/gate'
+import {
+  gateCashDueOf,
+  gateVerdictOf,
+  type GateCashDue,
+  type GateFacts,
+  type GateVerdict,
+} from '@/lib/domain/gate'
 import type { BookingStream } from '@/lib/domain/stream'
 import { unitNotReadyOf } from '@/lib/domain/unit-status'
 import { dataClient } from '@/lib/supabase/data'
@@ -12,7 +18,7 @@ import { readAllRows } from './rows'
 import { lastStayFactsOf, listUnitStates } from './units'
 
 /**
- * The gate's reads (capabilities D1–D5).
+ * The gate's reads (capabilities D1–D6).
  *
  * ── What reaches the phone, and what does not ─────────────────────────────
  *
@@ -21,8 +27,12 @@ import { lastStayFactsOf, listUnitStates } from './units'
  * makes every field on `GateBooking` something a phone left on the guardhouse
  * desk shows. So it carries what a guard needs to recognise a car and decide —
  * reference, name, unit, plates, headcount, whether the unit is ready — and a
- * verdict already decided on the server. **No phone number, email, access
- * token, price or deposit figure.**
+ * verdict already decided on the server. **No phone number, email or access
+ * token, and no price or deposit figure** — except the one figure a guard who
+ * takes cash has to see: what is owed now, and what it is for (`cash`, N54).
+ * Whether that is read is decided on the server for each request, from the
+ * reader's `payment.record_cash`, so a phone that may not take the money is
+ * never sent it.
  *
  * ── Which bookings are on the list ────────────────────────────────────────
  *
@@ -50,6 +60,11 @@ export interface GateReadOptions {
    * does; an action reading one booking again before it writes does not.
    */
   withReadiness: boolean
+  /**
+   * Work out the cash the gate may take (`gateCashDueOf`). Only for a reader
+   * who holds `payment.record_cash`: without it every row's `cash` is null.
+   */
+  withCash: boolean
 }
 
 export interface GateBooking {
@@ -76,6 +91,11 @@ export interface GateBooking {
    * not read.
    */
   unitNotReady: boolean
+  /**
+   * The cash the gate may take now, and what it is for. Null when nothing is
+   * due — and always null unless the read asked for it (`withCash`).
+   */
+  cash: GateCashDue | null
 }
 
 export interface GateList {
@@ -305,6 +325,7 @@ async function withVerdicts(
       noVehicle: row.no_vehicle,
       verdict: gateVerdictOf(facts),
       unitNotReady: isArrivingBy(row, today) && row.unit_id !== null && notReady.has(row.unit_id),
+      cash: options.withCash ? gateCashDueOf(facts) : null,
     }
   })
 }

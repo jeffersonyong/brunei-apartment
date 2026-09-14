@@ -3,27 +3,33 @@ import type { ComponentProps } from 'react'
 import { Badge } from '@/components/ui/badge'
 import type { GateBooking } from '@/lib/db/gate'
 import { formatStayDate, formatStayRange } from '@/lib/domain/dates'
-import { gateVerdictSentence, type GateVerdict } from '@/lib/domain/gate'
+import { GATE_CASH_LABELS, gateVerdictSentence, type GateVerdict } from '@/lib/domain/gate'
+import { formatCents } from '@/lib/domain/money'
 import { formatVehicles } from '@/lib/domain/vehicle'
 
 import { GateActionButton, type GateMove } from './gate-action-button'
+import { GateCashButton } from './gate-cash-button'
 
 /**
  * One booking at the barrier.
  *
  * Read top to bottom the way a guard reads it: whose booking and which door,
- * the plate to match against the car in front of them, what to do, and — only
- * when the card has a move its reader may make — the one full-width button at
- * the foot of the card (design.md §Field: the row's primary action, full
- * width, at the bottom). A card that needs the office has no button at all, so
- * there is nothing to press and then be refused by.
+ * the plate to match against the car in front of them, what is owed, what to
+ * do, and — only when the card has something its reader may do — full-width
+ * buttons at the foot of the card (design.md §Field: the row's primary action,
+ * full width, at the bottom). A card that needs the office has no button at
+ * all, so there is nothing to press and then be refused by.
  *
  * Which move a card offers is the verdict's; whether it is offered is the
- * reader's permission. The guard is the front desk (N54): he checks a stay in,
- * checks a leaving guest out when the keys come back, and admits a paid pass.
+ * reader's permission. The guard is the front desk (N54): he takes what a
+ * guest still owes, checks a stay in, checks a leaving guest out when the keys
+ * come back, and admits a paid pass. The money comes first on the card because
+ * it comes first at the barrier — the deposit before check-in, the stay before
+ * check-out.
  *
- * The badge is the answer at a glance and the sentence is the reason. No
- * figure appears in either.
+ * **A figure appears only for a reader who takes cash.** `booking.cash` is null
+ * for anyone else (lib/db/gate.ts), so a phone signed in without the permission
+ * carries no prices at all.
  */
 
 /** The gate moves the reader holds. */
@@ -34,6 +40,8 @@ export interface GateMoves {
   mayCheckOut: boolean
   /** `day_pass.admit`: a pass's card offers Admit. */
   mayAdmit: boolean
+  /** `payment.record_cash`: a card with money owed offers to take it. */
+  mayTakeCash: boolean
 }
 
 type BadgeTone = NonNullable<ComponentProps<typeof Badge>['tone']>
@@ -43,7 +51,10 @@ type BadgeTone = NonNullable<ComponentProps<typeof Badge>['tone']>
  * `BookingStatusBadge` keeps the booking's. `active` for a guest in residence
  * and a pass in use is design.md's checked-in pair.
  */
-function verdictBadge(verdict: GateVerdict): { label: string; tone: BadgeTone } {
+function verdictBadge(
+  verdict: GateVerdict,
+  takesCash: boolean,
+): { label: string; tone: BadgeTone } {
   switch (verdict.kind) {
     case 'check_in':
       return { label: 'Expected', tone: 'positive' }
@@ -56,7 +67,10 @@ function verdictBadge(verdict: GateVerdict): { label: string; tone: BadgeTone } 
     case 'admitted':
       return { label: 'Admitted', tone: 'active' }
     case 'office':
-      return { label: 'Call office', tone: 'warning' }
+      // Money the guard can take himself is not a call to the office.
+      return takesCash
+        ? { label: 'To pay', tone: 'warning' }
+        : { label: 'Call office', tone: 'warning' }
     case 'in_residence':
       return { label: 'Checked in', tone: 'active' }
     case 'closed':
@@ -86,10 +100,14 @@ function moveOf(verdict: GateVerdict, moves: GateMoves): GateMove | null {
  * still owes for the stay is the one move that closes a door on money: a
  * checked-out booking takes no payment, at the gate or at the office.
  */
-function noteOf(verdict: GateVerdict): string | undefined {
-  return verdict.kind === 'leaving' && verdict.stay === 'owed'
-    ? 'The stay is not paid. Once they are checked out, no payment can be recorded against this booking.'
-    : undefined
+function noteOf(verdict: GateVerdict, takesCash: boolean): string | undefined {
+  if (verdict.kind !== 'leaving' || verdict.stay !== 'owed') {
+    return undefined
+  }
+
+  return takesCash
+    ? 'The stay is not paid. Take the payment first — once they are checked out, it cannot be recorded against this booking.'
+    : 'The stay is not paid. Once they are checked out, no payment can be recorded against this booking.'
 }
 
 function placeOf(booking: GateBooking): string {
@@ -115,7 +133,8 @@ function datesOf(booking: GateBooking): string {
 }
 
 export function GateCard({ booking, moves }: { booking: GateBooking; moves: GateMoves }) {
-  const badge = verdictBadge(booking.verdict)
+  const cash = moves.mayTakeCash ? booking.cash : null
+  const badge = verdictBadge(booking.verdict, cash !== null)
   const move = moveOf(booking.verdict, moves)
   const place = placeOf(booking)
   const plates = formatVehicles(booking.vehicles)
@@ -132,8 +151,9 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
         <Badge tone={badge.tone}>{badge.label}</Badge>
       </div>
 
-      {/* A gray inset inside the card: the two facts a guard checks against
-          the car, labelled in the micro voice (design.md §Cards). */}
+      {/* A gray inset inside the card: the facts a guard checks against the
+          car, and what he is about to take, labelled in the micro voice
+          (design.md §Cards). */}
       <dl className="mt-md grid grid-cols-2 gap-md rounded-md bg-muted p-md">
         <div className="min-w-0">
           <dt className="micro-label text-muted-foreground">Vehicle</dt>
@@ -151,12 +171,24 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
           </dt>
           <dd className="mt-xxs text-body-sm text-foreground tabular-nums">{datesOf(booking)}</dd>
         </div>
+        {cash ? (
+          <div className="col-span-2 min-w-0">
+            <dt className="micro-label text-muted-foreground">To take</dt>
+            <dd className="mt-xxs text-body-md-strong text-foreground tabular-nums">
+              BND {formatCents(cash.amount)}{' '}
+              <span className="text-body-sm font-normal text-muted-foreground">
+                · {GATE_CASH_LABELS[cash.kind]}
+              </span>
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       <p className="mt-md text-body-sm text-foreground">
         {gateVerdictSentence(booking.verdict, booking, {
           mayCheckIn: moves.mayCheckIn,
           mayCheckOut: moves.mayCheckOut,
+          takesCash: cash !== null,
         })}
       </p>
 
@@ -168,6 +200,18 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
         </p>
       ) : null}
 
+      {cash ? (
+        <GateCashButton
+          bookingId={booking.id}
+          reference={booking.reference}
+          guestName={booking.guestName}
+          place={place}
+          due={cash}
+          isPrimary={move === null}
+          className="mt-md"
+        />
+      ) : null}
+
       {move ? (
         <GateActionButton
           move={move}
@@ -175,8 +219,8 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
           reference={booking.reference}
           guestName={booking.guestName}
           place={place}
-          note={noteOf(booking.verdict)}
-          className="mt-md"
+          note={noteOf(booking.verdict, cash !== null)}
+          className={cash ? 'mt-sm' : 'mt-md'}
         />
       ) : null}
     </article>

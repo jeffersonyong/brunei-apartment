@@ -70,6 +70,11 @@ export const FIELD_JOBS: readonly FieldJob[] = [
  * The permissions the field surface uses. Holding anything outside this set
  * — creating bookings, verifying money, configuration — means the portal is
  * where the person's work is.
+ *
+ * `payment.record_cash` is in it because the guard takes the cash a guest
+ * still owes at the gate (N54). It opens no screen on its own: somebody with
+ * nothing else to work in the field still lands on the portal, where cash is
+ * recorded against a booking.
  */
 const FIELD_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
   'booking.view',
@@ -77,6 +82,7 @@ const FIELD_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
   'booking.check_out',
   'day_pass.admit',
   'inspection.record',
+  'payment.record_cash',
   'unit.manage',
 ])
 

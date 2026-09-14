@@ -1,12 +1,19 @@
 import { describe, expect, test } from 'vitest'
 
 import { addDays, todayInBrunei } from '@/lib/domain/dates'
+import { gateCashStalenessOf } from '@/lib/domain/gate'
 import { bnd, type Cents } from '@/lib/domain/money'
 import { dataClient } from '@/lib/supabase/data'
 
-import { transitionBooking } from './bookings'
+import { createWalkInBooking, transitionBooking } from './bookings'
 import { admitDayPass } from './day-pass-admission'
-import { checkInBooking } from './deposits'
+import {
+  checkInBooking,
+  getDepositByBookingId,
+  recordBookingDeposit,
+  topUpBookingDeposit,
+  verifyDeposit,
+} from './deposits'
 import {
   getGateBooking,
   listGateBookings,
@@ -15,10 +22,11 @@ import {
   type GateReadOptions,
 } from './gate'
 import { recordInspection } from './inspections'
-import { recordCashPayment } from './payments'
+import { listPaymentsForBooking, recordCashPayment } from './payments'
 import { currentPropertyId } from './property'
 import { createPublicDayPassBooking, type CreatePublicDayPassInput } from './public-bookings'
 import {
+  bookingInput,
   givenBooking,
   givenBookingInState,
   givenCheckedInBooking,
@@ -30,17 +38,20 @@ import {
 import { markUnitReady } from './units'
 
 /**
- * The gate's reads against the real database (capabilities D1–D5), and its one
- * write of its own: admitting a day pass (N54). Checking in and out are the
- * office's own writers, exercised here only for what the gate reads back.
+ * The gate's reads against the real database (capabilities D1–D6), and its one
+ * write of its own: admitting a day pass (N54). Checking in and out, and the
+ * cash the gate takes, are the office's own writers, exercised here for what
+ * the gate reads back — beside the booking the office holds for the gate to
+ * collect (B17), whose writer refuses any day but today.
  *
  * "Today" is passed in rather than read from the clock for the reads, so they
  * describe a fixed day and cannot drift into a different answer at midnight in
  * Brunei. The day sits inside the public day-pass window the other public tests
- * use. Two things are the exception, because the database reads the clock
- * itself: `admit_day_pass()` checks today in the property's own timezone, and
- * `unit_state()` reports a unit's last stay only for the real today — so those
- * tests date their bookings by the same clock.
+ * use. Three things are the exception, because the database reads the clock
+ * itself: `admit_day_pass()` checks today in the property's own timezone,
+ * `unit_state()` reports a unit's last stay only for the real today, and
+ * `create_walk_in_booking()` holds a booking for the gate only when it starts
+ * today — so those tests date their bookings by the same clock.
  */
 
 const TODAY = '2026-10-05'
@@ -48,8 +59,14 @@ const YESTERDAY = addDays(TODAY, -1)
 const TOMORROW = addDays(TODAY, 1)
 const LATER = addDays(TODAY, 3)
 
-/** How the gate is read unless a test is about readiness. */
-const PLAIN: GateReadOptions = { withReadiness: false }
+/** How the gate is read unless a test is about readiness or cash. */
+const PLAIN: GateReadOptions = { withReadiness: false, withCash: false }
+
+/** Read as the guard's list is: with the units' turnovers. */
+const READINESS: GateReadOptions = { withReadiness: true, withCash: false }
+
+/** Read for a reader who holds `payment.record_cash`. */
+const CASH: GateReadOptions = { withReadiness: false, withCash: true }
 
 function references(rows: readonly GateBooking[]): string[] {
   return rows.map((row) => row.reference)
@@ -230,20 +247,24 @@ describe("today's list at the gate", () => {
     expect(references(list.expected)).not.toContain(today.data.reference)
   })
 
-  test('a row carries nothing a phone on the guardhouse desk should show', async () => {
+  test('a row carries nothing a phone on the guardhouse desk should show, and no figure unless the read was for a reader who may take the money', async () => {
     await givenBooking({
       unitRef: '3B-10',
       checkIn: TODAY,
       checkOut: LATER,
       guestPhone: '+673 812 3456',
+      // The stay is owed, so there is a figure a careless read could leak.
+      payStayNow: false,
     })
 
     const [row] = (await listGateBookings(TODAY, PLAIN)).expected
 
     expect(row).toBeDefined()
+    expect(row?.cash).toBeNull()
     expect(Object.keys(row ?? {}).sort()).toEqual(
       [
         'arrival',
+        'cash',
         'departure',
         'guestName',
         'headcount',
@@ -341,7 +362,7 @@ describe('whether the unit is ready for the guest arriving (N53)', () => {
       checkOut: addDays(today, 2),
     })
 
-    const asked = await listGateBookings(today, { withReadiness: true })
+    const asked = await listGateBookings(today, READINESS)
     const notAsked = await listGateBookings(today, PLAIN)
 
     expect(asked.expected.find((row) => row.id === arriving.id)?.unitNotReady).toBe(true)
@@ -370,7 +391,7 @@ describe('whether the unit is ready for the guest arriving (N53)', () => {
 
     expect(inspected.ok && ready.ok).toBe(true)
 
-    const row = (await listGateBookings(today, { withReadiness: true })).expected.find(
+    const row = (await listGateBookings(today, READINESS)).expected.find(
       (candidate) => candidate.id === arriving.id,
     )
 
@@ -389,7 +410,7 @@ describe('whether the unit is ready for the guest arriving (N53)', () => {
       checkOut: addDays(today, 2),
     })
 
-    const row = (await listGateBookings(today, { withReadiness: true })).expected.find(
+    const row = (await listGateBookings(today, READINESS)).expected.find(
       (candidate) => candidate.id === arriving.id,
     )
 
@@ -583,6 +604,305 @@ describe('admitting a day pass (N54)', () => {
   })
 })
 
+describe('the cash the gate may take (D6, N54)', () => {
+  test('is worked out only when the read asks for it, so a phone that may not take money is sent no figure', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-21',
+      checkIn: TODAY,
+      checkOut: LATER,
+      payStayNow: false,
+    })
+
+    // Three nights at the fixture's BND 200.
+    const owed = { kind: 'stay', amount: bnd(600) }
+
+    expect((await getGateBooking(booking.id, TODAY, PLAIN))?.cash).toBeNull()
+    expect((await getGateBooking(booking.id, TODAY, CASH))?.cash).toEqual(owed)
+    expect(
+      (await listGateBookings(TODAY, CASH)).expected.find((row) => row.id === booking.id)?.cash,
+    ).toEqual(owed)
+  })
+
+  test('a deposit promised by a transfer nobody checked is taken whole in cash, which fulfils the promise and confirms the booking', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-22',
+      checkIn: TODAY,
+      checkOut: LATER,
+      paymentMethod: 'bank_transfer',
+      payStayNow: false,
+    })
+
+    expect((await getGateBooking(booking.id, TODAY, CASH))?.cash).toEqual({
+      kind: 'deposit',
+      amount: bnd(100),
+      promised: true,
+    })
+
+    const taken = await recordBookingDeposit({
+      bookingId: booking.id,
+      method: 'cash',
+      actorId: null,
+    })
+
+    expect(taken.ok && taken.confirmedNow).toBe(true)
+
+    const after = await getGateBooking(booking.id, TODAY, CASH)
+
+    expect(after?.status).toBe('confirmed')
+    expect(after?.cash).toEqual({ kind: 'stay', amount: bnd(600) })
+    // A second press on the deposit's dialog is refused before anything is written.
+    expect(gateCashStalenessOf({ kind: 'deposit', amount: bnd(100) }, after?.cash ?? null)).toBe(
+      'already_recorded',
+    )
+  })
+
+  test('a deposit that arrived short is topped up by what is missing, and nothing more is offered for it', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-23',
+      checkIn: TODAY,
+      checkOut: LATER,
+      paymentMethod: 'bank_transfer',
+      payStayNow: false,
+    })
+    const deposit = await getDepositByBookingId(booking.id)
+
+    if (!deposit) throw new Error('Test setup expected a promised deposit.')
+
+    const verified = await verifyDeposit({
+      depositId: deposit.id,
+      observedAmount: bnd(60),
+      match: 'reference',
+      overrideReason: 'Test: the guest sent part of the deposit',
+      actorId: null,
+    })
+
+    expect(verified.ok).toBe(true)
+    expect((await getGateBooking(booking.id, TODAY, CASH))?.cash).toEqual({
+      kind: 'deposit_shortfall',
+      amount: bnd(40),
+    })
+
+    const topUp = { bookingId: booking.id, amount: bnd(40), method: 'cash', actorId: null } as const
+    const first = await topUpBookingDeposit(topUp)
+
+    expect(first.ok && first.confirmedNow).toBe(true)
+
+    const after = await getGateBooking(booking.id, TODAY, CASH)
+
+    expect(after?.cash).toEqual({ kind: 'stay', amount: bnd(600) })
+    expect(
+      gateCashStalenessOf({ kind: 'deposit_shortfall', amount: bnd(40) }, after?.cash ?? null),
+    ).toBe('already_recorded')
+    // And the database refuses a second top-up of a deposit that is whole.
+    expect((await topUpBookingDeposit(topUp)).ok).toBe(false)
+  })
+
+  test('the stay is taken once, and a second full payment is not taken without a reason — so the gate looks before it writes', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-24',
+      checkIn: TODAY,
+      checkOut: LATER,
+      payStayNow: false,
+    })
+    const payment = {
+      bookingId: booking.id,
+      amount: bnd(600),
+      amountOverrideReason: null,
+      actorId: null,
+    }
+
+    expect((await recordCashPayment(payment)).ok).toBe(true)
+
+    const after = await getGateBooking(booking.id, TODAY, CASH)
+
+    expect(after?.verdict).toEqual({ kind: 'check_in', stay: 'paid' })
+    expect(after?.cash).toBeNull()
+    expect(gateCashStalenessOf({ kind: 'stay', amount: bnd(600) }, after?.cash ?? null)).toBe(
+      'already_recorded',
+    )
+
+    // What a second press would meet without the gate's own check: the desk's
+    // writer asks only for a reason, and a reason is easy to type.
+    const again = await recordCashPayment(payment)
+
+    expect(!again.ok && again.error.code).toBe('reason_required')
+  })
+
+  test('nothing is taken for the stay while a transfer for it waits to be checked', async () => {
+    const { booking } = await givenConfirmedTransferBooking({
+      unitRef: '3B-25',
+      checkIn: TODAY,
+      checkOut: LATER,
+    })
+
+    const row = await getGateBooking(booking.id, TODAY, CASH)
+
+    expect(row?.verdict).toEqual({ kind: 'check_in', stay: 'awaiting_transfer' })
+    expect(row?.cash).toBeNull()
+  })
+
+  test('a guest checked in pays the stay before the keys come back, because a checked-out stay takes nothing', async () => {
+    const leaving = await givenCheckedInBooking({
+      unitRef: '3B-26',
+      checkIn: YESTERDAY,
+      checkOut: TODAY,
+      payStayNow: false,
+    })
+
+    expect((await getGateBooking(leaving.booking.id, TODAY, CASH))?.cash).toEqual({
+      kind: 'stay',
+      amount: bnd(200),
+    })
+    expect((await transitionBooking(leaving.booking.id, 'check_out', null)).ok).toBe(true)
+    expect((await getGateBooking(leaving.booking.id, TODAY, CASH))?.cash).toBeNull()
+
+    const late = await recordCashPayment({
+      bookingId: leaving.booking.id,
+      amount: bnd(200),
+      amountOverrideReason: null,
+      actorId: null,
+    })
+
+    expect(late.ok).toBe(false)
+  })
+
+  test('a day pass is paid at the gate, and then admitted', async () => {
+    const today = todayInBrunei()
+    const created = await dayPassOn(today, { guestPhone: '+673 710 0201' })
+
+    if (!created.ok) throw new Error(created.error.message)
+
+    const { bookingId } = created.data
+
+    expect((await getGateBooking(bookingId, today, CASH))?.cash).toEqual({
+      kind: 'pass',
+      amount: bnd(20),
+    })
+
+    const paid = await recordCashPayment({
+      bookingId,
+      amount: bnd(20),
+      amountOverrideReason: null,
+      actorId: null,
+    })
+
+    expect(paid.ok && paid.confirmedNow).toBe(true)
+
+    const row = await getGateBooking(bookingId, today, CASH)
+
+    expect(row?.verdict).toEqual({ kind: 'admit' })
+    expect(row?.cash).toBeNull()
+    expect(await admitDayPass({ bookingId, actorId: null })).toEqual({
+      ok: true,
+      status: 'completed',
+    })
+  })
+})
+
+describe('a booking held for the gate to collect (B17, N54)', () => {
+  const today = todayInBrunei()
+
+  test('holds the unit with nothing taken; the guard takes the deposit, then the stay, then checks the guest in', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-27',
+      checkIn: today,
+      checkOut: addDays(today, 2),
+      paymentMethod: 'at_gate',
+    })
+
+    expect(booking.status).toBe('held')
+    expect(await listPaymentsForBooking(booking.id)).toEqual([])
+    expect(await getDepositByBookingId(booking.id)).toBeNull()
+
+    // Held against nothing, it still holds: nobody else can take the unit.
+    const rival = await createWalkInBooking(
+      await bookingInput({ unitRef: '3B-27', checkIn: today, checkOut: addDays(today, 1) }),
+    )
+
+    expect(!rival.ok && rival.error.code).toBe('unit_unavailable')
+
+    const arriving = await getGateBooking(booking.id, today, CASH)
+
+    expect(arriving?.verdict).toEqual({ kind: 'office', reason: 'deposit_not_in' })
+    expect(arriving?.cash).toEqual({ kind: 'deposit', amount: bnd(100), promised: false })
+
+    const deposit = await recordBookingDeposit({
+      bookingId: booking.id,
+      method: 'cash',
+      actorId: null,
+    })
+
+    expect(deposit.ok && deposit.confirmedNow).toBe(true)
+
+    const secured = await getGateBooking(booking.id, today, CASH)
+
+    expect(secured?.status).toBe('confirmed')
+    expect(secured?.verdict).toEqual({ kind: 'check_in', stay: 'owed' })
+    // Two nights at the fixture's BND 200.
+    expect(secured?.cash).toEqual({ kind: 'stay', amount: bnd(400) })
+
+    const stay = await recordCashPayment({
+      bookingId: booking.id,
+      amount: bnd(400),
+      amountOverrideReason: null,
+      actorId: null,
+    })
+
+    expect(stay.ok).toBe(true)
+
+    const paid = await getGateBooking(booking.id, today, CASH)
+
+    expect(paid?.verdict).toEqual({ kind: 'check_in', stay: 'paid' })
+    expect(paid?.cash).toBeNull()
+    expect((await checkInBooking({ bookingId: booking.id, actorId: null })).ok).toBe(true)
+  })
+
+  test('its history says nothing was taken when it was made', async () => {
+    const booking = await givenBooking({
+      unitRef: '3B-28',
+      checkIn: today,
+      checkOut: addDays(today, 1),
+      paymentMethod: 'at_gate',
+    })
+
+    const { data, error } = await dataClient()
+      .from('audit_event')
+      .select('after')
+      .eq('entity_id', booking.id)
+      .eq('action', 'booking.created_walk_in')
+
+    expect(error).toBeNull()
+    expect(data?.[0]?.after).toMatchObject({
+      status: 'held',
+      payment_method: 'at_gate',
+      paying: 'nothing_now',
+    })
+  })
+
+  test('is refused for a stay that does not start today', async () => {
+    await expect(
+      givenBooking({
+        unitRef: '3B-29',
+        checkIn: addDays(today, 1),
+        checkOut: addDays(today, 3),
+        paymentMethod: 'at_gate',
+      }),
+    ).rejects.toThrow(/must start today/)
+  })
+
+  test('is refused beside a waived deposit', async () => {
+    await expect(
+      givenBooking({
+        unitRef: '3B-30',
+        checkIn: today,
+        checkOut: addDays(today, 1),
+        paymentMethod: 'at_gate',
+        depositWaiverReason: 'Test: extending a stay',
+      }),
+    ).rejects.toThrow(/cannot waive its deposit/)
+  })
+})
+
 describe('who works the gate (N11, N54)', () => {
   async function slugsHolding(permission: string): Promise<string[]> {
     const { data, error } = await dataClient()
@@ -619,5 +939,13 @@ describe('who works the gate (N11, N54)', () => {
   test('the guard still cannot make or edit a booking — he calls the office', async () => {
     expect(await slugsHolding('booking.create')).not.toContain('security')
     expect(await slugsHolding('booking.amend')).not.toContain('security')
+  })
+
+  test('the guard records the cash he is handed, as the office and Admin do', async () => {
+    expect(await slugsHolding('payment.record_cash')).toEqual(['admin', 'front-office', 'security'])
+  })
+
+  test('the guard never verifies a transfer', async () => {
+    expect(await slugsHolding('payment.verify')).not.toContain('security')
   })
 })
