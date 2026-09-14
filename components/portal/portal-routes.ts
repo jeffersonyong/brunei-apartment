@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   List,
   LockKeyhole,
+  MessageCircleQuestion,
   Plus,
   ScrollText,
   Settings,
@@ -117,6 +118,10 @@ export const navGroups = [
       // which whoever runs the Instagram account can hold without being an
       // administrator.
       { href: '/portal/website/photos', label: 'Website photos', icon: ImageIcon },
+      // Beside the photos, for the same reason they are here: what the public
+      // site says, kept current now and then. Its own permission,
+      // `faq.manage` (capability F9).
+      { href: '/portal/website/faqs', label: 'Website FAQs', icon: MessageCircleQuestion },
       { href: '/portal/settings/roles', label: 'Roles & staff', icon: Users },
       { href: '/portal/settings/audit', label: 'Audit log', icon: ScrollText },
       // No "Export data" item. The screen it pointed at listed seventeen table

@@ -1,5 +1,6 @@
 import { centsToDecimal, type Cents } from '@/lib/domain/money'
 import type { CsvValue } from '@/lib/domain/csv'
+import { FAQ_TOPICS } from '@/lib/domain/faq'
 import { isSiteImageSlot, slotLabel } from '@/lib/domain/site-image'
 import { dataClient } from '@/lib/supabase/data'
 
@@ -957,6 +958,62 @@ function placeName(row: SiteImageExportRow): string {
   return row.slot !== null && isSiteImageSlot(row.slot) ? slotLabel(row.slot) : ''
 }
 
+interface FaqExportRow {
+  topic: string
+  slug: string
+  question: string
+  answer: string
+  featured: boolean
+  sort_order: number
+  updated_by: string | null
+  updated_at: string
+}
+
+/**
+ * The FAQs on the site now (capability F9).
+ *
+ * Answers as staff wrote them, figures still in braces: the export is the
+ * record of what was written, and the figures are in the settings download.
+ * A removed FAQ is not a row — what it said is in the audit trail.
+ */
+const websiteFaqs: ExportTable = {
+  id: 'website-faqs',
+  label: 'Website FAQs',
+  description:
+    'Every question and answer on the public site, as written, and whether the front page shows it.',
+  count: () => countOf('faq'),
+  document: async () => {
+    const rows = await allOf<FaqExportRow>(
+      'faq',
+      'topic, slug, question, answer, featured, sort_order, updated_by, updated_at',
+      'sort_order',
+    )
+
+    return {
+      headers: [
+        'Topic',
+        'Question',
+        'Answer',
+        'On the front page',
+        'Order in topic',
+        'Address',
+        'Last changed by',
+        'Last changed',
+      ],
+      rows: rows.map((row) => [
+        FAQ_TOPICS.find((topic) => topic.id === row.topic)?.title ?? row.topic,
+        row.question,
+        row.answer,
+        yesNo(row.featured),
+        row.sort_order,
+        `/faq#${row.slug}`,
+        text(row.updated_by),
+        row.updated_at,
+      ]),
+    }
+  },
+}
+
 export const EXPORT_TABLES: readonly ExportTable[] = [
   bookings,
   bookingLines,
@@ -976,6 +1033,7 @@ export const EXPORT_TABLES: readonly ExportTable[] = [
   auditEvents,
   settings,
   websitePhotos,
+  websiteFaqs,
 ]
 
 export function exportTableById(id: string): ExportTable | undefined {
@@ -1028,6 +1086,8 @@ export const EXPORT_GROUPS = {
   cash: ['cash-bankings'],
   /** Website photos, downloaded beside the photographs themselves. */
   website: ['website-photos'],
+  /** Website FAQs, downloaded beside the questions themselves. */
+  faqs: ['website-faqs'],
 } as const satisfies Record<string, readonly string[]>
 
 export type ExportGroupName = keyof typeof EXPORT_GROUPS

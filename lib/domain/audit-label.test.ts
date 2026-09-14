@@ -306,6 +306,36 @@ describe('website photos (capability F7)', () => {
   })
 })
 
+describe('website FAQs', () => {
+  test('says what changed on a FAQ, one field at a time', () => {
+    expect(describeAuditEvent(event('faq.updated', { after: { name: 'Q', answer: 'A' } }))).toBe(
+      'Answer changed',
+    )
+    expect(
+      describeAuditEvent(event('faq.updated', { after: { name: 'Q', topic: 'paying' } })),
+    ).toBe('Moved to Paying')
+    expect(
+      describeAuditEvent(event('faq.updated', { after: { name: 'Q', featured: false } })),
+    ).toBe('Taken off the front page')
+    expect(
+      describeAuditEvent(
+        event('faq.updated', { after: { name: 'Q', question: 'R', answer: 'B' } }),
+      ),
+    ).toBe('FAQ edited — 2 fields changed')
+  })
+
+  test('says which way a FAQ moved', () => {
+    expect(describeAuditEvent(event('faq.moved', { after: { direction: 'down' } }))).toBe(
+      'Moved down',
+    )
+    expect(describeAuditEvent(event('faq.moved', { after: { direction: 'up' } }))).toBe('Moved up')
+  })
+
+  test('points a FAQ event at the screen that manages them', () => {
+    expect(auditSubjectHref('faq', 'How do we pay?')).toBe('/portal/website/faqs')
+  })
+})
+
 describe('the vocabulary against the migrations', () => {
   /**
    * Every `(action, entity_type)` pair the SQL writes.

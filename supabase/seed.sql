@@ -162,7 +162,7 @@ cross join unnest(array[
   'day_pass.admit', 'payment.verify', 'payment.record_cash', 'inspection.record',
   'charge.create', 'charge.waive', 'deposit.approve_release', 'deposit.waive',
   'unit.manage', 'tenancy.manage', 'config.manage', 'report.view',
-  'document.view_identity', 'site_image.manage'
+  'document.view_identity', 'site_image.manage', 'faq.manage'
 ]) as permission
 where r.slug = 'admin';
 
@@ -237,3 +237,11 @@ where r.slug = 'finance';
 -- migration that fills an existing database cannot disagree about them.
 
 select seed_property_settings(id) from property;
+
+-- ── The FAQs the public site starts with (capabilities A10 and F9) ─────────
+--
+-- Defined once in seed_faqs() (20260928000100) for the same reason: the
+-- migration fills a database that already has a property, and this fills one
+-- reset from nothing. Staff edit them from Admin → Website FAQs.
+
+select seed_faqs(id) from property;

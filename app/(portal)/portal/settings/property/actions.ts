@@ -104,14 +104,16 @@ const SETTINGS_PATH = '/portal/settings/property'
  * Everything a rate change is visible on.
  *
  * The two booking screens because they quote — the new-booking form shows the
- * rate per type and both price through `getPropertyConfig()` — and the portal
- * home because its tiles read the same inventory.
+ * rate per type and both price through `getPropertyConfig()` — the portal
+ * home because its tiles read the same inventory, and the landing page because
+ * its FAQs quote the rates and the deposit (capability F9).
  */
 function revalidatePricing(): void {
   revalidatePath(SETTINGS_PATH)
   revalidatePath('/portal/bookings/new')
   revalidatePath('/portal/bookings')
   revalidatePath('/portal')
+  revalidatePath('/')
 }
 
 export async function savePricingAction(
@@ -184,6 +186,8 @@ export async function saveDayPassAction(
   revalidatePath(SETTINGS_PATH)
   // The reports screen names where a day-pass capacity would come from.
   revalidatePath('/portal/reports')
+  // The landing page's FAQs quote the day-pass prices and facilities.
+  revalidatePath('/')
 
   return { status: 'done', changed: saved.changed }
 }
@@ -260,6 +264,8 @@ export async function saveBankAccountsAction(
   }
 
   revalidatePath(SETTINGS_PATH)
+  // The landing page's FAQs quote the accounts to transfer to.
+  revalidatePath('/')
 
   return { status: 'done', changed: saved.changed }
 }

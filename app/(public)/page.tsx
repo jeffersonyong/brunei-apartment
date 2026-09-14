@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 
+import { readFaqFacts } from '@/lib/db/faq-facts'
+import { listFaqs } from '@/lib/db/faqs'
 import { listCurrentSiteImages } from '@/lib/db/site-images'
+import { frontPageFaqs } from '@/lib/domain/faq'
 import {
   NO_LANDING_IMAGES,
   landingImagesFrom,
@@ -8,6 +11,8 @@ import {
 } from '@/lib/domain/landing-images'
 
 import { DayPassSection } from './_components/day-pass-section'
+import { faqItemFrom, type FaqItem } from './_components/faq-disclosures'
+import { FaqSection } from './_components/faq-section'
 import { FinalCta } from './_components/final-cta'
 import { Hero } from './_components/hero'
 import { HowBookingWorks } from './_components/how-booking-works'
@@ -32,11 +37,17 @@ export const metadata: Metadata = {
  * per request. The hour is the backstop for the one change that does not go
  * through those actions — a facility deleted in Property settings, which takes
  * its photograph with it.
+ *
+ * **The FAQs quote live figures, and are held to the same arrangement**
+ * (capability F9). Every FAQ action revalidates `/`, and so do the Property
+ * settings saves a figure comes from — rates, day-pass prices, facilities and
+ * bank accounts — so a changed deposit is on the front page on the next visit,
+ * not an hour later.
  */
 export const revalidate = 3600
 
 export default async function PublicHomePage() {
-  const images = await readLandingImages()
+  const [images, faqs] = await Promise.all([readLandingImages(), readLandingFaqs()])
 
   return (
     <>
@@ -46,9 +57,29 @@ export default async function PublicHomePage() {
       <LongTermSection />
       <HowBookingWorks />
       <SocialStrip images={images.feed} />
+      {faqs.length > 0 ? <FaqSection items={faqs} /> : null}
       <FinalCta />
     </>
   )
+}
+
+/**
+ * The FAQs staff put on the front page, or none.
+ *
+ * Read the way the photographs are, for the same reason: the front page never
+ * fails because a section could not be read. A failed read logs and leaves the
+ * section out, and the FAQs page is still one link away in the footer.
+ */
+async function readLandingFaqs(): Promise<FaqItem[]> {
+  try {
+    const [faqs, facts] = await Promise.all([listFaqs(), readFaqFacts()])
+
+    return frontPageFaqs(faqs).map((faq) => faqItemFrom(faq, facts))
+  } catch (error) {
+    console.error('The landing page could not read its FAQs; leaving the section out.', error)
+
+    return []
+  }
 }
 
 /**

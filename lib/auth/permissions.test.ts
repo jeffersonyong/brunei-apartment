@@ -43,9 +43,10 @@ describe('toPermissionSet', () => {
     const set = toPermissionSet([...PERMISSIONS])
 
     // 21 since `booking.check_in` and `booking.check_out` (20260924000100, N11);
-    // 22 since `day_pass.admit` (20260926000100, N54). Nothing since: the guard
-    // taking cash (20260927000200) is a grant of a string that already existed.
-    expect(set.size).toBe(22)
+    // 22 since `day_pass.admit` (20260926000100, N54) — the guard taking cash
+    // (20260927000200) granted a string that already existed; 23 since
+    // `faq.manage` (20260928000100, F9).
+    expect(set.size).toBe(23)
   })
 })
 
