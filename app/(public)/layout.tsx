@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 
+import { BookMenu } from './_components/book-menu'
 import { contact } from './_content/landing'
 
 /**
@@ -55,18 +57,27 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </ul>
           </div>
           <div className="flex items-center gap-sm">
-            <ThemeToggle />
-            {/* `tertiary`, and it has to be: design.md gives the customer
+            {/* From 640px only: below it the two actions need the width, and
+                the toggle moves to the footer. */}
+            <ThemeToggle className="mr-sm hidden sm:inline-flex" />
+            {/* Both actions at every width (Jeff, 14 September 2026): on a
+                phone they were hidden, which left a customer holding a phone
+                with no way to book from the header at all.
+
+                `tertiary`, and it has to be: design.md gives the customer
                 surface one lagoon fill per screen region, and that one is
-                "Book a stay". A returning guest looking for their own booking
-                is not competing with somebody about to make one, so this is
-                the hairline button beside it rather than a second solid. */}
-            <Button asChild variant="tertiary" className="ml-sm hidden sm:inline-flex">
-              <Link href="/find-booking">Find booking</Link>
+                Book. A returning guest looking for their own booking is not
+                competing with somebody about to make one, so this is the
+                hairline button beside it rather than a second solid. On the
+                narrowest phones it folds to its glyph, keeping its name for a
+                screen reader, so the pair never pushes the brand off the row. */}
+            <Button asChild variant="tertiary" className="px-md sm:px-lg">
+              <Link href="/find-booking">
+                <Search aria-hidden className="min-[360px]:hidden" />
+                <span className="max-[359px]:sr-only">Find booking</span>
+              </Link>
             </Button>
-            <Button asChild className="hidden sm:inline-flex">
-              <Link href="/stay">Book a stay</Link>
-            </Button>
+            <BookMenu />
           </div>
         </nav>
       </header>
@@ -126,7 +137,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <Link href="/find-booking">Find your booking</Link>
                 </li>
                 <li>
-                  <Link href="/faq">Questions</Link>
+                  <Link href="/faq">FAQs</Link>
                 </li>
                 <li>
                   <a href={contact.whatsappUrl} target="_blank" rel="noreferrer">
@@ -146,6 +157,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               </ul>
             </nav>
           </div>
+
+          {/* The header's toggle, on a phone, where the header has no room
+              for it beside the two actions. */}
+          <ThemeToggle className="mt-2xl sm:hidden" />
 
           <p className="mt-2xl text-caption opacity-70">
             © 2026 Palm Villa · Bandar Seri Begawan, Brunei Darussalam
