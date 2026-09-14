@@ -49,7 +49,7 @@ import { latestAccountingPackIdAction, rebuildAccountingPackAction } from './act
  * ── Why this waits, and how it knows to stop ──────────────────────────────
  *
  * A pack is assembled by `after()` once the verification's response is on its
- * way (schedule-accounting-pack.ts), so the clerk's screen re-renders a second
+ * way (app/schedule-accounting-pack.ts), so the clerk's screen re-renders a second
  * or two before the file exists. While the pack is behind the newest
  * verification, the panel polls for the pack's id and re-renders the route the
  * moment it changes — the same route render, with the file in it.

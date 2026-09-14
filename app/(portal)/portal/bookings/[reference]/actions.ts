@@ -14,9 +14,8 @@ import { centsFromInput } from '@/lib/domain/money'
 import type { PaymentMethod } from '@/lib/domain/payment'
 import { isNoteAudience, MAX_NOTE_LENGTH } from '@/lib/domain/note'
 
+import { scheduleAccountingPack } from '@/app/schedule-accounting-pack'
 import { scheduleBookingConfirmedEmail } from '@/app/schedule-booking-email'
-
-import { scheduleAccountingPack } from '../../schedule-accounting-pack'
 
 /**
  * Adding a note to a booking.
