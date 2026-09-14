@@ -75,8 +75,8 @@ values (
 --
 -- These figures are duplicated in lib/domain/config.ts, which is still the
 -- pricing engine's source of truth: that module also holds the values with no
--- database home yet — the TODO(client) fields covering prd.md §18 N2, N3, N4,
--- N6, N7, N8. Moving PropertyConfig wholesale into the database is a later
+-- database home yet — the TODO(client) fields covering prd.md §18 N2, N3 and
+-- N8. Moving PropertyConfig wholesale into the database is a later
 -- slice. Until then lib/db/inventory.test.ts asserts these rows and
 -- palmVillaConfig agree, so the two copies cannot drift silently.
 --

@@ -15,28 +15,26 @@ import type { Cents } from '../money'
  * commitment, not a preference.
  *
  * ────────────────────────────────────────────────────────────────────────────
- * TODO(client): prd.md §18 N4 is open and governs this file. N3's boundary is
- * settled; only its under-1 half remains.
+ * TODO(client): N3's under-1 half is the one question still open here.
  *
  *   N3 — [A] 2026-09-05: 1 to 11 is BND 5, 12 and above is BND 10. The bands in
  *        `config.dayPassAgeBands` already computed exactly that, so nothing here
  *        changed. Pricing under age 1 is still unstated and is free by
  *        inference.
  *
- *   N4 — bundles exist only for 2+1 and 2+2. Any other family shape has no
- *        stated rule. This module resolves that by allowing bundles to be
- *        applied REPEATEDLY and combined with per-person pricing for whoever is
- *        left over, then taking the cheapest arrangement. So 4 adults + 4
- *        children is priced as two 2+2 bundles (50) rather than per-person (60).
- *
- *        That is a faithful execution of the §8.1 [A] principle, but it IS an
- *        interpretation: the client may have meant a bundle to apply once per
- *        booking. Confirm with Jason before the day-pass flow ships — it is the
- *        difference between 50 and 60 on a common family shape.
+ *   N4 and C9 — [C] 14 September 2026, Jason: the two shapes above are the only
+ *        bundles, a booking takes as many as it fits, and anybody beyond them
+ *        pays per head — two adults and three children are 30, the 2+2 bundle
+ *        plus a child. This module already priced exactly that, by applying
+ *        bundles REPEATEDLY, pricing whoever is left over per person, and
+ *        taking the cheapest arrangement. At the seeded prices each bundle
+ *        takes 5 off the per-person price, so the cheapest arrangement is always
+ *        the one with the most bundles, which is his rule. One adult and two
+ *        children fit no bundle and pay per person (20); that follows from the
+ *        rule rather than being stated.
  * ────────────────────────────────────────────────────────────────────────────
  *
- * This module is shaped now so the config and line format are settled, but the
- * day-pass flow is Phase 2 and nothing on the walk-in stay path calls it.
+ * The public day-pass flow (capability A3) prices through this module.
  */
 
 /** Headcount per age-band id, e.g. `{ adult: 2, child: 3 }`. */
