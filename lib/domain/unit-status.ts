@@ -150,6 +150,29 @@ export function turnoverStageOf(
 }
 
 /**
+ * Whether a unit is not ready for the guest arriving in it: its last guest has
+ * not checked out, or has and the turnover is unfinished.
+ *
+ * Said on the gate's card and never enforced (N53). The guard hands over the
+ * keys (N54) with no units board beside him, so he is told, and whether an
+ * unready unit should stop a check-in is Jason's question. `turnoverStageOf`
+ * alone would call a unit whose last guest is still in it ready — that stay
+ * has no turnover yet — which is why the checked-in case is asked first.
+ */
+export function unitNotReadyOf(
+  lastStay: LastStayFacts | null,
+  turnoverTrackedSince: StayDate,
+): boolean {
+  if (lastStay === null) {
+    return false
+  }
+
+  return (
+    lastStay.status === 'checked_in' || turnoverStageOf(lastStay, turnoverTrackedSince) !== null
+  )
+}
+
+/**
  * What the unit is doing, first match wins.
  *
  * 1. **Out of service** outranks everything, including a guest, because it is a

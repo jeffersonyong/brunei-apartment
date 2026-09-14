@@ -4,6 +4,7 @@ import type { Permission } from '@/lib/auth/permissions'
 
 import {
   compareTurnovers,
+  isDueOut,
   nextGuestArrivesToday,
   TURNOVER_STEP_PERMISSION,
   TURNOVER_STEPS,
@@ -36,6 +37,20 @@ const stay = (overrides: Partial<LastStayFacts> = {}): LastStayFacts => ({
 const facts = (lastStay: LastStayFacts | null): TurnoverFacts => ({
   lastStay,
   turnoverTrackedSince: TRACKED,
+})
+
+describe('isDueOut', () => {
+  test('a guest whose last day is today is due out', () => {
+    expect(isDueOut(TODAY, TODAY)).toBe(true)
+  })
+
+  test('a guest whose last day has passed is still due out', () => {
+    expect(isDueOut('2026-09-24', TODAY)).toBe(true)
+  })
+
+  test('a guest whose stay runs past today is not — they may only be out for the day', () => {
+    expect(isDueOut('2026-09-26', TODAY)).toBe(false)
+  })
 })
 
 describe('turnoverStepOf', () => {

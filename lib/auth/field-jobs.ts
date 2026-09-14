@@ -9,19 +9,20 @@ import type { Permission } from '@/lib/auth/permissions'
  *
  * ── A job is a screen, reached by the permissions that act on it ──────────
  *
- * The gate answers to either of its two moves: `booking.check_in` or
- * `day_pass.admit` (N54, 26 September 2026). The desk checks stays in, because
- * the keys are taken to be at the counter; the guard admits day passes, which
- * never go near it. A guard also given check-in — after hours, say — still has
- * one screen, and each card offers only the move its reader holds. A screen
- * none of whose moves a person may make is a screen they have no reason to
- * open.
+ * The gate answers to either of its two arrival moves, `booking.check_in` or
+ * `day_pass.admit`. The guard holds both and checks guests out there too — he
+ * is the front desk, and takes the keys back (N54, answered by Jason on
+ * 14 September 2026) — but `booking.check_out` does not open the gate:
+ * Housekeeping holds it, and would otherwise sign in to a chooser of two
+ * screens instead of straight to the departures. Each card offers only the
+ * moves its reader holds. A screen none of whose moves a person may make is a
+ * screen they have no reason to open.
  *
  * The departures screen answers to `inspection.record` **[A]**. It has three
  * acts — seeing a guest off, inspecting, marking the unit ready — and the
- * inspection is the one only housekeeping does: the desk also checks guests
- * out and also manages units, and would otherwise be handed a cleaning list
- * it has nobody to work. Each card still checks its own step's permission
+ * inspection is the one only housekeeping does: the office and the guard also
+ * check guests out, and would otherwise be handed a cleaning list they have
+ * nobody to work. Each card still checks its own step's permission
  * (lib/domain/turnover.ts).
  *
  * ── Who lands where ───────────────────────────────────────────────────────
@@ -32,7 +33,7 @@ import type { Permission } from '@/lib/auth/permissions'
  * the cleaner to the departures — because the chooser in between would be a
  * second round trip on the guardhouse's one bar of signal, to show a menu of
  * one (Jeff, 13 September 2026). With two they land on the chooser at
- * `/field`. The desk, which also works the gate, lands on the portal as
+ * `/field`. The office, which can also work the gate, lands on the portal as
  * before: its day is the portal, and the gate is one link away.
  *
  * Decided from permissions rather than role slugs, because roles are data an
@@ -51,7 +52,9 @@ export interface FieldJob {
 export const FIELD_JOBS: readonly FieldJob[] = [
   {
     id: 'arrivals',
-    label: 'Arrivals',
+    // The Gate: it checks guests out as well as in (N54). The id and the route
+    // keep their first name, which guards have bookmarked.
+    label: 'Gate',
     href: '/field/arrivals',
     permissions: ['booking.check_in', 'day_pass.admit'],
   },
@@ -84,7 +87,9 @@ export type LandingPath = typeof PORTAL_HOME | typeof FIELD_HOME | FieldJob['hre
 
 /** The field screens this person can work, in display order. */
 export function fieldJobsFor(permissions: ReadonlySet<Permission>): readonly FieldJob[] {
-  return FIELD_JOBS.filter((job) => job.permissions.some((permission) => permissions.has(permission)))
+  return FIELD_JOBS.filter((job) =>
+    job.permissions.some((permission) => permissions.has(permission)),
+  )
 }
 
 /** Whether this person may open one field screen, named by its id. */

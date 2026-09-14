@@ -19,9 +19,9 @@ import { GateCard, type GateMoves } from './gate-card'
  * the keyboard asks the server for every open booking matching the term,
  * which is how the car whose booking starts tomorrow is found.
  *
- * Three sections, because the guard's three questions differ: a stay to send
- * on to the office for its keys, a day visitor to admit or turn away, and a
- * guest's car coming back.
+ * Four sections, because the guard's questions differ: a stay arriving for its
+ * keys, a guest leaving whose keys come back (N54), a day visitor to admit or
+ * turn away, and a guest's car coming back.
  */
 
 interface ArrivalsListProps {
@@ -32,7 +32,7 @@ interface ArrivalsListProps {
   found: readonly GateBooking[] | null
   /** "14:02" — when this list was read. */
   loadedAt: string
-  /** Which of the gate's two moves the reader holds. */
+  /** Which of the gate's moves the reader holds. */
   moves: GateMoves
 }
 
@@ -46,9 +46,10 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
     rows.filter((row) => matchesGateSearch(term, row))
 
   const expected = matching(list.expected)
+  const leaving = matching(list.leaving)
   const dayPasses = matching(list.dayPasses)
   const inResidence = matching(list.inResidence)
-  const onTodaysList = expected.length + dayPasses.length + inResidence.length
+  const onTodaysList = expected.length + leaving.length + dayPasses.length + inResidence.length
   // A server search belongs to the term it was run for. Once the guard types
   // something else, its results are about a different car.
   const searchIsCurrent = found !== null && typed === query
@@ -97,6 +98,16 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
         empty={typed.length > 0 ? null : 'Nobody else is due to arrive today.'}
       />
 
+      {list.leaving.length > 0 ? (
+        <GateSection
+          id="gate-leaving"
+          title="Leaving today"
+          rows={leaving}
+          moves={moves}
+          empty={null}
+        />
+      ) : null}
+
       {list.dayPasses.length > 0 ? (
         <GateSection
           id="gate-day-passes"
@@ -142,7 +153,7 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
           title={`All bookings matching “${query}”`}
           rows={found}
           moves={moves}
-          empty="No open booking matches. Send them to the office."
+          empty="No open booking matches. Call the office."
         />
       ) : null}
     </div>

@@ -4,9 +4,17 @@ import { addDays, todayInBrunei } from '@/lib/domain/dates'
 import { bnd, type Cents } from '@/lib/domain/money'
 import { dataClient } from '@/lib/supabase/data'
 
+import { transitionBooking } from './bookings'
 import { admitDayPass } from './day-pass-admission'
 import { checkInBooking } from './deposits'
-import { getGateBooking, listGateBookings, searchGateBookings, type GateBooking } from './gate'
+import {
+  getGateBooking,
+  listGateBookings,
+  searchGateBookings,
+  type GateBooking,
+  type GateReadOptions,
+} from './gate'
+import { recordInspection } from './inspections'
 import { recordCashPayment } from './payments'
 import { currentPropertyId } from './property'
 import { createPublicDayPassBooking, type CreatePublicDayPassInput } from './public-bookings'
@@ -14,19 +22,25 @@ import {
   givenBooking,
   givenBookingInState,
   givenCheckedInBooking,
+  givenConfirmedTransferBooking,
+  givenDepartedBooking,
   givenStaffAccount,
   givenTransferBooking,
 } from './test/factory'
+import { markUnitReady } from './units'
 
 /**
- * The gate's reads against the real database (capabilities D1, D2, D4), and
- * its one write of its own: admitting a day pass (N54).
+ * The gate's reads against the real database (capabilities D1–D5), and its one
+ * write of its own: admitting a day pass (N54). Checking in and out are the
+ * office's own writers, exercised here only for what the gate reads back.
  *
  * "Today" is passed in rather than read from the clock for the reads, so they
- * describe a fixed day and cannot drift into a different answer at midnight
- * in Brunei. The day sits inside the public day-pass window the other public
- * tests use. Admission is the exception: `admit_day_pass()` reads today in the
- * property's own timezone, so those tests date their passes by the same clock.
+ * describe a fixed day and cannot drift into a different answer at midnight in
+ * Brunei. The day sits inside the public day-pass window the other public tests
+ * use. Two things are the exception, because the database reads the clock
+ * itself: `admit_day_pass()` checks today in the property's own timezone, and
+ * `unit_state()` reports a unit's last stay only for the real today — so those
+ * tests date their bookings by the same clock.
  */
 
 const TODAY = '2026-10-05'
@@ -34,12 +48,17 @@ const YESTERDAY = addDays(TODAY, -1)
 const TOMORROW = addDays(TODAY, 1)
 const LATER = addDays(TODAY, 3)
 
+/** How the gate is read unless a test is about readiness. */
+const PLAIN: GateReadOptions = { withReadiness: false }
+
 function references(rows: readonly GateBooking[]): string[] {
   return rows.map((row) => row.reference)
 }
 
 function everyone(list: Awaited<ReturnType<typeof listGateBookings>>): string[] {
-  return [...list.expected, ...list.dayPasses, ...list.inResidence].map((row) => row.reference)
+  return [...list.expected, ...list.leaving, ...list.dayPasses, ...list.inResidence].map(
+    (row) => row.reference,
+  )
 }
 
 function dayPassOn(date: string, overrides: Partial<CreatePublicDayPassInput> = {}) {
@@ -103,10 +122,10 @@ describe("today's list at the gate", () => {
   test('a secured, paid stay arriving today is expected and may be checked in', async () => {
     const booking = await givenBooking({ unitRef: '3B-01', checkIn: TODAY, checkOut: LATER })
 
-    const list = await listGateBookings(TODAY)
+    const list = await listGateBookings(TODAY, PLAIN)
     const row = list.expected.find((candidate) => candidate.id === booking.id)
 
-    expect(row?.verdict).toEqual({ kind: 'check_in', stayOwed: false })
+    expect(row?.verdict).toEqual({ kind: 'check_in', stay: 'paid' })
     expect(row?.unitRef).toBe('3B-01')
     expect(row?.arrival).toBe(TODAY)
   })
@@ -119,69 +138,75 @@ describe("today's list at the gate", () => {
       payStayNow: false,
     })
 
-    const row = (await listGateBookings(TODAY)).expected.find((r) => r.id === booking.id)
+    const row = (await listGateBookings(TODAY, PLAIN)).expected.find((r) => r.id === booking.id)
 
-    expect(row?.verdict).toEqual({ kind: 'check_in', stayOwed: true })
+    expect(row?.verdict).toEqual({ kind: 'check_in', stay: 'owed' })
   })
 
-  test('a stay held on a transfer nobody has checked is listed, and sent to the office', async () => {
+  test('a stay held on a transfer nobody has checked is listed, and the guard is told the deposit is what is missing', async () => {
     const { booking } = await givenTransferBooking({
       unitRef: '3B-03',
       checkIn: TODAY,
       checkOut: LATER,
     })
 
-    const row = (await listGateBookings(TODAY)).expected.find((r) => r.id === booking.id)
+    const row = (await listGateBookings(TODAY, PLAIN)).expected.find((r) => r.id === booking.id)
 
-    expect(row?.verdict).toEqual({ kind: 'office', reason: 'not_confirmed' })
+    expect(row?.verdict).toEqual({ kind: 'office', reason: 'deposit_promised' })
+  })
+
+  test('a stay whose deposit is in, with its transfer for the stay still unchecked, is let in and says so', async () => {
+    const { booking } = await givenConfirmedTransferBooking({
+      unitRef: '3B-08',
+      checkIn: TODAY,
+      checkOut: LATER,
+    })
+
+    const row = (await listGateBookings(TODAY, PLAIN)).expected.find((r) => r.id === booking.id)
+
+    expect(row?.verdict).toEqual({ kind: 'check_in', stay: 'awaiting_transfer' })
   })
 
   test('a guest due yesterday who has not arrived is still expected', async () => {
     const booking = await givenBooking({ unitRef: '3B-04', checkIn: YESTERDAY, checkOut: LATER })
 
-    const row = (await listGateBookings(TODAY)).expected.find((r) => r.id === booking.id)
+    const row = (await listGateBookings(TODAY, PLAIN)).expected.find((r) => r.id === booking.id)
 
     expect(row?.verdict.kind).toBe('check_in')
   })
 
-  test('guests already checked in are listed apart — including one who has overstayed', async () => {
+  test('a guest checked in whose stay runs on is in residence, apart from arrivals and leavers', async () => {
     const staying = await givenCheckedInBooking({
       unitRef: '3B-05',
       checkIn: YESTERDAY,
       checkOut: TOMORROW,
     })
-    const overstaying = await givenCheckedInBooking({
-      unitRef: '3B-06',
-      checkIn: addDays(TODAY, -3),
-      checkOut: YESTERDAY,
-    })
 
-    const list = await listGateBookings(TODAY)
+    const list = await listGateBookings(TODAY, PLAIN)
+    const row = list.inResidence.find((candidate) => candidate.id === staying.booking.id)
 
-    expect(references(list.inResidence)).toEqual(
-      expect.arrayContaining([staying.booking.reference, overstaying.booking.reference]),
-    )
+    expect(row?.verdict).toEqual({ kind: 'in_residence' })
     expect(references(list.expected)).not.toContain(staying.booking.reference)
-    expect(list.inResidence.every((row) => row.verdict.kind === 'in_residence')).toBe(true)
+    expect(references(list.leaving)).not.toContain(staying.booking.reference)
   })
 
   test('a booking starting tomorrow is not expected today', async () => {
     const booking = await givenBooking({ unitRef: '3B-07', checkIn: TOMORROW, checkOut: LATER })
 
-    expect(everyone(await listGateBookings(TODAY))).not.toContain(booking.reference)
+    expect(everyone(await listGateBookings(TODAY, PLAIN))).not.toContain(booking.reference)
   })
 
   test('closed bookings never reach the gate', async () => {
     const cancelled = await givenBookingInState(
-      { unitRef: '3B-08', checkIn: TODAY, checkOut: LATER },
+      { unitRef: '3B-09', checkIn: TODAY, checkOut: LATER },
       ['pay_in_full', 'cancel'],
     )
     const noShow = await givenBookingInState(
-      { unitRef: '3B-09', checkIn: TODAY, checkOut: LATER },
+      { unitRef: '3B-11', checkIn: TODAY, checkOut: LATER },
       ['pay_in_full', 'mark_no_show'],
     )
 
-    const listed = everyone(await listGateBookings(TODAY))
+    const listed = everyone(await listGateBookings(TODAY, PLAIN))
 
     expect(listed).not.toContain(cancelled.reference)
     expect(listed).not.toContain(noShow.reference)
@@ -195,7 +220,7 @@ describe("today's list at the gate", () => {
 
     if (!today.ok || !otherDay.ok) return
 
-    const list = await listGateBookings(TODAY)
+    const list = await listGateBookings(TODAY, PLAIN)
     const row = list.dayPasses.find((candidate) => candidate.id === today.data.bookingId)
 
     expect(row?.verdict).toEqual({ kind: 'office', reason: 'pass_unpaid' })
@@ -213,7 +238,7 @@ describe("today's list at the gate", () => {
       guestPhone: '+673 812 3456',
     })
 
-    const [row] = (await listGateBookings(TODAY)).expected
+    const [row] = (await listGateBookings(TODAY, PLAIN)).expected
 
     expect(row).toBeDefined()
     expect(Object.keys(row ?? {}).sort()).toEqual(
@@ -227,12 +252,148 @@ describe("today's list at the gate", () => {
         'reference',
         'status',
         'stream',
+        'unitNotReady',
         'unitRef',
         'vehicles',
         'verdict',
       ].sort(),
     )
     expect(JSON.stringify(row)).not.toContain('812')
+  })
+})
+
+describe('guests leaving by the gate (N54: the keys come back to the guard)', () => {
+  test('a guest whose last day is today is leaving, and one who should have left yesterday is overdue', async () => {
+    const dueToday = await givenCheckedInBooking({
+      unitRef: '3B-05',
+      checkIn: YESTERDAY,
+      checkOut: TODAY,
+    })
+    const overdue = await givenCheckedInBooking({
+      unitRef: '3B-06',
+      checkIn: addDays(TODAY, -3),
+      checkOut: YESTERDAY,
+    })
+
+    const list = await listGateBookings(TODAY, PLAIN)
+    const byId = new Map(list.leaving.map((row) => [row.id, row]))
+
+    expect(byId.get(dueToday.booking.id)?.verdict).toEqual({
+      kind: 'leaving',
+      stay: 'paid',
+      overdue: false,
+    })
+    expect(byId.get(overdue.booking.id)?.verdict).toEqual({
+      kind: 'leaving',
+      stay: 'paid',
+      overdue: true,
+    })
+    expect(references(list.inResidence)).not.toContain(dueToday.booking.reference)
+  })
+
+  test('a guest leaving with the stay still owed is said to owe it', async () => {
+    const leaving = await givenCheckedInBooking({
+      unitRef: '3B-12',
+      checkIn: YESTERDAY,
+      checkOut: TODAY,
+      payStayNow: false,
+    })
+
+    const row = (await listGateBookings(TODAY, PLAIN)).leaving.find(
+      (candidate) => candidate.id === leaving.booking.id,
+    )
+
+    expect(row?.verdict).toEqual({ kind: 'leaving', stay: 'owed', overdue: false })
+  })
+
+  test('once checked out, a guest has left the list and reads as closed', async () => {
+    const leaving = await givenCheckedInBooking({
+      unitRef: '3B-13',
+      checkIn: YESTERDAY,
+      checkOut: TODAY,
+    })
+
+    expect(await transitionBooking(leaving.booking.id, 'check_out', null)).toEqual({
+      ok: true,
+      status: 'completed',
+    })
+
+    const row = await getGateBooking(leaving.booking.id, TODAY, PLAIN)
+
+    expect(row?.status).toBe('completed')
+    expect(row?.verdict).toEqual({ kind: 'closed' })
+    expect(everyone(await listGateBookings(TODAY, PLAIN))).not.toContain(leaving.booking.reference)
+  })
+})
+
+describe('whether the unit is ready for the guest arriving (N53)', () => {
+  const today = todayInBrunei()
+
+  test('a unit whose last guest left today and nobody has inspected is not ready — said only when asked', async () => {
+    await givenDepartedBooking({
+      unitRef: '3B-18',
+      checkIn: addDays(today, -2),
+      checkOut: today,
+    })
+    const arriving = await givenBooking({
+      unitRef: '3B-18',
+      checkIn: today,
+      checkOut: addDays(today, 2),
+    })
+
+    const asked = await listGateBookings(today, { withReadiness: true })
+    const notAsked = await listGateBookings(today, PLAIN)
+
+    expect(asked.expected.find((row) => row.id === arriving.id)?.unitNotReady).toBe(true)
+    expect(notAsked.expected.find((row) => row.id === arriving.id)?.unitNotReady).toBe(false)
+  })
+
+  test('once it is inspected and marked ready, the unit is ready', async () => {
+    const departed = await givenDepartedBooking({
+      unitRef: '3B-19',
+      checkIn: addDays(today, -2),
+      checkOut: today,
+    })
+    const arriving = await givenBooking({
+      unitRef: '3B-19',
+      checkIn: today,
+      checkOut: addDays(today, 2),
+    })
+
+    const inspected = await recordInspection({
+      bookingId: departed.booking.id,
+      outcome: 'clean',
+      notes: null,
+      actorId: null,
+    })
+    const ready = await markUnitReady({ bookingId: departed.booking.id, actorId: null })
+
+    expect(inspected.ok && ready.ok).toBe(true)
+
+    const row = (await listGateBookings(today, { withReadiness: true })).expected.find(
+      (candidate) => candidate.id === arriving.id,
+    )
+
+    expect(row?.unitNotReady).toBe(false)
+  })
+
+  test('a unit whose last guest has not checked out is not ready', async () => {
+    await givenCheckedInBooking({
+      unitRef: '3B-20',
+      checkIn: addDays(today, -2),
+      checkOut: today,
+    })
+    const arriving = await givenBooking({
+      unitRef: '3B-20',
+      checkIn: today,
+      checkOut: addDays(today, 2),
+    })
+
+    const row = (await listGateBookings(today, { withReadiness: true })).expected.find(
+      (candidate) => candidate.id === arriving.id,
+    )
+
+    expect(row?.unitNotReady).toBe(true)
   })
 })
 
@@ -246,12 +407,12 @@ describe('searching beyond today', () => {
     })
 
     for (const term of ['bab5678', 'BAB 5678', 'b-5678']) {
-      const found = await searchGateBookings(term, TODAY)
+      const found = await searchGateBookings(term, TODAY, PLAIN)
 
       expect(references(found), term).toContain(booking.reference)
     }
 
-    const [row] = await searchGateBookings('bab5678', TODAY)
+    const [row] = await searchGateBookings('bab5678', TODAY, PLAIN)
 
     expect(row?.verdict).toEqual({ kind: 'office', reason: 'early' })
   })
@@ -265,8 +426,10 @@ describe('searching beyond today', () => {
     })
     const digits = booking.reference.replace(/\D/g, '')
 
-    expect(references(await searchGateBookings('norhay', TODAY))).toContain(booking.reference)
-    expect(references(await searchGateBookings(digits, TODAY))).toContain(booking.reference)
+    expect(references(await searchGateBookings('norhay', TODAY, PLAIN))).toContain(
+      booking.reference,
+    )
+    expect(references(await searchGateBookings(digits, TODAY, PLAIN))).toContain(booking.reference)
   })
 
   test('never finds a closed booking', async () => {
@@ -275,7 +438,7 @@ describe('searching beyond today', () => {
       ['pay_in_full', 'cancel'],
     )
 
-    expect(references(await searchGateBookings('BAC1357', TODAY))).not.toContain(
+    expect(references(await searchGateBookings('BAC1357', TODAY, PLAIN))).not.toContain(
       cancelled.reference,
     )
   })
@@ -283,29 +446,29 @@ describe('searching beyond today', () => {
   test('takes a wildcard character literally', async () => {
     await givenBooking({ unitRef: '3B-14', checkIn: TOMORROW, checkOut: LATER })
 
-    expect(await searchGateBookings('%', TODAY)).toEqual([])
-    expect(await searchGateBookings('_', TODAY)).toEqual([])
+    expect(await searchGateBookings('%', TODAY, PLAIN)).toEqual([])
+    expect(await searchGateBookings('_', TODAY, PLAIN)).toEqual([])
   })
 
   test('an empty term searches nothing', async () => {
     await givenBooking({ unitRef: '3B-15', checkIn: TOMORROW, checkOut: LATER })
 
-    expect(await searchGateBookings('   ', TODAY)).toEqual([])
+    expect(await searchGateBookings('   ', TODAY, PLAIN)).toEqual([])
   })
 })
 
-describe('one booking, read fresh for the check-in', () => {
+describe('one booking, read fresh for the actions', () => {
   test('carries the same verdict the list does', async () => {
     const booking = await givenBooking({ unitRef: '3B-16', checkIn: TODAY, checkOut: LATER })
 
-    expect((await getGateBooking(booking.id, TODAY))?.verdict).toEqual({
+    expect((await getGateBooking(booking.id, TODAY, PLAIN))?.verdict).toEqual({
       kind: 'check_in',
-      stayOwed: false,
+      stay: 'paid',
     })
   })
 
   test('is null for a booking that does not exist', async () => {
-    expect(await getGateBooking('00000000-0000-4000-8000-000000000000', TODAY)).toBeNull()
+    expect(await getGateBooking('00000000-0000-4000-8000-000000000000', TODAY, PLAIN)).toBeNull()
   })
 })
 
@@ -320,7 +483,9 @@ describe('admitting a day pass (N54)', () => {
       status: 'completed',
     })
 
-    const row = (await listGateBookings(today)).dayPasses.find((r) => r.id === pass.bookingId)
+    const row = (await listGateBookings(today, PLAIN)).dayPasses.find(
+      (r) => r.id === pass.bookingId,
+    )
 
     expect(row?.status).toBe('completed')
     expect(row?.verdict).toEqual({ kind: 'admitted' })
@@ -350,7 +515,7 @@ describe('admitting a day pass (N54)', () => {
     const result = await admitDayPass({ bookingId: pass.bookingId, actorId: null })
 
     expect(!result.ok && result.error.code).toBe('not_today')
-    expect((await getGateBooking(pass.bookingId, today))?.status).toBe('confirmed')
+    expect((await getGateBooking(pass.bookingId, today, PLAIN))?.status).toBe('confirmed')
   })
 
   test('a pass confirmed with money still owed is refused', async () => {
@@ -418,7 +583,7 @@ describe('admitting a day pass (N54)', () => {
   })
 })
 
-describe('who works the gate, and who checks guests out (N11, N54)', () => {
+describe('who works the gate (N11, N54)', () => {
   async function slugsHolding(permission: string): Promise<string[]> {
     const { data, error } = await dataClient()
       .from('role_permission')
@@ -434,23 +599,25 @@ describe('who works the gate, and who checks guests out (N11, N54)', () => {
       .sort()
   }
 
-  test('the desk and Admin check stays in — not the guard, because the keys are at the counter', async () => {
-    expect(await slugsHolding('booking.check_in')).toEqual(['admin', 'front-office'])
+  test('the guard checks stays in, because he hands over the keys — and so do the office and Admin', async () => {
+    expect(await slugsHolding('booking.check_in')).toEqual(['admin', 'front-office', 'security'])
   })
 
-  test('the guard, the desk and Admin admit day passes', async () => {
-    expect(await slugsHolding('day_pass.admit')).toEqual(['admin', 'front-office', 'security'])
-  })
-
-  test('housekeeping, the desk and Admin check guests out', async () => {
+  test('the guard checks guests out when the keys come back, and housekeeping still can', async () => {
     expect(await slugsHolding('booking.check_out')).toEqual([
       'admin',
       'front-office',
       'housekeeping',
+      'security',
     ])
   })
 
-  test('the guard still cannot edit a booking', async () => {
+  test('the guard, the office and Admin admit day passes', async () => {
+    expect(await slugsHolding('day_pass.admit')).toEqual(['admin', 'front-office', 'security'])
+  })
+
+  test('the guard still cannot make or edit a booking — he calls the office', async () => {
+    expect(await slugsHolding('booking.create')).not.toContain('security')
     expect(await slugsHolding('booking.amend')).not.toContain('security')
   })
 })

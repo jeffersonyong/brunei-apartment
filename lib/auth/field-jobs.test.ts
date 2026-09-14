@@ -7,7 +7,7 @@ import { fieldJobsFor, landingPathFor, mayWork } from './field-jobs'
 const set = (...permissions: Permission[]): ReadonlySet<Permission> => new Set(permissions)
 
 /** The seeded roles (supabase/seed.sql), as the session reads them. */
-const SECURITY = set('booking.view', 'day_pass.admit')
+const SECURITY = set('booking.view', 'booking.check_in', 'booking.check_out', 'day_pass.admit')
 const HOUSEKEEPING = set('booking.view', 'booking.check_out', 'inspection.record', 'unit.manage')
 const FRONT_OFFICE = set(
   'booking.view',
@@ -24,9 +24,11 @@ describe('fieldJobsFor', () => {
     expect(fieldJobsFor(SECURITY).map((job) => job.id)).toEqual(['arrivals'])
   })
 
-  test('either of the gate’s two moves opens it — checking a stay in, or admitting a day pass', () => {
-    // N54: the desk checks stays in and the guard admits passes, and a guard
-    // granted check-in after hours still has one screen, not two.
+  test('the gate is called the Gate — it checks guests out as well as in (N54)', () => {
+    expect(fieldJobsFor(SECURITY).map((job) => job.label)).toEqual(['Gate'])
+  })
+
+  test('either of the gate’s two arrival moves opens it — checking a stay in, or admitting a day pass', () => {
     expect(fieldJobsFor(set('booking.view', 'booking.check_in')).map((job) => job.id)).toEqual([
       'arrivals',
     ])
@@ -35,16 +37,20 @@ describe('fieldJobsFor', () => {
     ])
   })
 
+  test('checking guests out alone opens no gate, so Housekeeping is not handed a second screen', () => {
+    expect(fieldJobsFor(set('booking.view', 'booking.check_out'))).toEqual([])
+  })
+
   test('viewing bookings alone opens no field screen', () => {
     expect(fieldJobsFor(set('booking.view'))).toEqual([])
   })
 
-  test('housekeeping works the departures', () => {
+  test('housekeeping works the departures, and only the departures', () => {
     expect(fieldJobsFor(HOUSEKEEPING).map((job) => job.id)).toEqual(['departures'])
   })
 
-  test('the desk can check guests out but is handed no cleaning list', () => {
-    // Departures answers to inspection.record, which the desk does not hold.
+  test('the office can check guests out but is handed no cleaning list', () => {
+    // Departures answers to inspection.record, which the office does not hold.
     expect(fieldJobsFor(FRONT_OFFICE).map((job) => job.id)).toEqual(['arrivals'])
   })
 
@@ -84,7 +90,7 @@ describe('landingPathFor', () => {
     expect(landingPathFor(both)).toBe('/field')
   })
 
-  test('the desk lands on the portal even though it works the gate', () => {
+  test('the office lands on the portal even though it works the gate', () => {
     expect(landingPathFor(FRONT_OFFICE)).toBe('/portal')
   })
 

@@ -7,6 +7,7 @@ import {
   turnoverStageOf,
   UNIT_STATUSES,
   UNIT_STATUS_LABELS,
+  unitNotReadyOf,
   type LastStayFacts,
   type OccupancyStatus,
   type UnitStateFacts,
@@ -237,6 +238,32 @@ describe('turnoverStageOf', () => {
     expect(turnoverStageOf(stay(), TRACKED)).toBe('awaiting_inspection')
     expect(turnoverStageOf(stay({ inspected: true }), TRACKED)).toBe('cleaning')
     expect(turnoverStageOf(stay({ inspected: true, ready: true }), TRACKED)).toBeNull()
+  })
+})
+
+describe('unitNotReadyOf — what the gate says before the keys are handed over (N53, N54)', () => {
+  test('a unit nobody has stayed in is ready', () => {
+    expect(unitNotReadyOf(null, TRACKED)).toBe(false)
+  })
+
+  test('a unit whose last guest has not checked out is not ready', () => {
+    expect(unitNotReadyOf(stay({ status: 'checked_in' }), TRACKED)).toBe(true)
+  })
+
+  test('a unit awaiting inspection is not ready', () => {
+    expect(unitNotReadyOf(stay(), TRACKED)).toBe(true)
+  })
+
+  test('a unit being cleaned is not ready', () => {
+    expect(unitNotReadyOf(stay({ inspected: true }), TRACKED)).toBe(true)
+  })
+
+  test('a unit marked ready is ready', () => {
+    expect(unitNotReadyOf(stay({ inspected: true, ready: true }), TRACKED)).toBe(false)
+  })
+
+  test('a stay that ended before turnovers were kept leaves the unit ready', () => {
+    expect(unitNotReadyOf(stay({ end: '2026-08-31' }), TRACKED)).toBe(false)
   })
 })
 

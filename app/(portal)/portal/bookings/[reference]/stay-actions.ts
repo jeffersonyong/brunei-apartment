@@ -30,17 +30,16 @@ import type { Cents } from '@/lib/domain/money'
  *
  * ── Two permissions, one per move ─────────────────────────────────────────
  *
- * `booking.check_in` and `booking.check_out`, answering open-questions.md N11
- * (13 September 2026, Jeff — [A] in prd.md §4 until Jason confirms). Both moves
- * used to borrow `booking.amend`, which kept Security from checking anyone in
- * and would have handed a guard the power to change a booking's dates had it
- * been granted to them. The guard checks guests in at the gate and the cleaner
- * checks them out when the unit is empty, so each of those roles holds its own
- * move and not the other; Front Office and Admin hold both, because the desk
- * is where a guest is standing when either happens there.
+ * `booking.check_in` and `booking.check_out` (open-questions.md N11). Both
+ * moves used to borrow `booking.amend`, which would have handed a guard the
+ * power to change a booking's dates had it been granted to them. The guard is
+ * the front desk and holds both, because he hands the keys over and takes them
+ * back (N54, answered by Jason on 14 September 2026). The cleaner checks a
+ * guest out when the unit is found empty, and Front Office and Admin hold both
+ * so the office can do either from here.
  *
- * The gate's own check-in is app/(field)/field/arrivals/actions.ts, under the
- * same permission and through the same `checkInBooking()`.
+ * The gate's own check-in and check-out are app/(field)/field/arrivals/actions.ts,
+ * under the same permissions and through the same writers.
  *
  * Check-out moves the booking and nothing else, so it is an ordinary
  * transition. The deposit stays held: what releases it is an inspection and an

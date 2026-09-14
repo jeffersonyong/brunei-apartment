@@ -496,6 +496,40 @@ export async function listPaymentsForBooking(bookingId: string): Promise<readonl
   return (data as unknown as PaymentSummaryRow[]).map(toPayment)
 }
 
+/**
+ * Which of these bookings have a bank transfer still waiting to be checked.
+ *
+ * One read for the whole gate list rather than one per booking. A pending
+ * transfer may already be in the bank, so the gate must not take the same money
+ * in cash on top of it — the booking's Money card refuses the same way, by
+ * hiding Record a payment while one waits (lib/domain/gate.ts).
+ */
+export async function listBookingIdsAwaitingTransfer(
+  bookingIds: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (bookingIds.length === 0) {
+    return new Set()
+  }
+
+  const propertyId = await currentPropertyId()
+  const db = dataClient()
+
+  const rows = await readAllRows<{ booking_id: string }>(
+    (from, to) =>
+      db
+        .from('payment')
+        .select('booking_id')
+        .eq('property_id', propertyId)
+        .eq('status', 'pending_verification')
+        .in('booking_id', [...bookingIds])
+        .order('id')
+        .range(from, to),
+    { label: 'the transfers awaiting verification' },
+  )
+
+  return new Set(rows.map((row) => row.booking_id))
+}
+
 export async function getPaymentById(id: string): Promise<Payment | null> {
   const propertyId = await currentPropertyId()
 

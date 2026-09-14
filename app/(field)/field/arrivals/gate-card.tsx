@@ -9,28 +9,29 @@ import { formatVehicles } from '@/lib/domain/vehicle'
 import { GateActionButton, type GateMove } from './gate-action-button'
 
 /**
- * One car at the barrier.
+ * One booking at the barrier.
  *
  * Read top to bottom the way a guard reads it: whose booking and which door,
  * the plate to match against the car in front of them, what to do, and — only
  * when the card has a move its reader may make — the one full-width button at
  * the foot of the card (design.md §Field: the row's primary action, full
- * width, at the bottom). A card that sends a guest to the office has no button
- * at all, so there is nothing to press and then be refused by.
+ * width, at the bottom). A card that needs the office has no button at all, so
+ * there is nothing to press and then be refused by.
  *
  * Which move a card offers is the verdict's; whether it is offered is the
- * reader's permission (N54). The guard admits a paid pass and sees a stay as
- * Expected, with the office named as where it is checked in; the desk, on the
- * same screen, gets the Check in button as well.
+ * reader's permission. The guard is the front desk (N54): he checks a stay in,
+ * checks a leaving guest out when the keys come back, and admits a paid pass.
  *
  * The badge is the answer at a glance and the sentence is the reason. No
- * figure appears anywhere: the guard does not take money (prd.md §12).
+ * figure appears in either.
  */
 
-/** The two gate moves the reader holds. */
+/** The gate moves the reader holds. */
 export interface GateMoves {
   /** `booking.check_in`: a stay's card offers Check in. */
   mayCheckIn: boolean
+  /** `booking.check_out`: a leaving guest's card offers Check out. */
+  mayCheckOut: boolean
   /** `day_pass.admit`: a pass's card offers Admit. */
   mayAdmit: boolean
 }
@@ -46,12 +47,16 @@ function verdictBadge(verdict: GateVerdict): { label: string; tone: BadgeTone } 
   switch (verdict.kind) {
     case 'check_in':
       return { label: 'Expected', tone: 'positive' }
+    case 'leaving':
+      return verdict.overdue
+        ? { label: 'Overdue', tone: 'warning' }
+        : { label: 'Due out', tone: 'active' }
     case 'admit':
       return { label: 'Paid', tone: 'positive' }
     case 'admitted':
       return { label: 'Admitted', tone: 'active' }
     case 'office':
-      return { label: 'Send to office', tone: 'warning' }
+      return { label: 'Call office', tone: 'warning' }
     case 'in_residence':
       return { label: 'Checked in', tone: 'active' }
     case 'closed':
@@ -65,11 +70,26 @@ function moveOf(verdict: GateVerdict, moves: GateMoves): GateMove | null {
     return 'check_in'
   }
 
+  if (verdict.kind === 'leaving' && moves.mayCheckOut) {
+    return 'check_out'
+  }
+
   if (verdict.kind === 'admit' && moves.mayAdmit) {
     return 'admit'
   }
 
   return null
+}
+
+/**
+ * What the dialog says before the guard confirms. Checking out a guest who
+ * still owes for the stay is the one move that closes a door on money: a
+ * checked-out booking takes no payment, at the gate or at the office.
+ */
+function noteOf(verdict: GateVerdict): string | undefined {
+  return verdict.kind === 'leaving' && verdict.stay === 'owed'
+    ? 'The stay is not paid. Once they are checked out, no payment can be recorded against this booking.'
+    : undefined
 }
 
 function placeOf(booking: GateBooking): string {
@@ -134,8 +154,19 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
       </dl>
 
       <p className="mt-md text-body-sm text-foreground">
-        {gateVerdictSentence(booking.verdict, booking.arrival, { mayCheckIn: moves.mayCheckIn })}
+        {gateVerdictSentence(booking.verdict, booking, {
+          mayCheckIn: moves.mayCheckIn,
+          mayCheckOut: moves.mayCheckOut,
+        })}
       </p>
+
+      {/* Information, never a gate (N53): the guard hands over the keys with no
+          units board beside him, so he is told. */}
+      {booking.unitNotReady && booking.unitRef ? (
+        <p className="mt-xxs text-body-sm text-muted-foreground">
+          {booking.unitRef} is not marked ready yet.
+        </p>
+      ) : null}
 
       {move ? (
         <GateActionButton
@@ -144,6 +175,7 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
           reference={booking.reference}
           guestName={booking.guestName}
           place={place}
+          note={noteOf(booking.verdict)}
           className="mt-md"
         />
       ) : null}
