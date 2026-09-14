@@ -170,7 +170,11 @@ A forwarded or leaked QR code grants nothing by itself — check-in authority co
 > - **It is built for a weak signal, not for none.** The day's list loads once and the guard's typing filters it on the phone. Whether the guardhouse has signal at all is still a question for you (register C3).
 > - **The QR code waits for the email domain.** A code sent before Palm Villa's domain exists would have to be sent again when it does, so D3's scan arrives with A8's QR half once the domain is chosen. Plate and name lookup — which the requirements always expected to carry most of the traffic — ships now.
 >
-> **Decided on your behalf, for you to confirm:** a guest who turns up before their booking starts is sent to the office rather than let in; nobody is checked out at the gate before their last day; a unit not marked ready is said on the guard's card and never stops the check-in; a day pass is admitted only when it is paid in full and on its own date; and a booking left for the gate to collect must start today and cannot waive its deposit. **Four questions for you, none blocking** (register N55–N58): whether a guest gets the BND 100 back from the guard when they hand in the keys, where the guard's cash goes before it reaches the office, what should happen when a guest leaves still owing for the stay, and whether booking a guest for the gate should stay today-only.
+> **Decided on your behalf, for you to confirm:** a guest who turns up before their booking starts is sent to the office rather than let in; nobody is checked out at the gate before their last day; a unit not marked ready is said on the guard's card and never stops the check-in; a day pass is admitted only when it is paid in full and on its own date; and a booking left for the gate to collect must start today and cannot waive its deposit. **Four details now settled** (register N55–N58):
+> - The guard never hands back the BND 100; the office processes it in the few days after check-out.
+> - How the guard's cash reaches the office is left to your own arrangements.
+> - A guest who leaves still owing for the stay is dealt with by the office, outside the system, because nothing can be recorded against a booking once it is checked out.
+> - Booking a guest for the gate to collect stays today-only.
 
 ---
 
