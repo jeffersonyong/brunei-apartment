@@ -9,9 +9,8 @@ import { getPaymentById, verifyPayment } from '@/lib/db/payments'
 import { centsFromInput } from '@/lib/domain/money'
 import { checkMatchReason, checkPaymentMatch, matchKindFor } from '@/lib/domain/payment-match'
 
+import { scheduleAccountingPack } from '@/app/schedule-accounting-pack'
 import { scheduleBookingConfirmedEmail } from '@/app/schedule-booking-email'
-
-import { scheduleAccountingPack } from '../schedule-accounting-pack'
 
 /**
  * Confirming a payment, and confirming a promised deposit (capabilities B5,

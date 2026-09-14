@@ -6,13 +6,16 @@ import { assembleAccountingPack } from '@/lib/db/packs'
  * Assembles a booking's accounting pack once the response is on its way
  * (capability G5, architecture.md §8.2).
  *
- * Called by the four actions that verify money against a booking, after their
- * write has succeeded. `after()` runs the work once the action has responded,
- * so the clerk's click returns as fast as it did before and the pack exists a
- * second or two later. It has to be called inside the request — which is why
- * this lives in the app layer and not in lib/db — and from a module that is
- * NOT `'use server'`, since such a module may export only async actions and
- * this is a synchronous scheduling call.
+ * Called by the actions that verify or record money against a booking — the
+ * portal's, and the cash the gate takes (N54) — after their write has
+ * succeeded. `after()` runs the work once the action has responded, so the
+ * clerk's click returns as fast as it did before and the pack exists a second
+ * or two later. It has to be called inside the request — which is why this
+ * lives in the app layer and not in lib/db — and from a module that is NOT
+ * `'use server'`, since such a module may export only async actions and this
+ * is a synchronous scheduling call. It sits at the app root rather than under
+ * a route group because the portal and the field screens both call it, as
+ * `schedule-booking-email.ts` does.
  *
  * ── A failure here is not a failure ───────────────────────────────────────
  *

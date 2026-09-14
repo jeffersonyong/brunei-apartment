@@ -312,6 +312,52 @@ begin
     end if;
   end loop;
 
+  -- The guest the guard takes the money from (capability B17, N54). Booked by
+  -- the office while the guest waits at the barrier, with nothing taken, in
+  -- the unit whose last guest left this morning and nobody has inspected — so
+  -- the guard's card says the unit is not marked ready, then offers the
+  -- deposit, then the stay, then Check in, each through the real function as
+  -- he presses it. `held` is `draft --hold-->`, the pair the state machine
+  -- derives for a booking paid at the gate.
+  select u.id, ut.base_rate_cents
+  into strict v_unit_id, v_rate_cents
+  from unit u
+  join unit_type ut on ut.id = u.unit_type_id
+  where u.property_id = v_property_id and u.ref = '3B-04';
+
+  v_total_cents := v_rate_cents * 2;
+
+  select create_walk_in_booking(
+    v_property_id,
+    v_unit_id,
+    'held',
+    v_today,
+    v_today + 2,
+    'DEMO — Pays at the gate',
+    '+673 000 0011',
+    array['BAM 7788'],
+    false,
+    2,
+    0,
+    v_total_cents,
+    10000,
+    jsonb_build_array(jsonb_build_object(
+      'type', 'accommodation',
+      'description', '2 nights',
+      'quantity', 2,
+      'unitPrice', v_rate_cents,
+      'amount', v_total_cents
+    )),
+    'at_gate',
+    false,
+    p_actor_id => null
+  ) into v_result;
+
+  if v_result ->> 'ok' <> 'true' then
+    raise exception 'Demo seed could not hold "DEMO — Pays at the gate" in 3B-04: %',
+      v_result ->> 'error';
+  end if;
+
   -- ── A day pass for today (capability A3; the gate's list, N40) ─────────
   --
   -- Sold the way a customer buys one — through the public writer, held until

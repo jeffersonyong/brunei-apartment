@@ -294,6 +294,9 @@ export function SecurityDepositInset({
           held={deposit.amount}
           shortfall={deposit.shortfall}
           securesBooking={securesBooking}
+          // Saying a transfer landed is reading the bank, which is what
+          // verifying a deposit already needs (N54).
+          mayRecordTransfer={mayVerifyDeposit}
         />
       ) : null}
 

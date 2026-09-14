@@ -53,6 +53,20 @@ export interface TurnoverFacts {
   turnoverTrackedSince: StayDate
 }
 
+/**
+ * Whether a guest still checked in is due out: their last day as booked is
+ * today, or has passed.
+ *
+ * The one rule both field screens use for "this guest is leaving" — the
+ * cleaner's "Guest has left" and the gate's check-out (N54) — so the two
+ * phones cannot disagree about who is going. A guest whose stay runs past
+ * today is, as far as either can tell, only out for the day.
+ */
+export function isDueOut(lastDay: StayDate, today: StayDate): boolean {
+  // ISO dates compare correctly as strings.
+  return lastDay <= today
+}
+
 /** The step this unit is waiting on today, or null when it is waiting on nobody. */
 export function turnoverStepOf(facts: TurnoverFacts, today: StayDate): TurnoverStep | null {
   const { lastStay } = facts
@@ -62,8 +76,7 @@ export function turnoverStepOf(facts: TurnoverFacts, today: StayDate): TurnoverS
   }
 
   if (lastStay.status === 'checked_in') {
-    // ISO dates compare correctly as strings.
-    return lastStay.end <= today ? 'guest_leaving' : null
+    return isDueOut(lastStay.end, today) ? 'guest_leaving' : null
   }
 
   switch (turnoverStageOf(lastStay, facts.turnoverTrackedSince)) {

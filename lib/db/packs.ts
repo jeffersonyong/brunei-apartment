@@ -34,7 +34,7 @@ import { listStaff, type StaffAccount } from './staff'
  * ── Two triggers, one function ────────────────────────────────────────────
  *
  * A verified payment calls this once the response is on its way (see
- * app/(portal)/portal/schedule-accounting-pack.ts), so the pack exists within
+ * app/schedule-accounting-pack.ts), so the pack exists within
  * seconds of the money being confirmed. The nightly job calls it for every
  * booking the due-list names, which is both the rebuild after a change and
  * the retry after a failure. Neither trigger has to be reliable on its own.

@@ -261,7 +261,12 @@ export default async function DepositPage({ params, searchParams }: PageProps) {
       {/* Only where somebody owes something. A card explaining that nothing is
           owed is a card about nothing. */}
       {owedState !== 'none' ? (
-        <OwedSection deposit={deposit} settled={owedState === 'settled'} maySettle={maySettle} />
+        <OwedSection
+          deposit={deposit}
+          settled={owedState === 'settled'}
+          maySettle={maySettle}
+          mayRecordTransfer={hasPermission(actor.permissions, 'payment.verify')}
+        />
       ) : null}
 
       <SectionCard id="history-heading" title="History" className="mt-xl">
@@ -616,10 +621,13 @@ function OwedSection({
   deposit,
   settled,
   maySettle,
+  mayRecordTransfer,
 }: {
   deposit: Deposit
   settled: boolean
   maySettle: boolean
+  /** `payment.verify`: whether settling may say the money came by transfer (N54). */
+  mayRecordTransfer: boolean
 }) {
   return (
     <SectionCard
@@ -649,6 +657,7 @@ function OwedSection({
             depositId={deposit.id}
             reference={deposit.bookingReference}
             owed={deposit.figures.owed}
+            mayRecordTransfer={mayRecordTransfer}
           />
         ) : null}
       </div>

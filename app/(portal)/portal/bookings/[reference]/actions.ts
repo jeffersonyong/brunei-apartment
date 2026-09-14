@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { permissionsToRecordMoneySeen } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require-permission'
 import { getBookingById } from '@/lib/db/bookings'
 import { listDocumentsForBooking } from '@/lib/db/documents'
@@ -14,9 +15,8 @@ import { centsFromInput } from '@/lib/domain/money'
 import type { PaymentMethod } from '@/lib/domain/payment'
 import { isNoteAudience, MAX_NOTE_LENGTH } from '@/lib/domain/note'
 
+import { scheduleAccountingPack } from '@/app/schedule-accounting-pack'
 import { scheduleBookingConfirmedEmail } from '@/app/schedule-booking-email'
-
-import { scheduleAccountingPack } from '../../schedule-accounting-pack'
 
 /**
  * Adding a note to a booking.
@@ -389,6 +389,14 @@ export async function topUpDepositAction(
       message: 'Check the highlighted fields.',
       fieldErrors: { amount: parsed.error.issues[0]?.message ?? 'Enter the amount that arrived.' },
     }
+  }
+
+  // A top-up by transfer writes the money down as already in the bank, so it
+  // also takes `payment.verify` (N54): the guard, who records cash, never says
+  // a transfer landed. Thrown rather than answered — the dialog offers the
+  // transfer only to a reader who holds it.
+  for (const permission of permissionsToRecordMoneySeen(parsed.data.method)) {
+    await requirePermission(permission)
   }
 
   const booking = await getBookingById(parsed.data.bookingId)

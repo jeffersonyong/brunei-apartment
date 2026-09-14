@@ -8,9 +8,8 @@ import { getBookingByReference } from '@/lib/db/bookings'
 import { recordCashPayment } from '@/lib/db/payments'
 import { centsFromInput } from '@/lib/domain/money'
 
+import { scheduleAccountingPack } from '@/app/schedule-accounting-pack'
 import { scheduleBookingConfirmedEmail } from '@/app/schedule-booking-email'
-
-import { scheduleAccountingPack } from '../../schedule-accounting-pack'
 
 /**
  * Recording cash collected against a booking (capability B7).

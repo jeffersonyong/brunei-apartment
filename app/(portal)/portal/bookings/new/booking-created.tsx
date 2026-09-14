@@ -28,6 +28,10 @@ import type { WalkInBookingState } from './actions'
  * deposit moved from the door to the booking (capability B16) — what was
  * actually taken, in two lines that keep the two kinds of money apart.
  *
+ * A booking paid at the gate takes nothing (N54), so it says **held** rather
+ * than confirmed, and names the gate beside both figures: the guard is who
+ * takes them.
+ *
  * It stays in memory rather than becoming a route with the reference in the
  * URL. A `?created=PV-5428` screen could be reached for any booking by typing
  * one, and would then say "Booking confirmed" about a stay that ended weeks
@@ -40,6 +44,7 @@ type CreatedBooking = NonNullable<WalkInBookingState['created']>
 
 export function BookingCreated({ created }: { created: CreatedBooking }) {
   const isTransfer = created.paymentMethod === 'bank_transfer'
+  const atGate = created.paymentMethod === 'at_gate'
   const takesDeposit = !created.depositWaived && created.securityDeposit > 0
   const nights = nightsBetween(created.checkIn, created.checkOut)
 
@@ -49,16 +54,22 @@ export function BookingCreated({ created }: { created: CreatedBooking }) {
     // screen reads as a page that failed to fill itself.
     <div className="max-w-[560px]">
       <PageHeader
-        title={isTransfer ? 'Booking created' : 'Booking confirmed'}
+        title={atGate ? 'Booking held' : isTransfer ? 'Booking created' : 'Booking confirmed'}
         meta={
-          <Badge tone={isTransfer ? 'warning' : 'positive'}>
-            {isTransfer ? 'Awaiting payment' : 'Confirmed'}
-          </Badge>
+          atGate ? (
+            <Badge tone="neutral">Held</Badge>
+          ) : (
+            <Badge tone={isTransfer ? 'warning' : 'positive'}>
+              {isTransfer ? 'Awaiting payment' : 'Confirmed'}
+            </Badge>
+          )
         }
         description={
-          isTransfer
-            ? 'The guest quotes this reference in the transfer description — it is how the payment is matched, and what they quote at the gate.'
-            : 'Give the guest this reference — it is what they quote at the gate.'
+          atGate
+            ? 'Give the guest this reference. The guard takes the deposit and the stay when they reach the gate.'
+            : isTransfer
+              ? 'The guest quotes this reference in the transfer description — it is how the payment is matched, and what they quote at the gate.'
+              : 'Give the guest this reference — it is what they quote at the gate.'
         }
       />
 
@@ -79,10 +90,10 @@ export function BookingCreated({ created }: { created: CreatedBooking }) {
           />
           {/* Two kinds of money, two lines, each saying what happened to it.
               The deposit secures the booking and sits on its own ledger; the
-              stay is revenue and is either paid, awaited, or settled on
-              arrival. A waived booking says so rather than printing 0.00 — a
-              zero on a receipt invites a second look at money that was never
-              due. */}
+              stay is revenue and is either paid, awaited, settled on arrival,
+              or taken at the gate. A waived booking says so rather than
+              printing 0.00 — a zero on a receipt invites a second look at money
+              that was never due. */}
           <ReceiptRow
             label="Security deposit"
             value={
@@ -90,23 +101,35 @@ export function BookingCreated({ created }: { created: CreatedBooking }) {
                 ? 'Waived'
                 : !takesDeposit
                   ? 'None quoted'
-                  : isTransfer
-                    ? `BND ${formatCents(created.securityDeposit)} awaited`
-                    : `BND ${formatCents(created.securityDeposit)} held`
+                  : atGate
+                    ? `BND ${formatCents(created.securityDeposit)} at the gate`
+                    : isTransfer
+                      ? `BND ${formatCents(created.securityDeposit)} awaited`
+                      : `BND ${formatCents(created.securityDeposit)} held`
             }
           />
           <ReceiptRow
             label="Stay"
             value={
-              created.payStayNow
-                ? isTransfer
-                  ? `BND ${formatCents(created.total)} awaited`
-                  : `BND ${formatCents(created.total)} paid`
-                : `BND ${formatCents(created.total)} on arrival`
+              atGate
+                ? `BND ${formatCents(created.total)} at the gate`
+                : created.payStayNow
+                  ? isTransfer
+                    ? `BND ${formatCents(created.total)} awaited`
+                    : `BND ${formatCents(created.total)} paid`
+                  : `BND ${formatCents(created.total)} on arrival`
             }
           />
         </dl>
       </Card>
+
+      {atGate ? (
+        <Notice placement="page" className="mt-md">
+          The unit is held with nothing taken. The booking is on the guard&rsquo;s list now, and it
+          is confirmed once he takes the deposit. If the guest never arrives, cancel it — nothing
+          releases the unit on its own.
+        </Notice>
+      ) : null}
 
       {isTransfer ? (
         <Notice placement="page" className="mt-md">
@@ -118,7 +141,7 @@ export function BookingCreated({ created }: { created: CreatedBooking }) {
         </Notice>
       ) : null}
 
-      {!created.payStayNow ? (
+      {!created.payStayNow && !atGate ? (
         <Notice placement="page" className="mt-md">
           The BND {formatCents(created.total)} for the stay is settled when the guest arrives.
           Record it from the booking then — the deposit is already in.

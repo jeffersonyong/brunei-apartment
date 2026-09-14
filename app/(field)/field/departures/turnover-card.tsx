@@ -138,7 +138,7 @@ function whereItHasGot(turnover: Turnover, today: StayDate): string {
 function whoTakesTheStep(turnover: Turnover): string {
   switch (turnover.step) {
     case 'guest_leaving':
-      return 'The office checks this guest out.'
+      return 'The gate or the office checks this guest out.'
     case 'inspect':
       return 'Somebody who records inspections looks at this unit next.'
     case 'mark_ready':

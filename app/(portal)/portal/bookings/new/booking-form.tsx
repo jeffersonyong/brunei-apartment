@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { WalkInPayment } from '@/lib/db/bookings'
 import type { Unit } from '@/lib/db/inventory'
 import type { PropertyConfig } from '@/lib/domain/config'
 import { formatStayDate } from '@/lib/domain/dates'
@@ -60,6 +61,13 @@ type PayingNow = 'deposit_only' | 'everything'
  * function used in both places, and the submitted total is never trusted (see
  * actions.ts).
  *
+ * **"At the gate" is the third method** (capability B17, N54). The guard is the
+ * front desk and cannot make a booking, so for the guest waiting at the barrier
+ * he calls the office, which books them here with nothing taken; the guard
+ * takes the deposit and then the stay on his phone. It is offered only for a
+ * stay starting today and never beside a waiver — the rules actions.ts and
+ * `create_walk_in_booking()` enforce.
+ *
  * The fields are this component's; the *outcome* is not. `NewBookingScreen`
  * owns the action state and swaps the whole screen for the confirmation when
  * a booking is created, because that outcome stands down the server-rendered
@@ -87,6 +95,11 @@ interface BookingFormProps {
   config: PropertyConfig
   checkIn: string
   checkOut: string
+  /**
+   * Today in Brunei. "At the gate" is offered only for a stay starting today:
+   * it holds a unit with nothing taken, for the guest waiting at the barrier.
+   */
+  today: string
   /** Whether this staff member holds `booking.discount`. Decided by the page. */
   mayDiscount: boolean
   /** Whether this staff member holds `deposit.waive`. Decided by the page. */
@@ -109,6 +122,7 @@ export function BookingForm({
   config,
   checkIn,
   checkOut,
+  today,
   mayDiscount,
   mayWaiveDeposit,
   state,
@@ -134,9 +148,10 @@ export function BookingForm({
   // form opens asking for one rather than offering the exception first.
   const [vehicles, setVehicles] = useState<readonly string[]>([''])
   const [noVehicle, setNoVehicle] = useState(false)
-  // prd.md §10.1 [C]'s two methods. Cash confirms outright; a transfer is paid
-  // but not yet seen, so it goes to the verification queue (§10.3).
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
+  // prd.md §10.1 [C]'s two methods, and the gate. Cash confirms outright; a
+  // transfer is paid but not yet seen, so it goes to the verification queue
+  // (§10.3); at the gate nothing is taken until the guest arrives (N54).
+  const [paymentChoice, setPaymentChoice] = useState<WalkInPayment>('cash')
   // The customer's two answers (prd.md §10.3), given here on their behalf.
   // **Paying in full is the default**, which reverses what this form opened on
   // until 19 September 2026 and closes a gap rather than opening one: the
@@ -169,6 +184,17 @@ export function BookingForm({
    */
   const selectedUnit = visibleUnits.find((unit) => unit.id === unitId) ?? visibleUnits[0]
   const totalGuests = chargeableGuests + exemptGuests
+
+  /*
+   * The same construction for the gate. "At the gate" is only for a stay
+   * starting today and never with a waiver, so a clerk who picks it and then
+   * ticks the waiver is back on cash in that same render — the button never
+   * offers what the server would refuse.
+   */
+  const mayPayAtGate = checkIn === today && !waiver.waived
+  const paymentMethod: WalkInPayment =
+    paymentChoice === 'at_gate' && !mayPayAtGate ? 'cash' : paymentChoice
+  const atGate = paymentMethod === 'at_gate'
 
   const quote = selectedUnit
     ? priceStay(
@@ -364,55 +390,58 @@ export function BookingForm({
               "just the deposit, or the whole stay?", then "cash or transfer?".
               The figures sit in the options so the amount being taken is
               chosen rather than worked out; the button on the price card
-              repeats it. */}
+              repeats it. At the gate there is no first question: nothing is
+              taken now. */}
           <div className="flex flex-wrap items-start gap-lg">
             {/* Each column is its control's width, so the caption wraps under
                 the thing it explains rather than stretching the column and
                 pushing the second question onto its own row. */}
-            <div className="grid w-[300px] gap-sm">
-              <Label htmlFor="payingNow">Paying now</Label>
-              {takesDeposit ? (
-                <Select
-                  name="payingNow"
-                  value={payingNow}
-                  onValueChange={(next) => setPayingNow(next as PayingNow)}
-                >
-                  <SelectTrigger id="payingNow" className="w-[300px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="deposit_only">
-                      Deposit only — BND {formatCents(depositNow)}
-                    </SelectItem>
-                    <SelectItem value="everything">
-                      Deposit and the stay — BND{' '}
-                      {formatCents(depositNow + (quote?.ok ? quote.total : 0))}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <>
-                  <input type="hidden" name="payingNow" value="everything" />
-                  <p id="payingNow" className="text-body-sm text-foreground tabular-nums">
-                    The stay — BND {formatCents(quote?.ok ? quote.total : 0)}
-                  </p>
-                </>
-              )}
-              <p className="text-caption text-muted-foreground">
-                {takesDeposit
-                  ? payingNow === 'deposit_only'
-                    ? 'The deposit secures the booking. The stay is settled when the guest arrives.'
-                    : 'Nothing is owed on arrival.'
-                  : 'No deposit is quoted, so the stay is what secures the booking.'}
-              </p>
-            </div>
+            {atGate ? null : (
+              <div className="grid w-[300px] gap-sm">
+                <Label htmlFor="payingNow">Paying now</Label>
+                {takesDeposit ? (
+                  <Select
+                    name="payingNow"
+                    value={payingNow}
+                    onValueChange={(next) => setPayingNow(next as PayingNow)}
+                  >
+                    <SelectTrigger id="payingNow" className="w-[300px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deposit_only">
+                        Deposit only — BND {formatCents(depositNow)}
+                      </SelectItem>
+                      <SelectItem value="everything">
+                        Deposit and the stay — BND{' '}
+                        {formatCents(depositNow + (quote?.ok ? quote.total : 0))}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <>
+                    <input type="hidden" name="payingNow" value="everything" />
+                    <p id="payingNow" className="text-body-sm text-foreground tabular-nums">
+                      The stay — BND {formatCents(quote?.ok ? quote.total : 0)}
+                    </p>
+                  </>
+                )}
+                <p className="text-caption text-muted-foreground">
+                  {takesDeposit
+                    ? payingNow === 'deposit_only'
+                      ? 'The deposit secures the booking. The stay is settled when the guest arrives.'
+                      : 'Nothing is owed on arrival.'
+                    : 'No deposit is quoted, so the stay is what secures the booking.'}
+                </p>
+              </div>
+            )}
 
             <div className="grid w-[280px] gap-sm">
               <Label htmlFor="paymentMethod">Method</Label>
               <Select
                 name="paymentMethod"
                 value={paymentMethod}
-                onValueChange={(next) => setPaymentMethod(next as PaymentMethod)}
+                onValueChange={(next) => setPaymentChoice(next as WalkInPayment)}
               >
                 <SelectTrigger id="paymentMethod" className="w-[280px]">
                   <SelectValue />
@@ -420,13 +449,19 @@ export function BookingForm({
                 <SelectContent>
                   <SelectItem value="cash">Cash — counted now</SelectItem>
                   <SelectItem value="bank_transfer">Bank transfer — verify later</SelectItem>
+                  {mayPayAtGate ? (
+                    <SelectItem value="at_gate">At the gate — the guard takes it</SelectItem>
+                  ) : null}
                 </SelectContent>
               </Select>
               <p className="text-caption text-muted-foreground">
-                {paymentMethod === 'cash'
-                  ? 'Counted now, so the booking is confirmed as soon as it is created.'
-                  : 'The guest quotes the booking reference in the transfer. The booking waits in the verification queue until someone checks the bank.'}
+                {atGate
+                  ? 'For the guest waiting at the gate. Nothing is taken now: the guard takes it when they drive up.'
+                  : paymentMethod === 'cash'
+                    ? 'Counted now, so the booking is confirmed as soon as it is created.'
+                    : 'The guest quotes the booking reference in the transfer. The booking waits in the verification queue until someone checks the bank.'}
               </p>
+              <FieldError message={state.fieldErrors?.paymentMethod} />
             </div>
           </div>
         </FormSection>
@@ -463,7 +498,7 @@ export function BookingForm({
           <>
             <QuoteLines lines={quote.lines} total={quote.total} />
 
-            {takesDeposit ? (
+            {takesDeposit && paymentMethod !== 'at_gate' ? (
               <TakingNow
                 stay={paysStay ? quote.total : 0}
                 deposit={depositNow}
@@ -475,10 +510,18 @@ export function BookingForm({
             {/* Only where it still says something. A waived booking needs the
                 sentence because the absence of a deposit is the fact; a
                 deposit-only booking needs the one about arrival, which is the
-                money the block above deliberately does not show. Everything
-                else is now itemised rather than described, so the paragraph
-                that used to restate the figures has gone. */}
-            {waiver.waived ? (
+                money the block above deliberately does not show; a booking left
+                for the gate needs the one about who takes it. Everything else is
+                now itemised rather than described, so the paragraph that used
+                to restate the figures has gone. */}
+            {atGate ? (
+              <Notice className="mt-lg">
+                Nothing is taken now. When the guest arrives, the guard takes{' '}
+                {takesDeposit ? `the BND ${formatCents(depositNow)} deposit, then ` : ''}the BND{' '}
+                {formatCents(quote.total)} for the stay
+                {takesDeposit ? ' — and the deposit is what confirms the booking' : ''}.
+              </Notice>
+            ) : waiver.waived ? (
               <Notice className="mt-lg">
                 No security deposit — waived on this booking. Nothing is held against the stay, so
                 the stay is paid now.
@@ -511,9 +554,11 @@ export function BookingForm({
                 // would be the button stating a price rather than admitting it
                 // has none.
                 'Create booking'
-              : paymentMethod === 'cash'
-                ? `Create & take BND ${formatCents(payingTotal)}`
-                : `Create & await BND ${formatCents(payingTotal)}`}
+              : atGate
+                ? 'Create & hold for the gate'
+                : paymentMethod === 'cash'
+                  ? `Create & take BND ${formatCents(payingTotal)}`
+                  : `Create & await BND ${formatCents(payingTotal)}`}
         </Button>
 
         {state.status === 'error' ? <FieldError className="mt-md" message={state.message} /> : null}

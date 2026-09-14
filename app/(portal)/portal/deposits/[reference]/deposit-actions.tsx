@@ -225,6 +225,12 @@ interface SettleOwedProps {
   depositId: string
   reference: string
   owed: number
+  /**
+   * Whether this reader may say a transfer arrived — `payment.verify`. Without
+   * it the money can only have been counted in cash, so that is the only
+   * choice offered (`permissionsToRecordMoneySeen`).
+   */
+  mayRecordTransfer: boolean
 }
 
 /**
@@ -238,7 +244,8 @@ interface SettleOwedProps {
  *
  * Gated by `payment.record_cash`: it is not a booking payment, appears in no
  * cash-up and settles no booking, but whoever may say money arrived is the
- * same person either way (prd.md §10.7).
+ * same person either way (prd.md §10.7). A transfer recorded as arrived also
+ * takes `payment.verify`, because it is a claim about the bank (N54).
  */
 export function SettleOwed(props: SettleOwedProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -258,6 +265,7 @@ function SettleOwedDialog({
   depositId,
   reference,
   owed,
+  mayRecordTransfer,
   onClose,
 }: SettleOwedProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(settleOwedAction, initialState)
@@ -282,8 +290,9 @@ function SettleOwedDialog({
         <DialogHeader>
           <DialogTitle>Record BND {formatCents(owed)} as settled?</DialogTitle>
           <DialogDescription>
-            The guest has paid what they owed beyond their deposit. This is recorded against the
-            deposit with your name and the time.
+            The guest has paid what they owed beyond their deposit
+            {mayRecordTransfer ? '' : ', in cash'}. This is recorded against the deposit with your
+            name and the time.
           </DialogDescription>
         </DialogHeader>
 
@@ -292,19 +301,26 @@ function SettleOwedDialog({
           <input type="hidden" name="reference" value={reference} />
           <input type="hidden" name="method" value={method} />
 
-          <div className="grid gap-sm">
-            <Label htmlFor="settle-method">How did it arrive?</Label>
-            <Select value={method} onValueChange={(value) => setMethod(value as PaymentMethod)}>
-              <SelectTrigger id="settle-method">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">{PAYMENT_METHOD_LABELS.cash}</SelectItem>
-                <SelectItem value="bank_transfer">{PAYMENT_METHOD_LABELS.bank_transfer}</SelectItem>
-              </SelectContent>
-            </Select>
-            {state.fieldErrors?.method ? <FieldError message={state.fieldErrors.method} /> : null}
-          </div>
+          {/* Asked only of a reader who may say a transfer arrived. Anyone else
+              can only have counted the money, so there is nothing to choose and
+              the hidden field above stays on cash (N54). */}
+          {mayRecordTransfer ? (
+            <div className="grid gap-sm">
+              <Label htmlFor="settle-method">How did it arrive?</Label>
+              <Select value={method} onValueChange={(value) => setMethod(value as PaymentMethod)}>
+                <SelectTrigger id="settle-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">{PAYMENT_METHOD_LABELS.cash}</SelectItem>
+                  <SelectItem value="bank_transfer">
+                    {PAYMENT_METHOD_LABELS.bank_transfer}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {state.fieldErrors?.method ? <FieldError message={state.fieldErrors.method} /> : null}
+            </div>
+          ) : null}
 
           <Notice>
             This is not a booking payment. It settles no booking and does not appear in the daily

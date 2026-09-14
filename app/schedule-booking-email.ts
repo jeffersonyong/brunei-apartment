@@ -7,7 +7,7 @@ import type { BookingEmailKind } from '@/lib/domain/booking-email'
  * Sends a customer their booking email once the response is on its way
  * (capability A8, architecture.md §9).
  *
- * `app/(portal)/portal/schedule-accounting-pack.ts`'s shape exactly, and for
+ * `app/schedule-accounting-pack.ts`'s shape exactly, and for
  * the same reasons: `after()` has to be called inside a request, which is why
  * this is in the app layer rather than lib/db, and from a module that is NOT
  * `'use server'`, since such a module may export only async functions and

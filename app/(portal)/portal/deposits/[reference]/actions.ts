@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { permissionsToRecordMoneySeen } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require-permission'
 import { addDepositCharge, waiveDepositCharge } from '@/lib/db/deposit-charges'
 import { approveDepositRelease, settleDepositOwed } from '@/lib/db/deposits'
@@ -316,6 +317,14 @@ export async function settleOwedAction(
   }
 
   const { depositId, reference, method } = parsed.data
+
+  // Settling by transfer writes the money down as already in the bank, so it
+  // also takes `payment.verify` (N54). Thrown rather than answered, like every
+  // other permission failure: the dialog offers a transfer only to a reader who
+  // holds it.
+  for (const permission of permissionsToRecordMoneySeen(method)) {
+    await requirePermission(permission)
+  }
 
   const result = await settleDepositOwed({ depositId, method, actorId: actor.userId })
 

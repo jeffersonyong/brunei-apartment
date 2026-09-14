@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogIn, Ticket, type LucideIcon } from 'lucide-react'
+import { LogIn, LogOut, Ticket, type LucideIcon } from 'lucide-react'
 
 import { DID_NOT_GO_THROUGH } from '@/components/field/did-not-go-through'
 import { Button } from '@/components/ui/button'
@@ -15,22 +15,30 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { FieldError } from '@/components/ui/field-error'
+import { Notice } from '@/components/ui/notice'
 import { toast } from '@/components/ui/toast-store'
 import { cn } from '@/lib/utils'
 
-import { admitAtGateAction, checkInAtGateAction, type GateActionState } from './actions'
+import {
+  admitAtGateAction,
+  checkInAtGateAction,
+  checkOutAtGateAction,
+  type GateActionState,
+} from './actions'
 
 /**
- * The card's one move, confirmed: admitting a day pass, or checking a stay in.
+ * The card's one move, confirmed: checking a stay in, checking it out, or
+ * admitting a day pass.
  *
- * One confirming tap, because neither can be undone from this screen and a
- * thumb brushing a full-width button in a queue of cars is the ordinary way
- * to press the wrong one. The dialog names the guest and the place so the
- * guard reads what they are about to confirm.
+ * One confirming tap, because none of them can be undone from this screen and a
+ * thumb brushing a full-width button in a queue of cars is the ordinary way to
+ * press the wrong one. The dialog names the guest and the place so the guard
+ * reads what he is about to confirm, and says anything he should know first —
+ * a stay still owed, say — before he does.
  *
- * Both moves share this component because they have one shape — the button,
- * the dialog, one server action, a toast the moment it lands — and differ only
- * in their words and which action runs. Two copies would be the first to
+ * The three share this component because they have one shape — the button, the
+ * dialog, one server action, a toast the moment it lands — and differ only in
+ * their words and which action runs. Three copies would be the first to
  * disagree about the wrapper below.
  *
  * **No signal is a sentence, not a crash.** A server action that cannot reach
@@ -40,7 +48,7 @@ import { admitAtGateAction, checkInAtGateAction, type GateActionState } from './
  * write never arrived — and the guard can try again when a bar comes back.
  */
 
-export type GateMove = 'check_in' | 'admit'
+export type GateMove = 'check_in' | 'check_out' | 'admit'
 
 interface MoveCopy {
   label: string
@@ -63,6 +71,16 @@ const MOVES: Readonly<Record<GateMove, MoveCopy>> = {
       `${reference} · ${place}. The booking is marked as arrived now, under your name.`,
     done: (guestName) => `${guestName} is checked in`,
   },
+  check_out: {
+    label: 'Check out',
+    pending: 'Checking out…',
+    icon: LogOut,
+    action: checkOutAtGateAction,
+    title: (guestName) => `Check out ${guestName}?`,
+    description: (reference, place) =>
+      `${reference} · ${place}. Take the keys back first. They are checked out now, under your name, and the unit moves to inspection.`,
+    done: (guestName) => `${guestName} is checked out`,
+  },
   admit: {
     label: 'Admit',
     pending: 'Admitting…',
@@ -84,6 +102,8 @@ interface GateActionButtonProps {
   guestName: string
   /** The unit, or "Day pass · 3 people". */
   place: string
+  /** Said in the dialog before the guard confirms, when there is something to know. */
+  note?: string
   className?: string
 }
 
@@ -110,6 +130,7 @@ function GateActionDialog({
   reference,
   guestName,
   place,
+  note,
   onClose,
 }: Omit<GateActionButtonProps, 'className'> & { onClose: () => void }) {
   const router = useRouter()
@@ -161,6 +182,8 @@ function GateActionDialog({
 
         <form action={formAction} className="grid gap-lg">
           <input type="hidden" name="bookingId" value={bookingId} />
+
+          {note ? <Notice>{note}</Notice> : null}
 
           {state.status === 'error' ? <FieldError message={state.message} /> : null}
 

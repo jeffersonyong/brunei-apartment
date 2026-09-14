@@ -1,3 +1,5 @@
+import type { PaymentMethod } from '@/lib/domain/payment'
+
 /**
  * The permission vocabulary and the pure set logic over it.
  *
@@ -33,37 +35,48 @@ export const PERMISSIONS = [
   /**
    * Checking a guest in to a stay (capability D3's check-in, without the QR).
    *
-   * Its own string, and one of two rather than one for both moves (N11,
-   * 13 September 2026). It used to borrow `booking.amend`, which kept Security
-   * from checking anybody in and would have let a guard edit a booking had it
-   * been granted. **The desk's, not the guard's, since N54** (26 September
-   * 2026): a guest collects the keys at the counter, so the move that says
-   * they have the unit happens there. Front Office and Admin — and one tick in
-   * Roles gives it to Security if the guard hands over keys after hours. It
-   * handles no money: `check_in_booking()` refuses a booking whose deposit is
-   * not held, and refuses a day pass, which is admitted instead.
+   * Its own string, and one of two rather than one for both moves (N11). It
+   * used to borrow `booking.amend`, which would have let a guard edit a
+   * booking had it been granted. **The guard's, because the guard hands over
+   * the keys** — the security guard and the front desk are the same people
+   * (N54, answered by Jason on 14 September 2026) — and Front Office's and
+   * Admin's. It handles no money: `check_in_booking()` refuses a booking whose
+   * deposit is not held, and refuses a day pass, which is admitted instead.
    */
   'booking.check_in',
   /**
-   * Checking a guest out — the cleaner's "the guest has left", or the desk's.
+   * Checking a guest out: the guard's when the keys come back (N54), the
+   * cleaner's when the unit is found empty with the keys in it, or the
+   * office's.
    *
-   * Separate from `booking.check_in` so each role holds the move that is its
-   * job: the guard never checks a guest out and the cleaner never checks one
-   * in. Housekeeping, Front Office and Admin.
+   * Separate from `booking.check_in` so each role holds only the moves that are
+   * its job: the cleaner never checks a guest in. Security, Housekeeping, Front
+   * Office and Admin.
    */
   'booking.check_out',
   /**
    * Admitting a day pass at the gate (N40, N54).
    *
-   * Not `booking.check_in`, for two reasons. It is a different move: a pass
-   * has no keys and no unit, and admitting it closes it (`confirmed →
-   * completed`). And the guard admits passes but no longer checks stays in,
-   * which one string could not say. It handles no money: `admit_day_pass()`
-   * refuses a pass that is not paid in full, or not for today. Security, Front
-   * Office and Admin.
+   * Not `booking.check_in`: it is a different move. A pass has no keys and no
+   * unit, and admitting it closes it (`confirmed → completed`). It handles no
+   * money: `admit_day_pass()` refuses a pass that is not paid in full, or not
+   * for today. Security, Front Office and Admin.
    */
   'day_pass.admit',
+  /**
+   * Checking the bank: confirming that a transfer landed, for a deposit or for
+   * the stay. Since N54 it is also what recording a transfer as already arrived
+   * takes (`permissionsToRecordMoneySeen`). Front Office, Finance and Admin.
+   */
   'payment.verify',
+  /**
+   * Recording money taken against a booking — the cash counted at the office or
+   * at the gate (N54), the security deposit, a short deposit's rest, what a
+   * guest owed beyond it — and raising a transfer for the queue to verify, which
+   * records nothing as arrived. A transfer written down as already seen takes
+   * `payment.verify` as well, so the guard takes cash and never says a transfer
+   * landed. Security, Front Office and Admin.
+   */
   'payment.record_cash',
   'inspection.record',
   'charge.create',
@@ -118,4 +131,23 @@ export function hasPermission(
   permission: Permission,
 ): boolean {
   return permissions.has(permission)
+}
+
+/**
+ * What recording money as already arrived takes, by how it arrived.
+ *
+ * `payment.record_cash` says money is in hand: notes counted at the office or
+ * the gate. A bank transfer written down as already seen — the rest of a
+ * deposit that arrived short, or what a guest owed beyond their deposit — makes
+ * the same claim about money only somebody reading the bank can check, so it
+ * takes `payment.verify` as well (N54). The guard holds the first and not the
+ * second. Front Office and Admin hold both, so nothing changed for them.
+ *
+ * Raising a transfer for the verification queue is not this: a promise records
+ * nothing as arrived, and verifying it is what `payment.verify` already gates.
+ */
+export function permissionsToRecordMoneySeen(method: PaymentMethod): readonly Permission[] {
+  return method === 'bank_transfer'
+    ? ['payment.record_cash', 'payment.verify']
+    : ['payment.record_cash']
 }

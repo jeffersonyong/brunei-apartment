@@ -10,7 +10,7 @@ import { runPackAssembly } from '@/lib/db/packs'
  * scope-of-capabilities.md G5: "the accounting record pack … is generated
  * automatically per booking — no more manual PDF assembly." A pack is first
  * assembled the moment a payment is verified (see
- * app/(portal)/portal/schedule-accounting-pack.ts); this is the other half:
+ * app/schedule-accounting-pack.ts); this is the other half:
  * every night, every booking whose pack is missing or older than what it
  * records gets a fresh one. That covers the slip attached a day after the
  * transfer, the IC collected at check-in, the amendment, the check-out — and

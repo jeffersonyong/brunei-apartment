@@ -251,6 +251,7 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
           checkOut={checkOut}
           mayDiscount={mayDiscount}
           mayWaiveDeposit={mayWaiveDeposit}
+          today={today}
         />
       </div>
     )

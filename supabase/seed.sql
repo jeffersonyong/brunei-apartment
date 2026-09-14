@@ -171,8 +171,8 @@ where r.slug = 'admin';
 -- operational one, and prd.md §4 gives Housekeeping `unit.manage` "(status
 -- only)" — the desk marks a lease, the cleaner does not.
 --
--- It checks stays in, because the keys are at the counter (N54), and admits
--- day passes too, for the visitor who paid at the office rather than ahead.
+-- It checks guests in and out and admits day passes too, so the office can do
+-- anything the gate does (N54).
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
@@ -186,8 +186,9 @@ where r.slug = 'front-office';
 
 -- Housekeeping records the inspection; a separate role approves the release
 -- (prd.md §4 [C]). Its booking view is read-only, which `booking.view` is. It
--- checks a departing guest out, because the cleaner is the one who finds the
--- unit empty (N11, 13 September 2026) — and never checks one in.
+-- checks a departing guest out when it finds the unit empty with the keys left
+-- in it — in the ordinary case the guard takes the keys back and checks them
+-- out (N54) — and never checks one in.
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
@@ -197,20 +198,22 @@ cross join unnest(array[
 where r.slug = 'housekeeping';
 
 -- ── Security ───────────────────────────────────────────────────────────────
--- prd.md §4 describes this role as "today's arrivals view, check-in action,
--- read-only booking summary. No document or payment access."
---
--- The gate's action is admitting a day pass, `day_pass.admit`, minted by
--- 20260926000100_the_gate_admits_a_day_pass.sql. A stay is checked in at the
--- counter, where the keys are (N54), so the guard does not hold
--- `booking.check_in` — one tick in Roles gives it back if the guard hands
--- over keys after hours. Neither handles money: admit_day_pass() refuses a
--- pass not paid in full. No check-out — that is Housekeeping's.
+-- The guard is the front desk (N54, answered by Jason on 14 September 2026):
+-- the guard hands the keys over, so checks a stay in, and takes them back, so
+-- checks it out. The gate admits day passes too (20260926000100), and takes
+-- the cash a guest still owes — the deposit, the stay, a day pass — recorded
+-- under the guard's name (20260927000200). No move takes money on its own:
+-- check_in_booking() refuses a booking whose deposit is not held in full, and
+-- admit_day_pass() a pass not paid in full. No `payment.verify`, so the guard
+-- never says a transfer landed; no document access; and nothing here creates
+-- or edits a booking — the guard calls the office for that. Housekeeping keeps
+-- check-out as well, for the guest who leaves the keys in the unit.
 insert into role_permission (property_id, role_id, permission)
 select r.property_id, r.id, permission
 from staff_role r
 cross join unnest(array[
-  'booking.view', 'day_pass.admit'
+  'booking.view', 'booking.check_in', 'booking.check_out', 'day_pass.admit',
+  'payment.record_cash'
 ]) as permission
 where r.slug = 'security';
 
