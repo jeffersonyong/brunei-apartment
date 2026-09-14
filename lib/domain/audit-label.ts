@@ -1,4 +1,5 @@
 import { DOCUMENT_KIND_LABELS, isDocumentKind } from './document'
+import { FAQ_TOPICS } from './faq'
 import { INSPECTION_OUTCOME_LABELS, isInspectionOutcome } from './inspection'
 import { formatCents } from './money'
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from './payment'
@@ -126,6 +127,12 @@ export const KNOWN_AUDIT_ACTIONS = [
   'site_image.replaced',
   'site_image.updated',
   'site_image.removed',
+  'faq.added',
+  'faq.updated',
+  'faq.featured',
+  'faq.unfeatured',
+  'faq.moved',
+  'faq.removed',
 ] as const
 
 /** The families the audit screen filters by, in the order it offers them. */
@@ -150,6 +157,7 @@ export const AUDIT_FAMILIES = [
   'staff',
   'cash',
   'site_image',
+  'faq',
 ] as const
 
 export type AuditFamily = (typeof AUDIT_FAMILIES)[number]
@@ -186,6 +194,7 @@ export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
   staff: 'Staff accounts',
   cash: 'Cash banked',
   site_image: 'Website photos',
+  faq: 'Website FAQs',
 }
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -266,6 +275,7 @@ export function describeAuditEvent(event: AuditEventLike): string {
     describeEmail(event) ??
     describeSettings(event) ??
     describeSiteImage(event) ??
+    describeFaq(event) ??
     ACTION_LABELS[event.action]
 
   return described ?? fallbackLabel(event.action)
@@ -738,6 +748,57 @@ function focusLabel(value: unknown): string | null {
   return typeof value === 'string' && isSiteImageFocus(value) ? FOCUS_LABELS[value] : null
 }
 
+// ── Website FAQs ───────────────────────────────────────────────────────────
+
+/**
+ * The FAQs on the public site (capability F9).
+ *
+ * The question is the subject column's job — the view reads it live, and every
+ * event carries it as `name` for a FAQ that has since been removed — so the
+ * sentence says only what happened to it.
+ */
+function describeFaq(event: AuditEventLike): string | null {
+  switch (event.action) {
+    case 'faq.added':
+      return 'FAQ added'
+    case 'faq.removed':
+      return 'FAQ removed'
+    case 'faq.featured':
+      return 'Put on the front page'
+    case 'faq.unfeatured':
+      return 'Taken off the front page'
+    case 'faq.moved':
+      return event.after?.direction === 'down' ? 'Moved down' : 'Moved up'
+    case 'faq.updated':
+      return faqUpdateLabel(event)
+    default:
+      return null
+  }
+}
+
+function faqUpdateLabel(event: AuditEventLike): string {
+  const changed = Object.keys(event.after ?? {}).filter((key) => key !== 'name')
+
+  if (changed.length === 1) {
+    switch (changed[0]) {
+      case 'question':
+        return 'Question reworded'
+      case 'answer':
+        // Both answers are in the payload; a sentence quoting them would be a page.
+        return 'Answer changed'
+      case 'featured':
+        return event.after?.featured === true ? 'Put on the front page' : 'Taken off the front page'
+      case 'topic': {
+        const topic = FAQ_TOPICS.find((candidate) => candidate.id === event.after?.topic)
+
+        return topic ? `Moved to ${topic.title}` : 'Topic changed'
+      }
+    }
+  }
+
+  return changed.length === 0 ? 'FAQ edited' : `FAQ edited — ${changed.length} fields changed`
+}
+
 // ── Where an event points ──────────────────────────────────────────────────
 
 /**
@@ -770,6 +831,7 @@ export const AUDIT_ENTITY_TYPES = [
   'staff_user',
   'cash_banking',
   'site_image',
+  'faq',
 ] as const
 
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number]
@@ -797,6 +859,7 @@ export const AUDIT_ENTITY_LABELS: Readonly<Record<AuditEntityType, string>> = {
   staff_user: 'Staff account',
   cash_banking: 'Banking',
   site_image: 'Website photo',
+  faq: 'Website FAQ',
 }
 
 /**
@@ -847,6 +910,8 @@ export function auditSubjectHref(entityType: string, subjectLabel: string | null
       return '/portal/settings/property?tab=bank-accounts'
     case 'site_image':
       return '/portal/website/photos'
+    case 'faq':
+      return '/portal/website/faqs'
     default:
       return null
   }

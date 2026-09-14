@@ -107,6 +107,17 @@ export const PERMISSIONS = [
    * Roles & staff.
    */
   'site_image.manage',
+  /**
+   * Adding, editing, reordering and removing the FAQs on the public site, and
+   * choosing which of them the landing page shows (capability F9).
+   *
+   * Its own string for the reason `site_image.manage` has one: whoever keeps
+   * the website's words current should not also be handed pricing, roles and
+   * the audit log. Not that string either — a photograph and a sentence about
+   * what a guest pays are different trusts. Seeded to Admin; any other role is
+   * one tick in Roles & staff.
+   */
+  'faq.manage',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
