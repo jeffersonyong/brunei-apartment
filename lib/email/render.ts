@@ -84,8 +84,23 @@ export interface RenderedEmail {
   text: string
 }
 
-export function renderBookingEmail(model: BookingEmailModel): RenderedEmail {
-  return { html: renderHtml(model), text: renderText(model) }
+export interface RenderBookingEmailOptions {
+  /**
+   * Where the entry code's `<img>` points. The attachment's `cid:` by default;
+   * the development preview passes a `data:` URL, because a browser frame has
+   * no attachments to resolve a `cid:` against.
+   */
+  entryCodeSrc?: string
+}
+
+export function renderBookingEmail(
+  model: BookingEmailModel,
+  options: RenderBookingEmailOptions = {},
+): RenderedEmail {
+  const entryCodeSrc =
+    options.entryCodeSrc ?? (model.entryCode ? `cid:${model.entryCode.contentId}` : '')
+
+  return { html: renderHtml(model, entryCodeSrc), text: renderText(model) }
 }
 
 /**
@@ -177,13 +192,15 @@ function escape(value: string): string {
     .replaceAll("'", '&#39;')
 }
 
-function renderHtml(model: BookingEmailModel): string {
+function renderHtml(model: BookingEmailModel, entryCodeSrc: string): string {
   const body = [
     eyebrow(model.footer.propertyName),
     `<h1 style="margin:12px 0 0 0;font-family:${DISPLAY};font-size:28px;line-height:34px;font-weight:600;letter-spacing:-0.56px;color:${INK}">${escape(model.headline)}</h1>`,
     statusChip(model.status),
     `<p style="margin:12px 0 0 0;font-size:16px;line-height:25px;color:${INK}">${escape(model.intro)}</p>`,
-    `<p style="margin:12px 0 0 0;font-size:14px;line-height:21px;color:${MUTE}">Reference <span style="font-family:${MONO};color:${INK}">${escape(model.reference)}</span></p>`,
+    model.entryCode === null
+      ? `<p style="margin:12px 0 0 0;font-size:14px;line-height:21px;color:${MUTE}">Reference <span style="font-family:${MONO};color:${INK}">${escape(model.reference)}</span></p>`
+      : entryCode(model, entryCodeSrc),
     section('What you booked', rows(model.facts)),
     model.quote === null ? '' : section('Price', quote(model.quote)),
     model.depositNote === null
@@ -333,6 +350,33 @@ function accountList(accounts: readonly EmailRow[]): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:4px">${cells}</table>`
 }
 
+/**
+ * design.md's QR block, in email: a white card, the code centred at 240 px
+ * with its own quiet zone, the reference in mono at the display-sm size
+ * beneath, and one guidance line. It takes the reference line's place under
+ * the intro, because the code is the thing a confirmed guest came back to
+ * this email for.
+ *
+ * Width and height are attributes as well as styles: Outlook sizes an image by
+ * its attributes and ignores the CSS.
+ */
+function entryCode(model: BookingEmailModel, src: string): string {
+  const code = model.entryCode
+
+  if (code === null) {
+    return ''
+  }
+
+  return (
+    `<div style="margin-top:20px;padding:20px;background-color:${CANVAS};border:1px solid ${HAIRLINE};border-radius:12px;text-align:center">` +
+    eyebrow('Your entry code') +
+    `<img src="${escape(src)}" width="240" height="240" alt="${escape(code.alt)}" style="display:block;margin:12px auto 0 auto;width:240px;height:240px;border:0">` +
+    `<p style="margin:8px 0 0 0;font-family:${MONO};font-size:22px;line-height:28px;font-weight:600;color:${INK}">${escape(model.reference)}</p>` +
+    `<p style="margin:8px 0 0 0;font-size:13px;line-height:18px;color:${MUTE}">${escape(code.guidance)}</p>` +
+    '</div>'
+  )
+}
+
 function arrival(sentences: readonly string[]): string {
   const body = sentences
     .map(
@@ -407,6 +451,15 @@ function renderText(model: BookingEmailModel): string {
     '',
     `Reference: ${model.reference}`,
     '',
+    // A client that refuses HTML shows no inline image, but it still lists the
+    // attachment — so the text names the file it is looking for.
+    ...(model.entryCode
+      ? [
+          'YOUR ENTRY CODE',
+          `  ${model.entryCode.guidance} (${model.entryCode.filename})`,
+          '',
+        ]
+      : []),
     'WHAT YOU BOOKED',
     ...model.facts.map((row) => `  ${row.label}: ${row.value}`),
   ]

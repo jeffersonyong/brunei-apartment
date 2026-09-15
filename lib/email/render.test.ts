@@ -69,6 +69,7 @@ function model(
     guestName?: string
     lineDescription?: string
     accounts?: readonly BankAccountSettings[]
+    hasEntryCode?: boolean
   } = {},
 ): BookingEmailModel {
   const kind = overrides.kind ?? 'booking_created'
@@ -105,6 +106,7 @@ function model(
     contact,
     bookingUrl: URL,
     findBookingUrl: LOOKUP_URL,
+    hasEntryCode: overrides.hasEntryCode ?? false,
   })
 
   if (!result.ok) {
@@ -290,6 +292,45 @@ describe('the way back into a booking', () => {
     expect(text).not.toContain('find-booking')
     // The rest of the footer is untouched.
     expect(html).toContain('Call or WhatsApp us on')
+  })
+})
+
+describe('the entry code', () => {
+  const confirmed = () => model({ kind: 'booking_confirmed', hasEntryCode: true })
+
+  test('is drawn inline from its attachment, sized by attribute for Outlook', () => {
+    const { html } = renderBookingEmail(confirmed())
+
+    expect(html).toContain('src="cid:entry-qr"')
+    expect(html).toContain('width="240" height="240"')
+    expect(html).toContain('alt="Entry QR code for booking PV-4821"')
+  })
+
+  test('can be pointed at a data URL for the browser preview', () => {
+    const { html } = renderBookingEmail(confirmed(), {
+      entryCodeSrc: 'data:image/png;base64,AAAA',
+    })
+
+    expect(html).toContain('src="data:image/png;base64,AAAA"')
+    expect(html).not.toContain('cid:')
+  })
+
+  test('takes the place of the reference line, so the reference is set once under the code', () => {
+    const { html } = renderBookingEmail(confirmed())
+
+    expect(html).not.toContain('Reference <span')
+    expect(html).toContain('PV-4821</p>')
+  })
+
+  test('the plain text names the attached file', () => {
+    expect(renderBookingEmail(confirmed()).text).toContain('PV-4821-entry-qr.png')
+  })
+
+  test('an email for a booking with no code draws no image at all', () => {
+    const { html } = renderBookingEmail(model({ kind: 'booking_confirmed' }))
+
+    expect(html).not.toContain('<img')
+    expect(html).toContain('Reference <span')
   })
 })
 

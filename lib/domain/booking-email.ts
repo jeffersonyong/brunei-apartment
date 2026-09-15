@@ -2,6 +2,7 @@ import { balanceOf } from './balance'
 import type { BookingStatus } from './booking-state'
 import type { PropertyContact } from './contact'
 import { formatStayDate, formatStayRange, nightsBetween, type StayDate } from './dates'
+import { entryQrFilename } from './entry-qr'
 import type { BookingLine } from './lines'
 import { formatCents, type Cents } from './money'
 import { isLikelyEmailAddress, publicStageOf, transferPlanFor } from './public-booking'
@@ -27,12 +28,14 @@ import type { BookingStream } from './stream'
  * nothing, and telling them otherwise is the one mistake that would cost the
  * desk a phone call per booking.
  *
- * ── No QR ──────────────────────────────────────────────────────────────────
+ * ── The entry code ────────────────────────────────────────────────────────
  *
- * A8 promises a confirmation *and* an entry QR code; this is the first half.
- * Nothing here mentions a code, because nothing can read one yet — check-in
- * authority is open (N11) and no code has been issued. An email promising an
- * attachment it does not carry is worse than one that says what to show.
+ * A8 promises a confirmation *and* an entry QR code. The code is issued by the
+ * database when the booking is confirmed, so it rides on the confirmed email
+ * alone — shown inline and attached, which is the forwardable image prd.md §12
+ * asks for. It is mentioned only when the sender says it will attach one
+ * (`hasEntryCode`): an email promising an attachment it does not carry is worse
+ * than one that says what reference to quote, which is what it says otherwise.
  */
 
 export type BookingEmailKind = 'booking_created' | 'booking_confirmed'
@@ -92,6 +95,28 @@ export interface BuildBookingEmailInput {
   bookingUrl: string | null
   /** The public lookup page. Absolute, or null if the origin is unreadable. */
   findBookingUrl: string | null
+  /**
+   * The booking carries an entry QR code the sender will attach
+   * (`ENTRY_QR_CONTENT_ID`). Only a confirmed email uses it; false where the
+   * booking has no code, so the email falls back to the reference.
+   */
+  hasEntryCode: boolean
+}
+
+/** The `cid:` the entry code's image is attached under and the HTML points at. */
+export const ENTRY_QR_CONTENT_ID = 'entry-qr'
+
+/**
+ * The entry QR code, on a confirmed email (capability A8's QR half).
+ *
+ * The image itself is not the model's — it is bytes the sender attaches — so
+ * this carries what the renderer needs to point at it and say what it is.
+ */
+export interface EmailEntryCode {
+  contentId: string
+  filename: string
+  alt: string
+  guidance: string
 }
 
 export interface EmailRow {
@@ -183,6 +208,11 @@ export interface BookingEmailModel {
   depositNote: string | null
   /** Present on a created email only — the confirmed one asks for nothing. */
   transfer: EmailTransfer | null
+  /**
+   * Present on a confirmed email for a booking that has a code. Null otherwise,
+   * and then the arrival sentences name the reference alone.
+   */
+  entryCode: EmailEntryCode | null
   /** Present on a confirmed email only. One sentence per line. */
   arrival: readonly string[]
   action: EmailAction | null
@@ -211,11 +241,10 @@ const LOOKUP_LABEL = 'Lost this email? Open your booking with your reference and
  * a deadline — "in the meantime" is as far as it goes. prd.md §9.3 spells out
  * why: a timer the system does not enforce is a promise it does not keep.
  *
- * "We will let you know" is deliberately unspecific. Today that is the desk
- * calling, and the confirmation email once a sending domain exists; it will
- * name the entry QR code the day one is issued (capability A8's other half),
- * and not before — a promise of a code nothing can read yet is the thing this
- * slice took off the landing page.
+ * "We will let you know" is deliberately unspecific. For a guest with an
+ * address it is the confirmation email, which carries the entry QR code; for
+ * one without, it is the desk calling. A sentence here that promised a code
+ * by email would be wrong for the second.
  */
 const HOLD_SENTENCE =
   'Your unit is held for you in the meantime — once we confirm the transfer, your booking is confirmed and we will let you know.'
@@ -245,6 +274,8 @@ export function buildBookingEmail(input: BuildBookingEmailInput): BuildBookingEm
 
   const isDayPass = booking.dayPass !== null
   const action = actionFor(input.bookingUrl)
+  const entryCode =
+    kind === 'booking_confirmed' && input.hasEntryCode ? entryCodeFor(booking.reference) : null
 
   return {
     ok: true,
@@ -260,7 +291,11 @@ export function buildBookingEmail(input: BuildBookingEmailInput): BuildBookingEm
       quote: quoteFor(booking),
       depositNote: depositNoteFor(kind, booking),
       transfer: kind === 'booking_created' ? transferFor(booking, property) : null,
-      arrival: kind === 'booking_confirmed' ? arrivalFor(booking, property, isDayPass) : [],
+      entryCode,
+      arrival:
+        kind === 'booking_confirmed'
+          ? arrivalFor(booking, property, isDayPass, entryCode !== null)
+          : [],
       action,
       footer: {
         propertyName: property.name,
@@ -485,12 +520,19 @@ function arrivalFor(
   booking: EmailBookingFacts,
   property: EmailPropertyFacts,
   isDayPass: boolean,
+  hasEntryCode: boolean,
 ): readonly string[] {
+  // The code first, and the reference as the way in when a phone is flat or a
+  // screen is cracked (prd.md §12 requirement 7).
+  const gate = hasEntryCode
+    ? `Show the QR code in this email at the gate, or quote reference ${booking.reference}.`
+    : `Show reference ${booking.reference} at the gate.`
+
   if (isDayPass) {
-    return [`Show reference ${booking.reference} at the gate.`]
+    return [gate]
   }
 
-  const sentences: string[] = []
+  const sentences: string[] = hasEntryCode ? [gate] : []
 
   if (booking.securityDeposit > 0) {
     sentences.push(
@@ -520,6 +562,16 @@ function arrivalFor(
  * anybody to. It degrades to the reference, which the model always carries —
  * never to a link built out of `null`.
  */
+function entryCodeFor(reference: string): EmailEntryCode {
+  return {
+    contentId: ENTRY_QR_CONTENT_ID,
+    filename: entryQrFilename(reference),
+    alt: `Entry QR code for booking ${reference}`,
+    guidance:
+      'Show it at the gate. It is attached to this email too, so you can forward it to whoever is driving.',
+  }
+}
+
 function actionFor(url: string | null): EmailAction | null {
   return url === null ? null : { label: 'Open your booking', url, note: LINK_NOTE }
 }

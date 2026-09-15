@@ -30,6 +30,7 @@ import { bookingInput } from './test/factory'
  */
 
 const ORIGIN = 'https://palmvilla.test'
+const STAFF_ORIGIN = 'https://portal.palmvilla.test'
 
 const CHECK_IN = '2026-11-05'
 const CHECK_OUT = '2026-11-08'
@@ -101,7 +102,12 @@ async function givenPublicStay(overrides: Partial<CreatePublicStayInput> = {}) {
 }
 
 async function message(kind: 'booking_created' | 'booking_confirmed', bookingId: string) {
-  const built = await buildBookingEmailMessage({ kind, bookingId, origin: ORIGIN })
+  const built = await buildBookingEmailMessage({
+    kind,
+    bookingId,
+    origin: ORIGIN,
+    staffOrigin: STAFF_ORIGIN,
+  })
 
   if (!built.ok) {
     throw new Error(`Expected a message, got ${built.reason}`)
@@ -111,6 +117,15 @@ async function message(kind: 'booking_created' | 'booking_confirmed', bookingId:
 }
 
 describe('the email a created booking produces', () => {
+  test('carries no entry code, since nothing is confirmed yet', async () => {
+    const created = await givenPublicStay()
+    const built = await message('booking_created', created.bookingId)
+
+    expect(built.attachments).toEqual([])
+    expect(built.html).not.toContain('cid:')
+    expect(built.text).not.toContain('QR')
+  })
+
   test('is addressed to the guest and carries their own link', async () => {
     const created = await givenPublicStay()
     const built = await message('booking_created', created.bookingId)
@@ -171,6 +186,7 @@ describe('a booking with nowhere to send', () => {
         kind: 'booking_created',
         bookingId: walkIn.booking.id,
         origin: ORIGIN,
+        staffOrigin: STAFF_ORIGIN,
       }),
     ).resolves.toEqual({ ok: false, reason: 'no_address' })
   })
@@ -181,6 +197,7 @@ describe('a booking with nowhere to send', () => {
         kind: 'booking_created',
         bookingId: '00000000-0000-0000-0000-000000000000',
         origin: ORIGIN,
+        staffOrigin: STAFF_ORIGIN,
       }),
     ).resolves.toEqual({ ok: false, reason: 'booking_missing' })
   })
@@ -223,6 +240,25 @@ describe('what a confirmed booking is told it owes', () => {
 
     expect(verified.bookingId).toBe(created.bookingId)
     expect(verified.confirmedNow).toBe(true)
+  })
+
+  test('carries the entry code inline and as a PNG a guest can forward', async () => {
+    const { created } = await givenDepositSecuredBooking()
+    const built = await message('booking_confirmed', created.bookingId)
+
+    expect(built.attachments).toHaveLength(1)
+
+    const [attachment] = built.attachments
+
+    expect(attachment?.filename).toBe(`${created.reference}-entry-qr.png`)
+    expect(attachment?.contentType).toBe('image/png')
+    expect(attachment?.contentId).toBe('entry-qr')
+    // The PNG signature: real image bytes, not a placeholder.
+    expect([...Buffer.from(attachment?.content ?? '', 'base64').subarray(0, 8)]).toEqual([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ])
+    expect(built.html).toContain('src="cid:entry-qr"')
+    expect(built.text).toContain('Show the QR code in this email at the gate')
   })
 
   test('the whole stay is still owed, because a deposit is not a payment', async () => {

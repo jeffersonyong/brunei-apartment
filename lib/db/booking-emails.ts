@@ -5,14 +5,17 @@ import {
   type BookingEmailRefusal,
 } from '@/lib/domain/booking-email'
 import { contact } from '@/lib/domain/contact'
+import { entryCodeShownFor, entryUrl } from '@/lib/domain/entry-qr'
 import { bookingUrl, findBookingUrl } from '@/lib/domain/origin'
 import { DAY_IN_SECONDS, PUBLIC_LIMITS } from '@/lib/domain/public-booking'
 import { renderBookingEmail } from '@/lib/email/render'
-import { sendEmail, type SendFailureClass } from '@/lib/email/send'
+import { sendEmail, type EmailAttachment, type SendFailureClass } from '@/lib/email/send'
 import { env } from '@/lib/env'
+import { entryQrPng } from '@/lib/qr/entry-qr'
 
 import { recordAuditEvent } from './audit'
 import { getBookingById } from './bookings'
+import { getEntryToken } from './entry-qr'
 import { notePublicAttempt } from './public-bookings'
 import { readPropertySettings } from './settings'
 
@@ -42,8 +45,8 @@ import { readPropertySettings } from './settings'
  *     the rows that matter.
  *   - **A booking that moved on.** The email described a moment that has
  *     passed; the move itself is already in the trail.
- *   - **A deployment with no mail service configured**, which is every
- *     deployment until a sending domain is verified. That is one fact about
+ *   - **A deployment with no mail service configured** — a local run, a
+ *     preview, anywhere without a verified sending domain. That is one fact about
  *     the environment, not a fact about each booking, and writing it against
  *     every booking would be the same row several hundred times.
  *
@@ -64,6 +67,8 @@ export interface BookingEmailMessage {
   subject: string
   html: string
   text: string
+  /** The entry QR code on a confirmed email, shown inline and forwardable. Empty otherwise. */
+  attachments: readonly EmailAttachment[]
 }
 
 export type BuildBookingEmailMessageResult =
@@ -72,17 +77,28 @@ export type BuildBookingEmailMessageResult =
 /**
  * Everything except the send. No network, so a test can assert the whole
  * assembly against a booking the application actually produced.
+ *
+ * `staffOrigin` is where the entry code points (lib/domain/entry-qr.ts): the
+ * staff host, because that is where a guard's session lives.
  */
 export async function buildBookingEmailMessage(input: {
   kind: BookingEmailKind
   bookingId: string
   origin: string
+  staffOrigin: string
 }): Promise<BuildBookingEmailMessageResult> {
   const booking = await getBookingById(input.bookingId)
 
   if (!booking) {
     return { ok: false, reason: 'booking_missing' }
   }
+
+  // Only the confirmation carries the code, so only it reads the token. The
+  // database issued it in the same write that confirmed the booking.
+  const codeUrl =
+    input.kind === 'booking_confirmed' && entryCodeShownFor(booking.status)
+      ? entryUrl(input.staffOrigin, await getEntryToken(booking.id))
+      : null
 
   const settings = await readPropertySettings()
   const unitTypeName =
@@ -103,6 +119,7 @@ export async function buildBookingEmailMessage(input: {
     contact,
     bookingUrl: bookingUrl(input.origin, booking.accessToken),
     findBookingUrl: findBookingUrl(input.origin),
+    hasEntryCode: codeUrl !== null,
   })
 
   if (!built.ok) {
@@ -110,6 +127,23 @@ export async function buildBookingEmailMessage(input: {
   }
 
   const rendered = renderBookingEmail(built.model)
+  const code = built.model.entryCode
+
+  // Inline and forwardable at once: the HTML shows it by `cid:`, and the same
+  // file is an ordinary attachment a guest can send on to whoever is driving.
+  // The PNG is the same bytes for the same URL, so a retry under the one
+  // idempotency key sends the same body.
+  const attachments: EmailAttachment[] =
+    code !== null && codeUrl !== null
+      ? [
+          {
+            filename: code.filename,
+            content: (await entryQrPng(codeUrl)).toString('base64'),
+            contentType: 'image/png',
+            contentId: code.contentId,
+          },
+        ]
+      : []
 
   return {
     ok: true,
@@ -119,6 +153,7 @@ export async function buildBookingEmailMessage(input: {
       subject: built.model.subject,
       html: rendered.html,
       text: rendered.text,
+      attachments,
     },
   }
 }
@@ -133,7 +168,11 @@ export async function deliverBookingEmail(input: {
     return { status: 'skipped', reason: 'not_configured' }
   }
 
-  const built = await buildBookingEmailMessage({ ...input, origin: env.siteOrigin })
+  const built = await buildBookingEmailMessage({
+    ...input,
+    origin: env.siteOrigin,
+    staffOrigin: env.staffOrigin,
+  })
 
   if (!built.ok) {
     return { status: 'skipped', reason: built.reason }
