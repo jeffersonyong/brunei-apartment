@@ -1,21 +1,28 @@
 /**
  * The privacy policy on the public site (capability F10).
  *
- * Staff write it; this module decides what their text means. It is **one
- * document of plain text**, not rows of sections, because the likeliest
- * source is a lawyer's Word document pasted in whole. Three things in that
- * text carry structure, and nothing else does:
+ * Staff write it in a rich text editor; what is stored is **plain text** in a
+ * small, fixed format, and this module is the only thing that reads or writes
+ * it. Five constructions, and nothing else:
  *
  * - a line starting `#` (any number, then a space) is a heading;
- * - a line starting `-`, `*` or `•` and a space is a bullet point, and
- *   neighbouring bullets are one list — a blank line between them does not
- *   split it, because Word pastes one;
- * - every other line is its own paragraph, which is the rule an FAQ answer
- *   already follows.
+ * - a line starting `-`, `*` or `•` and a space is a bullet point;
+ * - a line starting a number, `.` or `)`, and a space is a numbered item —
+ *   neighbouring items of one kind are one list, and a blank line between
+ *   them does not split it;
+ * - every other line is its own paragraph;
+ * - `**` either side of words makes them bold, anywhere in a line.
  *
- * **It never becomes HTML.** The page renders the blocks below as React
- * elements, so whatever is typed is text on the page and nothing more — no
- * markup library, no sanitiser, and nothing to escape.
+ * A backslash makes the next character literal, which is how a paragraph that
+ * genuinely starts "2026." or a sentence with an asterisk in it survives a
+ * save. `privacyPolicyText()` writes those escapes; nobody types them.
+ *
+ * **Why text, when staff never see it.** The editor (TipTap) is a way of
+ * producing this format, not a storage format of its own: the published
+ * versions, the data export and the public page all read the same text they
+ * read before the editor existed, nothing stored is HTML, and the page renders
+ * the blocks below as React elements — so nothing typed or pasted can become
+ * markup on the site.
  *
  * **What it says is not checked**, and cannot be: whether a notice satisfies
  * the PDPO is the client's to decide (prd.md §13, open question R5). The one
@@ -45,19 +52,32 @@ export function privacyPolicyWriteMessage(code: string): string {
   )
 }
 
+/* ── The blocks ───────────────────────────────────────────────────────────── */
+
+/** A stretch of text that is bold or is not. */
+export interface PrivacyPolicyRun {
+  text: string
+  bold: boolean
+}
+
+export type PrivacyPolicyRuns = readonly PrivacyPolicyRun[]
+
 export type PrivacyPolicyBlock =
-  | { kind: 'heading'; text: string }
-  | { kind: 'paragraph'; text: string }
-  | { kind: 'list'; items: readonly string[] }
+  | { kind: 'heading'; runs: PrivacyPolicyRuns }
+  | { kind: 'paragraph'; runs: PrivacyPolicyRuns }
+  | { kind: 'list'; ordered: boolean; items: readonly PrivacyPolicyRuns[] }
 
 const HEADING = /^#+(?:\s+(.*))?$/
 const BULLET = /^[-*•](?:\s+(.*))?$/
+const NUMBERED = /^\d+[.)](?:\s+(.*))?$/
+/** A paragraph whose first character would otherwise read as a construction. */
+const ESCAPED_START = /^\\([#\-•\d])/
 const PLACEHOLDER = /\[Fill in:\s*([^\]]*)\]/gi
 
 /**
  * Line endings made one kind, trailing spaces dropped from every line, and the
- * whole trimmed. What is saved and compared, so a paste from Windows and the
- * same words typed on a Mac are one text.
+ * whole trimmed, so a paste from Windows and the same words typed on a Mac are
+ * one text.
  */
 export function tidyPrivacyPolicy(text: string): string {
   return text
@@ -71,12 +91,26 @@ export function tidyPrivacyPolicy(text: string): string {
 /** The text as the page shows it: headings, paragraphs and lists, in order. */
 export function parsePrivacyPolicy(text: string): PrivacyPolicyBlock[] {
   const blocks: PrivacyPolicyBlock[] = []
-  let items: string[] = []
+  let list: { ordered: boolean; items: PrivacyPolicyRuns[] } | null = null
 
   const closeList = () => {
-    if (items.length > 0) {
-      blocks.push({ kind: 'list', items })
-      items = []
+    if (list && list.items.length > 0) {
+      blocks.push({ kind: 'list', ordered: list.ordered, items: list.items })
+    }
+
+    list = null
+  }
+
+  const addItem = (ordered: boolean, source: string | undefined) => {
+    if (list?.ordered !== ordered) {
+      closeList()
+      list = { ordered, items: [] }
+    }
+
+    const runs = parseRuns(source?.trim() ?? '')
+
+    if (runs.length > 0) {
+      list.items.push(runs)
     }
   }
 
@@ -87,15 +121,25 @@ export function parsePrivacyPolicy(text: string): PrivacyPolicyBlock[] {
       continue
     }
 
+    const escaped = ESCAPED_START.exec(line)
+
+    if (escaped) {
+      closeList()
+      pushText(blocks, 'paragraph', line.slice(1))
+      continue
+    }
+
     const bullet = BULLET.exec(line)
 
     if (bullet) {
-      const item = bullet[1]?.trim() ?? ''
+      addItem(false, bullet[1])
+      continue
+    }
 
-      if (item !== '') {
-        items.push(item)
-      }
+    const numbered = NUMBERED.exec(line)
 
+    if (numbered) {
+      addItem(true, numbered[1])
       continue
     }
 
@@ -104,22 +148,180 @@ export function parsePrivacyPolicy(text: string): PrivacyPolicyBlock[] {
     const heading = HEADING.exec(line)
 
     if (heading) {
-      const title = heading[1]?.trim() ?? ''
-
-      if (title !== '') {
-        blocks.push({ kind: 'heading', text: title })
-      }
-
+      pushText(blocks, 'heading', heading[1]?.trim() ?? '')
       continue
     }
 
-    blocks.push({ kind: 'paragraph', text: line })
+    pushText(blocks, 'paragraph', line)
   }
 
   closeList()
 
   return blocks
 }
+
+function pushText(
+  blocks: PrivacyPolicyBlock[],
+  kind: 'heading' | 'paragraph',
+  source: string,
+): void {
+  const runs = parseRuns(source)
+
+  if (runs.length > 0) {
+    blocks.push({ kind, runs })
+  }
+}
+
+/**
+ * One line's words, split where `**` turns bold on and off.
+ *
+ * A `**` with no partner is literal — "5** stars" is not the start of a bold
+ * stretch that never ends — and a backslash makes the next character literal.
+ */
+export function parseRuns(source: string): PrivacyPolicyRun[] {
+  const delimiters: number[] = []
+
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index] === '\\') {
+      index += 1
+    } else if (source[index] === '*' && source[index + 1] === '*') {
+      delimiters.push(index)
+      index += 1
+    }
+  }
+
+  if (delimiters.length % 2 === 1) {
+    delimiters.pop()
+  }
+
+  const toggles = new Set(delimiters)
+  const runs: PrivacyPolicyRun[] = []
+  let bold = false
+  let buffer = ''
+
+  const flush = () => {
+    appendRun(runs, { text: buffer, bold })
+    buffer = ''
+  }
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index]!
+
+    if (character === '\\' && index + 1 < source.length) {
+      buffer += source[index + 1]
+      index += 1
+    } else if (toggles.has(index)) {
+      flush()
+      bold = !bold
+      index += 1
+    } else {
+      buffer += character
+    }
+  }
+
+  flush()
+
+  return runs
+}
+
+/** Adds a run, merging it into the last one when their weight matches. */
+function appendRun(runs: PrivacyPolicyRun[], run: PrivacyPolicyRun): void {
+  if (run.text === '') {
+    return
+  }
+
+  const last = runs.at(-1)
+
+  if (last && last.bold === run.bold) {
+    runs[runs.length - 1] = { text: last.text + run.text, bold: last.bold }
+  } else {
+    runs.push(run)
+  }
+}
+
+/* ── Back to text ─────────────────────────────────────────────────────────── */
+
+/** The stored text for some blocks — what the editor saves. */
+export function privacyPolicyText(blocks: readonly PrivacyPolicyBlock[]): string {
+  const lines = blocks.flatMap((block): string[] => {
+    switch (block.kind) {
+      case 'heading':
+        return [`## ${runsText(block.runs)}`]
+      case 'paragraph': {
+        const source = runsText(block.runs)
+
+        // A paragraph that starts like a construction is escaped, so it reads
+        // back as the paragraph it is.
+        // Asterisks are already escaped, so these are the only starts left.
+        return [/^[#\-•\d]/.test(source) ? `\\${source}` : source]
+      }
+      case 'list':
+        return block.items.map((runs, index) =>
+          block.ordered ? `${index + 1}. ${runsText(runs)}` : `- ${runsText(runs)}`,
+        )
+    }
+  })
+
+  return tidyPrivacyPolicy(lines.join('\n'))
+}
+
+/**
+ * A line's runs as text. Bold that starts or ends on a space moves the space
+ * outside it — the editor makes "`Email: `" bold as easily as "`Email:`", and
+ * `**Email:** us` is the line anybody reading the export would expect.
+ */
+function runsText(runs: PrivacyPolicyRuns): string {
+  return trimRuns(runs)
+    .map((run) => {
+      if (!run.bold) {
+        return escapeText(run.text)
+      }
+
+      const [, lead = '', core = '', trail = ''] = /^(\s*)([\s\S]*?)(\s*)$/.exec(run.text) ?? []
+
+      return core === '' ? run.text : `${lead}**${escapeText(core)}**${trail}`
+    })
+    .join('')
+}
+
+function escapeText(text: string): string {
+  return text.replace(/[\\*]/g, (character) => `\\${character}`)
+}
+
+/** A line's runs merged, with whitespace trimmed off its two ends and no empty runs. */
+export function trimRuns(runs: PrivacyPolicyRuns): PrivacyPolicyRun[] {
+  const merged: PrivacyPolicyRun[] = []
+
+  for (const run of runs) {
+    appendRun(merged, run)
+  }
+
+  if (merged.length === 0) {
+    return []
+  }
+
+  const first = merged[0]!
+  const lastIndex = merged.length - 1
+
+  merged[0] = { text: first.text.replace(/^\s+/, ''), bold: first.bold }
+  merged[lastIndex] = {
+    text: merged[lastIndex]!.text.replace(/\s+$/, ''),
+    bold: merged[lastIndex]!.bold,
+  }
+
+  return merged.filter((run) => run.text !== '')
+}
+
+/**
+ * The text as the editor would save it. Two spellings of one policy — `* item`
+ * and `- item`, a stray `##` — become one, which is what "has anything
+ * changed" and "is this what the website shows" compare.
+ */
+export function normalisePrivacyPolicy(text: string): string {
+  return privacyPolicyText(parsePrivacyPolicy(text))
+}
+
+/* ── Checks ───────────────────────────────────────────────────────────────── */
 
 /** What each `[Fill in: …]` gap asks for, in the order they appear. */
 export function unfilledPlaceholders(text: string): string[] {
@@ -130,7 +332,7 @@ export type PrivacyPolicyCheck = { ok: true; value: string } | { ok: false; erro
 
 /** A draft may be anything, including empty, as long as it fits. */
 export function checkPrivacyPolicyDraft(text: string): PrivacyPolicyCheck {
-  const value = tidyPrivacyPolicy(text)
+  const value = normalisePrivacyPolicy(text)
 
   return value.length > MAX_PRIVACY_POLICY_LENGTH
     ? { ok: false, error: MESSAGES.too_long }
@@ -173,7 +375,7 @@ export function privacyPolicyStatus(input: {
     return 'unpublished'
   }
 
-  return tidyPrivacyPolicy(input.draft) === tidyPrivacyPolicy(input.published)
+  return normalisePrivacyPolicy(input.draft) === normalisePrivacyPolicy(input.published)
     ? 'published'
     : 'draft_ahead'
 }

@@ -22,6 +22,7 @@
 | Email | **Resend**, over its REST API | Transactional confirmations and QR delivery. **No npm dependency** (14 September 2026, capability A8): the surface used is one endpoint, six body fields — the sixth, `attachments`, carries the entry QR code since 15 September 2026 — and one response field, so `lib/email/send.ts` posts to it directly — the reasoning `lib/auth/access-token.ts` already applied to `nanoid`. The SDK earns its keep the day bounce webhooks are handled, and that is the day to take it. Swappable. |
 | QR generation | **`qrcode`** (npm, 1.5.4, with `@types/qrcode`), server-side | Produces the entry code's PNG for the confirmation email's attachment, the portal's download for WhatsApp forwarding, and the guest's booking page (`lib/qr/entry-qr.ts`, §7). Installed 15 September 2026 with the code. |
 | PDF generation | **`pdf-lib`** | Accounting pack assembly server-side. |
+| Rich text editing | **TipTap** (`@tiptap/react`, `@tiptap/core`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-list`, all 3.31.3), client-side, one portal screen | The privacy policy editor (§8.5). Staff write a legal document and paste it from Word, so a text box with formatting conventions was the wrong tool for them (Jeff, 15 September 2026). Configured down to what the stored text holds, and it saves that text rather than HTML, so nothing it produces reaches the public site as markup. Loaded only by the route that uses it. |
 | Payments | **None in v1** | Bank transfer + manual verification per PRD §10. A `PaymentProvider` interface isolates this so a gateway can be added without touching booking logic. |
 | Validation | **Zod** | Server actions receive untyped `FormData` from a browser. An authenticated staff member is trusted; the request is not. One schema per action, parsed before anything reaches `lib/domain`. Added 2026-08-27 with the walk-in booking form. |
 | Testing | **Vitest** (dev) | §2 makes coverage mandatory for the pricing engine and state machine, which needs a runner. Node's built-in `node:test` was the zero-dependency alternative but needs stable TS stripping the `engines` floor of Node 20.9 lacks, so it would have pulled in `tsx` regardless. Added 2026-08-27. |
@@ -488,7 +489,14 @@ Everything above holds as written; the accounting pack followed a day later (§8
 - **`publish_privacy_policy()`** takes the text on screen rather than "the saved draft", so what the confirmation showed is exactly what goes live. It saves that text as the draft and appends a version, unless the newest version already says exactly this, in which case it writes nothing. It writes `privacy_policy.published` against the version, carrying character counts and the previous version's id rather than a second copy of fifty thousand characters. A draft save is not audited.
 - **Both repeat the checks** from `lib/domain/privacy-policy.ts`: at most 50,000 characters, not empty to publish, and no `[Fill in:` gap.
 
-**No markup, anywhere.** `parsePrivacyPolicy()` turns the text into heading, paragraph and list blocks, and `components/privacy-policy-document.tsx` renders them as elements. The public page and the portal preview share that component, so the preview is the page. There is no Markdown library and no HTML string to sanitise, so no new dependency. The template is code (`lib/domain/privacy-policy-template.ts`), filled in with the contact phone numbers.
+**A rich text editor that saves plain text, and no markup anywhere.** The stored format is plain text with five constructions: `##` headings, `-` bullets, `1.` numbered items, paragraphs, and `**bold**`, with backslash escapes. `lib/domain/privacy-policy.ts` is its only reader and writer: `parsePrivacyPolicy()` and `privacyPolicyText()`.
+- **The editor** is TipTap (§1), configured to exactly those constructions. Its schema refuses everything else, including a nested list, which the stored text cannot hold.
+- **The JSON bridge:** `lib/domain/privacy-policy-editor-doc.ts` translates the editor's ProseMirror JSON to and from the blocks, as pure functions tested without a browser.
+- **Pasting:** every heading level becomes the one heading size.
+- **Saving:** the server normalises what it is sent through the same parser and writer, so two spellings of one policy are stored as one.
+- **Unchanged downstream:** the tables, writers, published versions and export all hold the same text as before the editor existed.
+- **The public page** renders the blocks as elements (`components/privacy-policy-document.tsx`), so there is no HTML string to sanitise.
+- **The template** is code (`lib/domain/privacy-policy-template.ts`), filled in with the contact phone numbers.
 
 **Delivery.**
 - **`/privacy`** is `force-dynamic` and returns 404 until a version exists.

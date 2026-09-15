@@ -1,23 +1,17 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText } from 'lucide-react'
 
 import { SectionCard } from '@/components/portal/section-card'
-import { PrivacyPolicyDocument } from '@/components/privacy-policy-document'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
-import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Notice } from '@/components/ui/notice'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast-store'
 import {
-  checkPrivacyPolicyForPublishing,
-  parsePrivacyPolicy,
-  tidyPrivacyPolicy,
+  MAX_PRIVACY_POLICY_LENGTH,
+  normalisePrivacyPolicy,
   unfilledPlaceholders,
 } from '@/lib/domain/privacy-policy'
 
@@ -26,6 +20,7 @@ import {
   savePrivacyPolicyDraftAction,
   type PrivacyPolicyActionState,
 } from './actions'
+import { PolicyRichText } from './policy-rich-text'
 import { PublishPrivacyPolicyDialog } from './publish-privacy-policy-dialog'
 import { UseTemplateDialog } from './use-template-dialog'
 
@@ -35,16 +30,16 @@ const LISTED_GAPS = 6
 /**
  * Writing the privacy policy (capability F10).
  *
- * **One text box, and a preview that is the public page's own markup.** The
- * formatting is three conventions a hint under the box states in a sentence,
- * and *Preview* shows what they did — which is how somebody who has never
- * typed `##` can tell it worked.
+ * **A rich text editor, saving plain text.** The editor (`PolicyRichText`)
+ * looks like the page a guest reads, and hands back the stored format — so
+ * everything here compares and saves text, normalised the way the editor
+ * writes it, and nothing downstream knows an editor exists.
  *
  * **Save draft** keeps the work and changes nothing on the website; it is
  * dirty-gated (design.md, Buttons). **Publish** is the one primary, asks first,
- * and is disabled while the text is empty, has a `[Fill in: …]` gap, or is
- * already what the website shows. *Start from template* replaces the text in
- * the editor only, and asks first when there is text to lose.
+ * and is disabled while the text is empty, too long, has a `[Fill in: …]` gap,
+ * or is already what the website shows. *Start from template* replaces what is
+ * in the editor only, and asks first when there is text to lose.
  */
 export function PrivacyPolicyEditor({
   savedText,
@@ -58,27 +53,24 @@ export function PrivacyPolicyEditor({
   publishedText: string | null
   template: string
 }) {
-  const [text, setText] = useState(savedText)
-  const [tab, setTab] = useState('write')
+  const saved = useMemo(() => normalisePrivacyPolicy(savedText), [savedText])
+  const published = useMemo(
+    () => (publishedText === null ? null : normalisePrivacyPolicy(publishedText)),
+    [publishedText],
+  )
+  const templateText = useMemo(() => normalisePrivacyPolicy(template), [template])
+
+  const [text, setText] = useState(saved)
   const [dialog, setDialog] = useState<'publish' | 'template' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  const tidied = tidyPrivacyPolicy(text)
-  const isDirty = tidied !== tidyPrivacyPolicy(savedText)
-  const gaps = unfilledPlaceholders(tidied)
-  const isOnWebsite = publishedText !== null && tidied === tidyPrivacyPolicy(publishedText)
-  const canPublish = checkPrivacyPolicyForPublishing(tidied).ok && !isOnWebsite
-
-  function submitted(): FormData {
-    const data = new FormData()
-
-    data.set('text', text)
-    data.set('expectedUpdatedAt', savedAt ?? '')
-
-    return data
-  }
+  const isDirty = text !== saved
+  const gaps = unfilledPlaceholders(text)
+  const isTooLong = text.length > MAX_PRIVACY_POLICY_LENGTH
+  const isOnWebsite = published !== null && text === published
+  const canPublish = text !== '' && !isTooLong && gaps.length === 0 && !isOnWebsite
 
   function run(
     action: (
@@ -90,7 +82,12 @@ export function PrivacyPolicyEditor({
     setError(null)
 
     startTransition(async () => {
-      const outcome = await action({ status: 'idle' }, submitted())
+      const data = new FormData()
+
+      data.set('text', text)
+      data.set('expectedUpdatedAt', savedAt ?? '')
+
+      const outcome = await action({ status: 'idle' }, data)
 
       if (outcome.status !== 'done') {
         setError(outcome.message ?? 'The privacy policy could not be saved. Try again.')
@@ -117,8 +114,7 @@ export function PrivacyPolicyEditor({
   }
 
   function applyTemplate() {
-    setText(template)
-    setTab('write')
+    setText(templateText)
     setDialog(null)
   }
 
@@ -131,50 +127,26 @@ export function PrivacyPolicyEditor({
           type="button"
           variant="tertiary"
           disabled={isPending}
-          onClick={() => (tidied === '' ? applyTemplate() : setDialog('template'))}
+          onClick={() => (text === '' ? applyTemplate() : setDialog('template'))}
         >
           <FileText aria-hidden />
           Start from template
         </Button>
       }
     >
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="write">Write</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-        </TabsList>
+      <PolicyRichText
+        value={text}
+        onChange={setText}
+        disabled={isPending}
+        labelledBy="privacy-policy-editor"
+        describedBy="privacy-policy-hint"
+      />
+      <p id="privacy-policy-hint" className="mt-sm text-caption text-muted-foreground">
+        Paste from Word or Google Docs and its headings, lists and bold come with it; other
+        formatting is left behind.
+      </p>
 
-        <TabsContent value="write">
-          <Label htmlFor="privacy-policy-text" className="sr-only">
-            Privacy policy
-          </Label>
-          <Textarea
-            id="privacy-policy-text"
-            value={text}
-            disabled={isPending}
-            className="min-h-[420px]"
-            placeholder="Paste your privacy policy here, or start from the template."
-            aria-describedby="privacy-policy-hint"
-            onChange={(event) => setText(event.target.value)}
-          />
-          <p id="privacy-policy-hint" className="mt-sm text-caption text-muted-foreground">
-            Start a line with ## for a heading, or with - for a bullet point. Every other line is
-            its own paragraph. Preview shows it as the website will.
-          </p>
-        </TabsContent>
-
-        <TabsContent value="preview">
-          <Card surface="inset" className="p-lg">
-            {tidied === '' ? (
-              <p className="text-body-sm text-muted-foreground">Nothing to preview yet.</p>
-            ) : (
-              <PrivacyPolicyDocument blocks={parsePrivacyPolicy(tidied)} headingLevel="h3" />
-            )}
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {tidied === '' ? (
+      {text === '' ? (
         <Notice className="mt-md">
           Nothing written yet. <strong className="font-medium">Start from template</strong> gives
           you headings shaped to what the website collects, with a [Fill in: …] gap wherever only
@@ -200,6 +172,13 @@ export function PrivacyPolicyEditor({
         </Notice>
       ) : null}
 
+      {isTooLong ? (
+        <Callout className="mt-md">
+          The policy is longer than {MAX_PRIVACY_POLICY_LENGTH.toLocaleString('en-GB')} characters,
+          so it cannot be saved. Shorten it first.
+        </Callout>
+      ) : null}
+
       {error && dialog === null ? (
         <Callout role="alert" className="mt-md">
           {error}
@@ -217,14 +196,19 @@ export function PrivacyPolicyEditor({
               variant="tertiary"
               disabled={isPending}
               onClick={() => {
-                setText(savedText)
+                setText(saved)
                 setError(null)
               }}
             >
               Discard changes
             </Button>
           ) : null}
-          <Button type="button" variant="tertiary" disabled={isPending || !isDirty} onClick={save}>
+          <Button
+            type="button"
+            variant="tertiary"
+            disabled={isPending || !isDirty || isTooLong}
+            onClick={save}
+          >
             {isPending && dialog === null ? 'Saving…' : 'Save draft'}
           </Button>
           <Button

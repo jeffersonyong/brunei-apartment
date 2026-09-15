@@ -25,7 +25,7 @@ The `docs/` folder is the source of truth. Each doc is **normative for its domai
 
 ## Architecture (summary — details in architecture.md)
 
-- **Stack:** Next.js App Router (single app, route groups `(public)` / `(portal)` / `(field)`), Vercel, Supabase (`ap-southeast-1`), Tailwind + shadcn/ui themed from design.md tokens, Resend, `qrcode`, `pdf-lib`.
+- **Stack:** Next.js App Router (single app, route groups `(public)` / `(portal)` / `(field)`), Vercel, Supabase (`ap-southeast-1`), Tailwind + shadcn/ui themed from design.md tokens, Resend, `qrcode`, `pdf-lib`, TipTap (the privacy policy's rich text editor, portal only).
 - **Non-negotiable invariants:**
   - Double-booking is prevented **in the database** (GiST exclusion constraint on occupancy ranges), never by application logic alone.
   - All DB access is server-side; the browser never holds a data-access Supabase client. Every mutation is a server action gated by `requirePermission(...)`.
