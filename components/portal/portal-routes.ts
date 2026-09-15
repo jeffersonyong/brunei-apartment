@@ -15,6 +15,7 @@ import {
   Plus,
   ScrollText,
   Settings,
+  ShieldCheck,
   Smartphone,
   Tag,
   Users,
@@ -122,6 +123,13 @@ export const navGroups = [
       // site says, kept current now and then. Its own permission,
       // `faq.manage` (capability F9).
       { href: '/website/faqs', label: 'Website FAQs', icon: MessageCircleQuestion },
+      // Beside the other two for the same reason: what the public site says.
+      // Its own permission, `privacy_policy.manage` (capability F10).
+      {
+        href: '/website/privacy-policy',
+        label: 'Privacy policy',
+        icon: ShieldCheck,
+      },
       { href: '/settings/roles', label: 'Roles & staff', icon: Users },
       { href: '/settings/audit', label: 'Audit log', icon: ScrollText },
       // No "Export data" item. The screen it pointed at listed seventeen table

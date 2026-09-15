@@ -30,6 +30,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'document.view_identity': 'View identity documents',
   'site_image.manage': 'Manage website photos',
   'faq.manage': 'Manage website FAQs',
+  'privacy_policy.manage': 'Write and publish the privacy policy',
 }
 
 export const PERMISSION_GROUPS: readonly { label: string; permissions: readonly Permission[] }[] = [
@@ -63,7 +64,7 @@ export const PERMISSION_GROUPS: readonly { label: string; permissions: readonly 
   },
   {
     label: 'Website',
-    permissions: ['site_image.manage', 'faq.manage'],
+    permissions: ['site_image.manage', 'faq.manage', 'privacy_policy.manage'],
   },
   {
     label: 'Administration',

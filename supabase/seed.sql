@@ -162,7 +162,7 @@ cross join unnest(array[
   'day_pass.admit', 'payment.verify', 'payment.record_cash', 'inspection.record',
   'charge.create', 'charge.waive', 'deposit.approve_release', 'deposit.waive',
   'unit.manage', 'tenancy.manage', 'config.manage', 'report.view',
-  'document.view_identity', 'site_image.manage', 'faq.manage'
+  'document.view_identity', 'site_image.manage', 'faq.manage', 'privacy_policy.manage'
 ]) as permission
 where r.slug = 'admin';
 

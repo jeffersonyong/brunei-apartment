@@ -134,6 +134,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'faq.unfeatured',
   'faq.moved',
   'faq.removed',
+  'privacy_policy.published',
 ] as const
 
 /** The families the audit screen filters by, in the order it offers them. */
@@ -159,6 +160,7 @@ export const AUDIT_FAMILIES = [
   'cash',
   'site_image',
   'faq',
+  'privacy_policy',
 ] as const
 
 export type AuditFamily = (typeof AUDIT_FAMILIES)[number]
@@ -196,6 +198,7 @@ export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
   cash: 'Cash banked',
   site_image: 'Website photos',
   faq: 'Website FAQs',
+  privacy_policy: 'Privacy policy',
 }
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -280,6 +283,7 @@ export function describeAuditEvent(event: AuditEventLike): string {
     describeSettings(event) ??
     describeSiteImage(event) ??
     describeFaq(event) ??
+    describePrivacyPolicy(event) ??
     ACTION_LABELS[event.action]
 
   return described ?? fallbackLabel(event.action)
@@ -803,6 +807,25 @@ function faqUpdateLabel(event: AuditEventLike): string {
   return changed.length === 0 ? 'FAQ edited' : `FAQ edited — ${changed.length} fields changed`
 }
 
+// ── Website privacy policy ─────────────────────────────────────────────────
+
+/**
+ * The privacy policy on the public site (capability F10).
+ *
+ * Only publishing is recorded — a draft save changes nothing a guest sees — so
+ * there is one verb. The first publish is worth telling apart, because it is
+ * the moment the website's footer link started working.
+ */
+function describePrivacyPolicy(event: AuditEventLike): string | null {
+  if (event.action !== 'privacy_policy.published') {
+    return null
+  }
+
+  return event.after?.first === true
+    ? 'Privacy policy published for the first time'
+    : 'New version of the privacy policy published'
+}
+
 // ── Where an event points ──────────────────────────────────────────────────
 
 /**
@@ -836,6 +859,7 @@ export const AUDIT_ENTITY_TYPES = [
   'cash_banking',
   'site_image',
   'faq',
+  'privacy_policy_version',
 ] as const
 
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number]
@@ -864,6 +888,7 @@ export const AUDIT_ENTITY_LABELS: Readonly<Record<AuditEntityType, string>> = {
   cash_banking: 'Banking',
   site_image: 'Website photo',
   faq: 'Website FAQ',
+  privacy_policy_version: 'Privacy policy',
 }
 
 /**
@@ -916,6 +941,8 @@ export function auditSubjectHref(entityType: string, subjectLabel: string | null
       return '/website/photos'
     case 'faq':
       return '/website/faqs'
+    case 'privacy_policy_version':
+      return '/website/privacy-policy'
     default:
       return null
   }

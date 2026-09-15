@@ -5,14 +5,24 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 import { BookMenu } from './_components/book-menu'
+import {
+  FooterPrivacyPolicyLink,
+  readPrivacyPolicyPublished,
+} from './_components/privacy-policy-link'
 import { contact } from './_content/landing'
 
 /**
  * Public site chrome. One continuous white surface (design.md §Layout):
  * sections separate with hairlines, and the header carries the funnel — the
  * nav links plus the one primary button.
+ *
+ * It reads one thing: whether a privacy policy is published, for the footer's
+ * link (capability F10). Publishing revalidates every page's layout, so the
+ * static pages pick the link up without waiting on their own regeneration.
  */
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  const hasPrivacyPolicy = await readPrivacyPolicyPublished()
+
   return (
     <div className="flex min-h-dvh flex-col">
       {/* Sticky: the day-pass and stays links are the funnel, and on a phone
@@ -138,6 +148,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 </li>
                 <li>
                   <Link href="/faq">FAQs</Link>
+                </li>
+                <li>
+                  <FooterPrivacyPolicyLink isPublished={hasPrivacyPolicy} />
                 </li>
                 <li>
                   <a href={contact.whatsappUrl} target="_blank" rel="noreferrer">

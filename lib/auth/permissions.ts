@@ -118,6 +118,17 @@ export const PERMISSIONS = [
    * one tick in Roles & staff.
    */
   'faq.manage',
+  /**
+   * Writing and publishing the privacy policy on the public site (capability
+   * F10).
+   *
+   * Its own string for the reason the two above have one — whoever drafts the
+   * notice should not also be handed pricing, roles and the audit log — and
+   * not `faq.manage`: an FAQ answers a question, while this is what the
+   * business commits to about a guest's personal data. Seeded to Admin; any
+   * other role is one tick in Roles & staff.
+   */
+  'privacy_policy.manage',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]

@@ -1014,6 +1014,38 @@ const websiteFaqs: ExportTable = {
   },
 }
 
+interface PrivacyPolicyVersionExportRow {
+  body: string
+  published_by: string | null
+  published_at: string
+}
+
+/**
+ * Every privacy policy the website has shown (capability F10).
+ *
+ * The published versions, not the draft: a draft is a working copy no guest
+ * saw, and what guests were told, from when, is the record worth keeping.
+ */
+const websitePrivacyPolicy: ExportTable = {
+  id: 'website-privacy-policy',
+  label: 'Privacy policy versions',
+  description:
+    'Every version of the privacy policy the website has shown, with who published it and when.',
+  count: () => countOf('privacy_policy_version'),
+  document: async () => {
+    const rows = await allOf<PrivacyPolicyVersionExportRow>(
+      'privacy_policy_version',
+      'body, published_by, published_at',
+      'published_at',
+    )
+
+    return {
+      headers: ['Published', 'Published by', 'Policy'],
+      rows: rows.map((row) => [row.published_at, text(row.published_by), row.body]),
+    }
+  },
+}
+
 export const EXPORT_TABLES: readonly ExportTable[] = [
   bookings,
   bookingLines,
@@ -1034,6 +1066,7 @@ export const EXPORT_TABLES: readonly ExportTable[] = [
   settings,
   websitePhotos,
   websiteFaqs,
+  websitePrivacyPolicy,
 ]
 
 export function exportTableById(id: string): ExportTable | undefined {
@@ -1088,6 +1121,8 @@ export const EXPORT_GROUPS = {
   website: ['website-photos'],
   /** Website FAQs, downloaded beside the questions themselves. */
   faqs: ['website-faqs'],
+  /** Website privacy policy, downloaded beside the policy itself. */
+  privacyPolicy: ['website-privacy-policy'],
 } as const satisfies Record<string, readonly string[]>
 
 export type ExportGroupName = keyof typeof EXPORT_GROUPS
