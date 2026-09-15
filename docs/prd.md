@@ -110,16 +110,18 @@ inspection.record     charge.create         charge.waive
 deposit.approve_release                     deposit.waive
 unit.manage           tenancy.manage        config.manage
 report.view           document.view_identity
-site_image.manage     faq.manage
+site_image.manage     faq.manage            privacy_policy.manage
 ```
 
 **[A] `booking.discount` is separate from `booking.create`** and is the one permission that gates discretion rather than an operation — see §8.4. Front Office holds it by default, because the desk is where a discount is asked for; withholding it from a role is one click in the Roles matrix.
 
 **[A] `deposit.waive` is the second such permission** (5 September 2026, capability B15). It gates deciding at the desk that no security deposit is taken on a booking — see §11. Same construction and same default as the discount: separate from `booking.create` because it decides money is not taken, held by Front Office because the guest asking to stay another night is standing at the desk, and one click to withhold.
 
-**[A] `site_image.manage` is a departure, made on purpose** (23 September 2026, capability F7). It gates adding, replacing, reframing and removing the photographs on the public site. The unit registry below reused `config.manage` rather than mint a new string, because an administrator opens it twice a year; the photos are different in who does them — whoever runs the Instagram account refreshes the "Follow along" tiles — and `config.manage` would also hand that person pricing, roles and the audit log. Seeded to Admin only; any other role is one tick in the Roles matrix. The set held nineteen strings then, twenty-one from `booking.check_in` and `booking.check_out`, twenty-two since `day_pass.admit` (below), and twenty-three since `faq.manage`.
+**[A] `site_image.manage` is a departure, made on purpose** (23 September 2026, capability F7). It gates adding, replacing, reframing and removing the photographs on the public site. The unit registry below reused `config.manage` rather than mint a new string, because an administrator opens it twice a year; the photos are different in who does them — whoever runs the Instagram account refreshes the "Follow along" tiles — and `config.manage` would also hand that person pricing, roles and the audit log. Seeded to Admin only; any other role is one tick in the Roles matrix. The set held nineteen strings then, twenty-one from `booking.check_in` and `booking.check_out`, twenty-two since `day_pass.admit` (below), twenty-three since `faq.manage`, and twenty-four since `privacy_policy.manage`.
 
 **[A] `faq.manage` follows the same reasoning** (14 September 2026, capability F9; proposed by Jeff, not yet agreed with the client). It gates adding, rewording, reordering, featuring and removing the questions on the public site. Its own string rather than `config.manage`, for the reason `site_image.manage` has one — whoever keeps the website's words current should not also be handed pricing, roles and the audit log — and not `site_image.manage` either: a photograph and a sentence about payment are different trusts, and the difference is one tick. Seeded to Admin only, and grouped under Website beside the photos in the Roles matrix.
+
+**[A] `privacy_policy.manage` is the third** (15 September 2026, capability F10; proposed by Jeff, not yet agreed with the client). It gates writing and publishing the privacy policy on the public site — see §13. Its own string for the same reason as the two above, and not `faq.manage`: an FAQ answers a question, while the policy is what the business commits to about a guest's personal data, and Jason may well want fewer hands on it. Seeded to Admin only, grouped under Website in the Roles matrix.
 
 **[C]** Deposit release approval sits at the end of the pipeline, with Finance or Jason, not with Housekeeping or Front Office. Housekeeping records the inspection; a separate role approves.
 
@@ -881,7 +883,26 @@ Until now every document in the system was put there by a member of staff. §2 d
 
 **[A] Neither is required, and the IC is still the desk's to collect.** An upload that refused a booking would lose the booking, which is §13's own reasoning for the email address being optional. A guest who sends nothing is a guest the desk registers at the door exactly as it does today. **[O] What is not settled is whether a guest's own upload is *enough* for registration**, or whether the desk should still sight the physical IC on arrival — §13's **[C]** requires a copy and is silent on who takes it. Nothing is blocked: the document is on file either way, and if the answer is that a clerk must still look, that is a line on the check-in screen rather than a change here.
 
-**[O] What the guest is told when they hand it over.** This is the first surface in the product where identity data is collected with no member of staff present, and Brunei's PDPO commenced in January 2026. The page states the purpose — it is needed to register the stay — that the file is held privately, and that it is deleted when its retention period ends. **It does not name the period**, for the reason below: that is F3's setting, and copy repeating it would start lying the first time it is shortened. Whether that wording is sufficient notification is the client's risk to accept, and it is in the register.
+**[O] What the guest is told when they hand it over.** This is the first surface in the product where identity data is collected with no member of staff present, and Brunei's PDPO commenced in January 2026. The page states the purpose — it is needed to register the stay — that the file is held privately, and that it is deleted when its retention period ends. **It does not name the period**, for the reason below: that is F3's setting, and copy repeating it would start lying the first time it is shortened. Whether that wording is sufficient notification is the client's risk to accept, and it is in the register. **Since 15 September 2026 the page can also point to a privacy policy** (capability F10, below): once one is published, the IC section links to it.
+
+### As built (capability F10, 15 September 2026) — the privacy policy
+
+The site collected names, phone numbers, car registrations and ICs, and said nowhere what happens to them. **What a privacy notice says is the client's to write and approve, and the product does not decide it** — so what is built is the capability, not the wording. Staff write the policy under *Admin → Privacy policy* and publish it to `/privacy`. Until they do, there is no page, and the *Privacy policy* link in the footer of every public page is shown but does nothing. Once one is published, the link works and the guest's IC upload points to it too. Whether a given wording meets the PDPO is **[R5](open-questions.md)**. The following are **[A]**.
+
+**[A] One document, not a form.** The policy is one block of plain text with three conventions: `##` starts a heading, `-` starts a bullet, and every other line is a paragraph. That shape is chosen because the likeliest source is a lawyer's document pasted in whole. A preview shows it exactly as the website will. Nothing typed becomes markup.
+
+**[A] A template to start from, which cannot be published as it is.** *Start from template* fills the editor with headings shaped to what this product actually collects and to what the PDPO gives a notice reason to cover:
+- who we are, what we collect and why;
+- consent and withdrawing it;
+- who it is shared with, including service providers outside Brunei, since the database is in Singapore;
+- how long it is kept, and how it is protected, including breach notification to AITI;
+- access and correction, and a Data Protection Officer to contact.
+
+Anything only the business knows is a `[Fill in: …]` gap: who operates Palm Villa, the Data Protection Officer's name and email, and the response time to a request. **A gap left in refuses to publish**, so an unedited template can never go live. The template states no retention period, for the reason above: that is F3's setting.
+
+**[A] A draft, and published versions.** Saving changes nothing on the website; *Publish* asks first, then replaces what the website shows. Every published version is kept, with who published it and when, because the question the PDPO actually asks is what a guest was told on the day their IC arrived. Publishing is recorded in the audit log; saving a draft is not, because nothing anybody outside the portal sees has changed. There is no *unpublish*: a mistake is corrected by publishing again, and a notice that disappears is not a fix.
+
+**[A] The page is dated, and says nothing else of its own.** `/privacy` adds only its title and "Last updated" with the date of the newest version; every other word is staff's.
 
 **The retention anchor got more exposed, and is still [N22](open-questions.md).** A guest can now attach an IC to a booking that is never paid for and is then cancelled, whose clock runs twelve months from a checkout that never happened. The question is unchanged; it is no longer the exotic case.
 

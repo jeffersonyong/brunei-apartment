@@ -191,6 +191,7 @@ These protect Jeff and the client. They are not build decisions.
 | **R2** | Insurance, lifeguard and supervision arrangements for admitting paying non-residents to a water park and an indoor children's playground |
 | **R3** | Total parking bays, given per-unit car allowances plus day pass visitor vehicles |
 | **R4** | Consent for photographs on the public website: whether a photo in which a guest, a child or a member of staff can be recognised may be published, and whose permission that needs. The upload dialog asks staff not to use one (capability F7), but a sentence on a screen is not a policy, and a recognisable photograph is personal data under the PDPO. |
+| **R5** | **The privacy policy's wording, and the obligations behind it.** Capability F10 lets staff write and publish a privacy policy from a template, and publishing refuses any `[Fill in: …]` gap left in. It does not make the wording compliant with the PDPO, and was never meant to. Before launch, Jason should confirm in writing four things. (1) He has published a policy, since the site collects ICs with no notice until he does. (2) He or his adviser has approved its wording. (3) He has appointed a Data Protection Officer, whose contact the policy names. (4) He accepts that personal data is held by providers outside Brunei, in Singapore (Supabase) and wherever the hosting and email providers process it. |
 
 ---
 
