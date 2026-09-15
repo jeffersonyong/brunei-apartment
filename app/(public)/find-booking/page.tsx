@@ -15,10 +15,10 @@ export const metadata: Metadata = {
  *
  * Every other route to `/booking/{token}` assumes the customer still has the
  * link. Two ordinary situations break that assumption and this page is the
- * answer to both: a customer who booked online and closed the tab — the
- * confirmation email that would have carried the link is built and switched
- * off until N42 answers — and a guest who booked at the counter, whose
- * booking has never had a link at all until they ask for one here.
+ * answer to both: a customer who booked online and closed the tab — with no
+ * email address given, or the email lost — and a guest who booked at the
+ * counter, whose booking has never had a link at all until they ask for one
+ * here.
  *
  * **This is the one page on this surface that wants to be indexed.** Everything
  * under `/booking/*` is `noindex` because it is about one person's booking;
