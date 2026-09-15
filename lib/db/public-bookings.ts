@@ -418,9 +418,9 @@ export interface PublicBookingLink {
  * they booked with (capability A9).
  *
  * The one read on this surface with no token behind it, and the reason the
- * screen exists: the confirmation email is switched off until N42 answers, so
- * a customer who closes the tab has no link, and a customer who booked at the
- * counter never had one.
+ * screen exists: a customer who gave no email address and closed the tab has
+ * no link, one who lost the email has none to hand, and a customer who booked
+ * at the counter never had one.
  *
  * **Reference first, then the phone compared in TypeScript.** The phone rule
  * cannot go into SQL without becoming a second copy of `lib/domain/phone.ts`,

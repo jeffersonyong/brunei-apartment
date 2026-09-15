@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { classify, isRetryable, type SendFailureClass } from './send'
+import { classify, isRetryable, resendBody, type SendFailureClass } from './send'
 
 /**
  * Which answer from the mail service means try again.
@@ -37,6 +37,66 @@ describe('classify', () => {
   test('the two 409s are told apart by the code, which is the only body field read', () => {
     expect(classify(409, 'concurrent_idempotent_requests').class).toBe('in_flight')
     expect(classify(409, 'invalid_idempotent_request').class).toBe('rejected')
+  })
+})
+
+describe('resendBody', () => {
+  const message = {
+    to: 'guest@example.test',
+    subject: 'You are booked',
+    html: '<p>Hi</p>',
+    text: 'Hi',
+    idempotencyKey: 'pv.booking_confirmed.0000',
+  }
+
+  test('sends the five fields, and no attachments key when there are none', () => {
+    expect(resendBody('Palm Villa <noreply@bruneiapartment.com>', message)).toEqual({
+      from: 'Palm Villa <noreply@bruneiapartment.com>',
+      to: 'guest@example.test',
+      subject: 'You are booked',
+      html: '<p>Hi</p>',
+      text: 'Hi',
+    })
+  })
+
+  test('names an inline attachment in Resend’s own field names', () => {
+    const body = resendBody('from@example.test', {
+      ...message,
+      attachments: [
+        {
+          filename: 'PV-0042-entry-qr.png',
+          content: 'iVBORw0KGgo=',
+          contentType: 'image/png',
+          contentId: 'entry-qr',
+        },
+      ],
+    })
+
+    expect(body.attachments).toEqual([
+      {
+        filename: 'PV-0042-entry-qr.png',
+        content: 'iVBORw0KGgo=',
+        content_type: 'image/png',
+        content_id: 'entry-qr',
+      },
+    ])
+  })
+
+  test('leaves content_id off an attachment that is not shown inline', () => {
+    const body = resendBody('from@example.test', {
+      ...message,
+      attachments: [{ filename: 'a.png', content: 'AA==', contentType: 'image/png' }],
+    })
+
+    expect(body.attachments).toEqual([
+      { filename: 'a.png', content: 'AA==', content_type: 'image/png' },
+    ])
+  })
+
+  test('never sends the idempotency key in the body — it is a header', () => {
+    expect(JSON.stringify(resendBody('from@example.test', message))).not.toContain(
+      message.idempotencyKey,
+    )
   })
 })
 

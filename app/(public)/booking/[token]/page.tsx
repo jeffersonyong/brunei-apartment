@@ -21,6 +21,7 @@ import {
   type PublicStage,
 } from '@/lib/domain/public-booking'
 
+import { EntryCodeCard } from './entry-code-card'
 import { SendAFile } from './send-a-file'
 import { TransferInstructions } from './transfer-instructions'
 
@@ -235,10 +236,16 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             instruction — a positive callout above the uploads announced the
             page was finished with them, which is exactly the reading that made
             the IC easy to miss. */}
+        {/* The promise the confirmation keeps (architecture.md §9): the code
+            is issued the moment the transfer is verified. Where it arrives
+            depends on whether the guest gave an address — the field is
+            optional — so the sentence does too. */}
         {stage === 'checking' && shortfall === 0 ? (
           <p className="mt-xl text-body-sm text-muted-foreground">
-            We have your booking and are checking for the transfer. Once we verify it, we will email
-            your confirmation and a QR code for entry.
+            We have your booking and are checking for the transfer. Once we verify it,{' '}
+            {booking.guestEmail
+              ? 'we will email your confirmation and a QR code for entry, which will be on this page too.'
+              : 'your QR code for entry will be on this page.'}
           </p>
         ) : null}
 
@@ -246,9 +253,13 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
           <Callout tone="positive" className="mt-xl">
             Your booking is confirmed.{' '}
             {booking.stream === 'short_stay'
-              ? arrivalSentence(booking)
-              : 'Show this reference at the gate.'}
+              ? `${arrivalSentence(booking)} Show the code below at the gate.`
+              : 'Show the code below at the gate.'}
           </Callout>
+        ) : null}
+
+        {stage === 'confirmed' ? (
+          <EntryCodeCard token={token} booking={booking} className="mt-xl" />
         ) : null}
 
         {stage === 'closed' ? (

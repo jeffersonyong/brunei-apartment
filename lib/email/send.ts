@@ -75,9 +75,53 @@ export interface OutgoingEmail {
    * second copy. Resend holds a key for 24 hours and replays the first result.
    */
   idempotencyKey: string
+  /**
+   * Files sent with the message — today only the confirmation's entry QR code.
+   * Deterministic for a given booking, so a retry under the same idempotency
+   * key sends the same body, which is what Resend requires of a replay.
+   */
+  attachments?: readonly EmailAttachment[]
 }
 
-/** Which HTTP answer means what. Pure, and the only tested part of this file. */
+export interface EmailAttachment {
+  filename: string
+  /** The bytes, base64-encoded. */
+  content: string
+  contentType: string
+  /**
+   * Set to show the file inline: the HTML refers to it as `cid:<contentId>`.
+   * It is still an attachment too, which is what lets a guest forward it.
+   */
+  contentId?: string
+}
+
+/**
+ * The JSON Resend is sent. Pure, so what reaches the wire is tested without a
+ * network: the only two field names that differ from ours are Resend's
+ * snake_case ones on an attachment.
+ */
+export function resendBody(from: string, message: OutgoingEmail): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    from,
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+    text: message.text,
+  }
+
+  if (message.attachments && message.attachments.length > 0) {
+    body.attachments = message.attachments.map((file) => ({
+      filename: file.filename,
+      content: file.content,
+      content_type: file.contentType,
+      ...(file.contentId ? { content_id: file.contentId } : {}),
+    }))
+  }
+
+  return body
+}
+
+/** Which HTTP answer means what. Pure, and tested with `resendBody`. */
 export function classify(status: number, code: string | null): SendFailure {
   if (status === 429) {
     return { class: 'throttled', status, code }
@@ -150,13 +194,7 @@ async function attemptSend(
         'content-type': 'application/json',
         'idempotency-key': message.idempotencyKey,
       },
-      body: JSON.stringify({
-        from,
-        to: message.to,
-        subject: message.subject,
-        html: message.html,
-        text: message.text,
-      }),
+      body: JSON.stringify(resendBody(from, message)),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
   } catch (error) {

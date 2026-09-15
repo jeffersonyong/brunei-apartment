@@ -14,6 +14,12 @@ describe('safeNextPath', () => {
     expect(safeNextPath('/deposits/PV-4821/statement')).toBe('/deposits/PV-4821/statement')
   })
 
+  test('honours the entry code page, so a guard signs in and lands back on the booking', () => {
+    expect(safeNextPath('/c/Ab3xY9-_ZqRs7TuVwX2Kd0')).toBe('/c/Ab3xY9-_ZqRs7TuVwX2Kd0')
+    expect(safeNextPath('/code/abc')).toBe(DEFAULT_SIGNED_IN_PATH)
+    expect(safeNextPath('/cancel')).toBe(DEFAULT_SIGNED_IN_PATH)
+  })
+
   test('rejects absolute and scheme-relative URLs', () => {
     // The open-redirect cases: a crafted login link must not be able to send
     // a signed-in staff member off-site.

@@ -93,6 +93,7 @@ const build = (
     contact,
     bookingUrl: booking.accessToken === null ? null : `https://palmvilla.bn/booking/${TOKEN}`,
     findBookingUrl: 'https://palmvilla.bn/find-booking',
+    hasEntryCode: false,
     ...overrides,
   })
 
@@ -322,6 +323,46 @@ describe('where the money goes', () => {
   })
 })
 
+describe('the entry code', () => {
+  const withCode = (kind: BookingEmailKind, booking: EmailBookingFacts) => {
+    const result = build(kind, booking, { hasEntryCode: true })
+
+    if (!result.ok) {
+      throw new Error(`Expected an email, got a refusal: ${result.reason}`)
+    }
+
+    return result.model
+  }
+
+  test('a confirmed booking with a code carries it, named by its reference', () => {
+    expect(withCode('booking_confirmed', stay({ status: 'confirmed' })).entryCode).toEqual({
+      contentId: 'entry-qr',
+      filename: 'PV-4821-entry-qr.png',
+      alt: 'Entry QR code for booking PV-4821',
+      guidance: expect.stringContaining('Show it at the gate'),
+    })
+  })
+
+  test('a stay is told to show the code first, with the reference as the way in', () => {
+    const model = withCode('booking_confirmed', stay({ status: 'confirmed' }))
+
+    expect(model.arrival[0]).toBe(
+      'Show the QR code in this email at the gate, or quote reference PV-4821.',
+    )
+    expect(model.arrival).toContain('Check in from 14:00, and check out by 12:00.')
+  })
+
+  test('a day pass is told the same, and nothing else', () => {
+    expect(withCode('booking_confirmed', dayPass({ status: 'confirmed' })).arrival).toEqual([
+      'Show the QR code in this email at the gate, or quote reference PV-4822.',
+    ])
+  })
+
+  test('the created email never carries one, since nothing is confirmed yet', () => {
+    expect(withCode('booking_created', stay()).entryCode).toBeNull()
+  })
+})
+
 describe('what the emails never say', () => {
   const everyModel = [
     built('booking_created', stay()),
@@ -330,7 +371,7 @@ describe('what the emails never say', () => {
     built('booking_confirmed', dayPass({ status: 'confirmed' })),
   ]
 
-  test('never mentions a QR code, because none is issued yet', () => {
+  test('never mentions a QR code the booking does not have', () => {
     for (const model of everyModel) {
       expect(JSON.stringify(model)).not.toContain('QR')
     }

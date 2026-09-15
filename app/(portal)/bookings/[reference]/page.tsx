@@ -45,6 +45,7 @@ import { AdmitPassButton } from './admit-pass-button'
 import { BookingActions } from './booking-actions'
 import { BookingHistory } from './booking-history'
 import { AddNote, BookingNotes } from './booking-notes'
+import { EntryCode } from './entry-code'
 import { IdentityDocuments } from './identity-documents'
 import { RecordPayment } from './record-payment'
 import { SecurityDepositInset } from './security-deposit-inset'
@@ -370,6 +371,16 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         pendingSince={packPendingSince}
         verifiedSince={packVerifiedSince}
         mayRebuild={hasPermission(actor.permissions, 'payment.verify')}
+      />
+
+      {/* The code the guard scans, for the desk to forward to a guest the
+          confirmation email never reached (prd.md §12). Below the money: it
+          exists because the money was confirmed. Replacing it answers to
+          `booking.amend`, the permission that already changes the booking. */}
+      <EntryCode
+        booking={booking}
+        mayReplace={hasPermission(actor.permissions, 'booking.amend')}
+        className="mt-xl"
       />
 
       {/* Above the history, below the money. The history is the system's

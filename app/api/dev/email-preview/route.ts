@@ -2,18 +2,24 @@ import { NextResponse } from 'next/server'
 
 import { buildBookingEmail, type BookingEmailKind } from '@/lib/domain/booking-email'
 import { contact } from '@/lib/domain/contact'
+import { entryUrl } from '@/lib/domain/entry-qr'
 import { line } from '@/lib/domain/lines'
 import { buildPasswordResetEmail, resetPasswordUrl } from '@/lib/domain/password-reset'
 import { renderBookingEmail, renderPasswordResetEmail } from '@/lib/email/render'
+import { entryQrDataUrl } from '@/lib/qr/entry-qr'
+
+/** A token of the right shape that opens nothing. */
+const PREVIEW_TOKEN = 'Ab3xY9-_ZqRs7TuVwX2Kd0'
 
 /**
  * The emails, drawn in a browser (capabilities A8 and F8).
  *
- * It exists because **nothing sends**: Resend delivers only to the account
- * owner until a sending domain is verified and none is chosen, so without this
- * the only way to see what a guest — or a member of staff resetting a password
- * — receives would be to read the markup. An email is a design surface and has
- * to be looked at.
+ * It exists because **nothing sends from a developer's machine**: Resend
+ * delivers only from a verified domain, and a local key would mail real guests,
+ * so without this the only way to see what a guest — or a member of staff
+ * resetting a password — receives would be to read the markup. An email is a
+ * design surface and has to be looked at. The confirmed cases draw the entry QR
+ * code from a `data:` URL, since a frame cannot resolve the email's `cid:`.
  *
  * **404 outside development**, which is the whole of its access control — it
  * is a route rather than a page so that check is one line and cannot be
@@ -40,7 +46,7 @@ const CASES: Readonly<Record<PreviewCase, string>> = {
   'password-reset': 'Staff — choose a new password',
 }
 
-export function GET(request: Request): NextResponse {
+export async function GET(request: Request): Promise<NextResponse> {
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
@@ -59,7 +65,13 @@ export function GET(request: Request): NextResponse {
   const rendered =
     requested === 'password-reset'
       ? renderPasswordResetEmail(passwordResetModel())
-      : renderBookingEmail(modelFor(requested))
+      : // A frame has no attachments to resolve `cid:` against, so the preview
+        // draws the same PNG inline. It encodes an invented token.
+        renderBookingEmail(modelFor(requested), {
+          entryCodeSrc: await entryQrDataUrl(
+            entryUrl('https://portal.palmvilla.bn', PREVIEW_TOKEN) ?? '',
+          ),
+        })
 
   return url.searchParams.get('format') === 'text'
     ? new NextResponse(rendered.text, {
@@ -157,6 +169,8 @@ function modelFor(preview: BookingPreviewCase) {
     contact,
     bookingUrl: 'https://palmvilla.bn/booking/Ab3xY9-_ZqRs7TuVwX2Kd0',
     findBookingUrl: 'https://palmvilla.bn/find-booking',
+    // A confirmed booking has a code by construction (the database issues it).
+    hasEntryCode: kind === 'booking_confirmed',
   })
 
   if (!built.ok) {
