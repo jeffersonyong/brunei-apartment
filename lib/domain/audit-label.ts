@@ -47,6 +47,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'booking.created_walk_in',
   'booking.created_public',
   'booking.link_issued',
+  'booking.qr_reissued',
   'booking.amended',
   'booking.discounted',
   'booking.hold',
@@ -220,6 +221,9 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   // null actor as "System", which would read as the property issuing itself a
   // link. Naming how it was found is what says a person asked for it.
   'booking.link_issued': 'Booking link issued — found by reference and phone',
+  // Issuing a code writes no event — it is part of confirming the booking — so
+  // replacing one is the only entry the code ever makes in the trail.
+  'booking.qr_reissued': 'Entry QR code replaced — the old code no longer opens this booking',
   'booking.expire': 'Hold expired',
   'booking.mark_no_show': 'Marked no-show',
   'booking.hold': 'Held',
