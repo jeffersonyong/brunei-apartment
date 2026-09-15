@@ -33,8 +33,24 @@ export const FIELD_SEGMENT = 'field'
 /** Sign-in and password recovery: `app/(auth)`. On the staff host, but open to anyone signed out. */
 export const AUTH_SEGMENTS = ['login', 'forgot-password', 'reset-password'] as const
 
+/**
+ * The entry QR code's page, `/c/{token}`: `app/(entry)` (architecture.md §7).
+ *
+ * On the staff host, because that is where a guard's session lives and the
+ * page shows him the gate. **Not gated**: anybody may scan a code, and whoever
+ * is not staff sees a masked summary rather than a sign-in screen. The proxy
+ * still refreshes the session here, so a guard whose access token has lapsed
+ * is not mistaken for a stranger.
+ */
+export const ENTRY_SEGMENT = 'c'
+
 const GATED = new Set<string>([...PORTAL_SEGMENTS, FIELD_SEGMENT])
-const STAFF = new Set<string>([...GATED, ...AUTH_SEGMENTS])
+const STAFF = new Set<string>([...GATED, ...AUTH_SEGMENTS, ENTRY_SEGMENT])
+
+/** The entry code's page: open to anyone, on the staff host, session refreshed. */
+export function isEntryPath(path: string): boolean {
+  return firstSegment(path) === ENTRY_SEGMENT
+}
 
 /**
  * A path's first segment, or null when it is not an in-app path at all.
@@ -70,7 +86,7 @@ export function isStaffPath(path: string): boolean {
  * `/login` fronts the operations surfaces and takes their register; the
  * recovery screens never did, and still do not.
  */
-export const OPERATIONS_REGISTER_ROOTS: readonly string[] = [...GATED, 'login'].map(
+export const OPERATIONS_REGISTER_ROOTS: readonly string[] = [...GATED, 'login', ENTRY_SEGMENT].map(
   (segment) => `/${segment}`,
 )
 

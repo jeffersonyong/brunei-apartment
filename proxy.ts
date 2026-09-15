@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { safeNextPath } from '@/lib/auth/next-path'
-import { crossHostRedirect, isGatedPath } from '@/lib/auth/surfaces'
+import { crossHostRedirect, isEntryPath, isGatedPath } from '@/lib/auth/surfaces'
 import { env } from '@/lib/env'
 import { updateSession } from '@/lib/supabase/middleware'
 
@@ -37,6 +37,15 @@ export default async function proxy(request: NextRequest) {
   // mistyped origin would then outlive its own fix.
   if (elsewhere !== null) {
     return NextResponse.redirect(elsewhere, 307)
+  }
+
+  // The entry code's page is open to anyone and sends nobody to sign in, but a
+  // guard reads the gate on it — so his session is refreshed here as on any
+  // gated screen. A server component cannot write the renewed cookie, and a
+  // guard whose hour-old access token had lapsed would otherwise be shown the
+  // stranger's summary.
+  if (isEntryPath(pathname)) {
+    return (await updateSession(request)).response
   }
 
   // The public site and the recovery screens: no session to check, so no

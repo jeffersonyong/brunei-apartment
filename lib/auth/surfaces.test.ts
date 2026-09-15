@@ -6,7 +6,9 @@ import { describe, expect, test } from 'vitest'
 import {
   AUTH_SEGMENTS,
   crossHostRedirect,
+  ENTRY_SEGMENT,
   FIELD_SEGMENT,
+  isEntryPath,
   isGatedPath,
   isStaffPath,
   OPERATIONS_REGISTER_ROOTS,
@@ -30,9 +32,27 @@ describe('the staff segments match the route folders', () => {
     expect(folders).toEqual([...PORTAL_SEGMENTS].sort())
   })
 
-  test('the field and auth groups hold exactly their segments', () => {
+  test('the field, auth and entry groups hold exactly their segments', () => {
     expect(routeSegments('(field)')).toEqual([FIELD_SEGMENT])
     expect(routeSegments('(auth)')).toEqual([...AUTH_SEGMENTS].sort())
+    expect(routeSegments('(entry)')).toEqual([ENTRY_SEGMENT])
+  })
+
+  test('the entry code page is on the staff host, and open to anyone', () => {
+    const token = '/c/Ab3xY9-_ZqRs7TuVwX2Kd0'
+
+    expect(isEntryPath(token)).toBe(true)
+    expect(isStaffPath(token)).toBe(true)
+    expect(isGatedPath(token)).toBe(false)
+    expect(isEntryPath('/cancel')).toBe(false)
+    expect(isEntryPath('/booking/abc')).toBe(false)
+    expect(OPERATIONS_REGISTER_ROOTS).toContain('/c')
+    expect(
+      crossHostRedirect(
+        { host: 'bruneiapartment.com', pathname: token, search: '' },
+        { site: 'https://bruneiapartment.com', staff: 'https://portal.bruneiapartment.com' },
+      ),
+    ).toBe(`https://portal.bruneiapartment.com${token}`)
   })
 
   test('no public folder is a staff path', () => {
