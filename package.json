@@ -23,7 +23,8 @@
     "db:seed-demo": "docker exec -i supabase_db_palm-villa-app psql -v ON_ERROR_STOP=1 -U postgres -d postgres -f - < supabase/seeds/demo.sql && npm run db:assemble-demo-packs && npm run db:demo-staff",
     "db:assemble-demo-packs": "node --env-file=.env.local scripts/assemble-demo-packs.mjs",
     "db:demo-staff": "node --env-file=.env.local scripts/demo-staff.mjs",
-    "db:bootstrap-admin": "node --env-file=.env.local scripts/bootstrap-admin.mjs"
+    "db:bootstrap-admin": "node --env-file=.env.local scripts/bootstrap-admin.mjs",
+    "db:push:hosted": "node --env-file=.env.hosted.local scripts/push-hosted-migrations.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "1.3.3",

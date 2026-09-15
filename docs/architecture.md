@@ -548,6 +548,14 @@ Resend, transactional only, and **two templates rather than the four this sectio
 | Production | Vercel production + **prod** Supabase project. Two Supabase projects total. |
 
 - Migrations are SQL files in `supabase/migrations/`, committed, applied via CLI (`npm run db:start`, `npm run db:reset`). The Supabase CLI is a pinned devDependency so every machine replays them with the same version. No dashboard-only schema changes.
+- **The hosted database gets what is merged, and nothing else: `npm run db:push:hosted`** (`scripts/push-hosted-migrations.mjs`, with `-- --dry-run` to only list). `supabase db push` sends every migration in the folder it runs from, and the working folder is often on a branch whose migration has not been reviewed. So the script:
+  - checks out `origin/main` in a temporary folder and links it to the project;
+  - asks the database's migration history which versions it holds, through the Management API's read-only query;
+  - refuses when the database holds a version `main` does not;
+  - pushes what is pending, then checks every pending version is recorded;
+  - removes the temporary folder.
+
+  Merging the PR is the approval. A migration applied by hand in the SQL editor applies the schema but records nothing, so the next push re-runs it and fails. Repair the history with `supabase migration repair --status applied <version> --linked` rather than pasting SQL.
 - `npm run test` runs both suites: `unit` (pure `lib/domain`) and `integration` (`lib/db` against the local stack). The integration suite **fails loudly when the stack is down rather than skipping**, so a green run always means capability G1 was checked.
 - Secrets live in Vercel env vars and Supabase config; nothing secret in the repository.
 - Backups: Supabase automated daily backups; restore procedure tested once before go-live and documented in the repo.
