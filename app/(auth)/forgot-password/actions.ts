@@ -99,7 +99,7 @@ export async function requestPasswordResetAction(
     try {
       const outcome = await deliverPasswordReset({
         email,
-        origin: env.siteOrigin,
+        origin: env.staffOrigin,
         transport: configuredPasswordResetTransport(),
       })
 

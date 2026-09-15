@@ -39,7 +39,13 @@ import { PortalTools } from '@/components/portal/portal-tools'
  *
  * It never carries the page title — that stays the screen's single `h1`.
  */
-export function PortalPanelHeader({ account }: { account: PortalAccountUser | null }) {
+export function PortalPanelHeader({
+  account,
+  siteHref,
+}: {
+  account: PortalAccountUser | null
+  siteHref: string
+}) {
   const pathname = usePathname()
   const crumbs = breadcrumbTrail(pathname)
 
@@ -47,7 +53,7 @@ export function PortalPanelHeader({ account }: { account: PortalAccountUser | nu
     <header className="sticky top-0 z-10 flex h-panel-header items-center justify-between gap-lg border-b border-divider bg-surface-panel px-lg lg:px-xl">
       <div className="flex min-w-0 items-center gap-sm">
         {/* Below `lg` this is the only way to the navigation. */}
-        <PortalMobileNav account={account} />
+        <PortalMobileNav account={account} siteHref={siteHref} />
 
         <nav aria-label="Breadcrumb" className="min-w-0">
           <ol className="flex items-center gap-xs text-body-sm">

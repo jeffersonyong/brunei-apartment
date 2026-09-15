@@ -22,7 +22,13 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
  * component instead of two. Keyboard activation fires a click too, so Enter on
  * a link closes the drawer the same way a tap does.
  */
-export function PortalMobileNav({ account }: { account: PortalAccountUser | null }) {
+export function PortalMobileNav({
+  account,
+  siteHref,
+}: {
+  account: PortalAccountUser | null
+  siteHref: string
+}) {
   const [isOpen, setIsOpen] = useState(false)
 
   function closeIfNavigating(event: React.MouseEvent<HTMLDivElement>) {
@@ -52,7 +58,7 @@ export function PortalMobileNav({ account }: { account: PortalAccountUser | null
 
         {/* Delegation target: every interactive thing inside is itself a link. */}
         <div className="flex flex-1 flex-col overflow-y-auto" onClick={closeIfNavigating}>
-          <PortalNav />
+          <PortalNav siteHref={siteHref} />
 
           {/* As in the desktop sidebar: the account alone under the rule, and
               the ways out of the portal as the nav's last rows. */}

@@ -1,3 +1,5 @@
+import { OPERATIONS_REGISTER_ROOTS } from './auth/surfaces'
+
 /** Where the explicit theme choice is persisted. */
 export const THEME_STORAGE_KEY = 'pv-theme'
 
@@ -52,11 +54,10 @@ export const themeInitScript = `
     // system) is keyed off <html> so overlays portaled into <body> inherit it
     // too. Set from the pathname here so the first paint is already
     // monochrome; OperationsSurface keeps it in sync across client-side
-    // navigation. Matches whole segments so a future /portal-status route
-    // does not get swept in. /login is staff chrome too — the sign-in
-    // screen fronts the operations surfaces and takes their register.
+    // navigation. The roots are lib/auth/surfaces.ts's, and match whole
+    // segments so a future /dashboard-status route does not get swept in.
     var path = location.pathname;
-    var isOps = ['/portal', '/field', '/login'].some(function (root) {
+    var isOps = ${JSON.stringify(OPERATIONS_REGISTER_ROOTS)}.some(function (root) {
       return path === root || path.indexOf(root + '/') === 0;
     });
     if (isOps) {

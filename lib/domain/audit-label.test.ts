@@ -236,15 +236,15 @@ describe('describeAuditEvent', () => {
 
 describe('auditSubjectHref', () => {
   test('points a booking, a deposit and a unit at their own screens', () => {
-    expect(auditSubjectHref('payment', 'PV-0042')).toBe('/portal/bookings/PV-0042')
-    expect(auditSubjectHref('deposit_charge', 'PV-0042')).toBe('/portal/deposits/PV-0042')
-    expect(auditSubjectHref('unit', '3B-01')).toBe('/portal/units/3B-01')
+    expect(auditSubjectHref('payment', 'PV-0042')).toBe('/bookings/PV-0042')
+    expect(auditSubjectHref('deposit_charge', 'PV-0042')).toBe('/deposits/PV-0042')
+    expect(auditSubjectHref('unit', '3B-01')).toBe('/units/3B-01')
   })
 
   test('points a settings event at the tab that changed it', () => {
-    expect(auditSubjectHref('facility', 'Gym')).toBe('/portal/settings/property?tab=day-pass')
+    expect(auditSubjectHref('facility', 'Gym')).toBe('/settings/property?tab=day-pass')
     expect(auditSubjectHref('document_retention', 'Palm Villa')).toBe(
-      '/portal/settings/property?tab=documents',
+      '/settings/property?tab=documents',
     )
   })
 
@@ -302,7 +302,7 @@ describe('website photos (capability F7)', () => {
   })
 
   test('points at the screen the photographs are managed on', () => {
-    expect(auditSubjectHref('site_image', 'Front page')).toBe('/portal/website/photos')
+    expect(auditSubjectHref('site_image', 'Front page')).toBe('/website/photos')
   })
 })
 
@@ -332,7 +332,7 @@ describe('website FAQs', () => {
   })
 
   test('points a FAQ event at the screen that manages them', () => {
-    expect(auditSubjectHref('faq', 'How do we pay?')).toBe('/portal/website/faqs')
+    expect(auditSubjectHref('faq', 'How do we pay?')).toBe('/website/faqs')
   })
 })
 

@@ -46,7 +46,7 @@ import type { ExportTableRef } from '@/lib/db/export'
 
 /** The one route behind all of them. */
 export function exportHref(tableId: string): string {
-  return `/portal/export?table=${tableId}`
+  return `/export?table=${tableId}`
 }
 
 interface ExportCsvButtonProps {

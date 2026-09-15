@@ -39,10 +39,10 @@ export const MAX_UNIT_REF_LENGTH = 16
 export const MAX_UNITS_PER_TYPE = 200
 
 /**
- * References that would collide with a route segment under `/portal/units`.
+ * References that would collide with a route segment under `/units`.
  *
  * There is no static sibling of `[ref]` today, and the registry editor lives
- * at `/portal/settings/units` partly so there need not be. This list is the
+ * at `/settings/units` partly so there need not be. This list is the
  * cheap insurance against the next person adding one and discovering that a
  * unit called "new" has become unreachable.
  */

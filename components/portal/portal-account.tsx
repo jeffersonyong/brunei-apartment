@@ -52,7 +52,7 @@ export function PortalAccount({ user }: { user: PortalAccountUser }) {
       <DropdownMenuContent side="top" align="start" className="w-[200px]">
         <DropdownMenuLabel>Signed in</DropdownMenuLabel>
         <DropdownMenuItem asChild>
-          <Link href="/portal/account">
+          <Link href="/account">
             <Settings aria-hidden />
             Settings
           </Link>

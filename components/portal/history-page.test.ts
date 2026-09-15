@@ -38,10 +38,10 @@ describe('historyPage', () => {
 
 describe('historyHref', () => {
   it('addresses the first page as the record itself', () => {
-    expect(historyHref('/portal/units/3B-04', 1)).toBe('/portal/units/3B-04')
+    expect(historyHref('/units/3B-04', 1)).toBe('/units/3B-04')
   })
 
   it('addresses every other page in the query', () => {
-    expect(historyHref('/portal/units/3B-04', 3)).toBe('/portal/units/3B-04?history=3')
+    expect(historyHref('/units/3B-04', 3)).toBe('/units/3B-04?history=3')
   })
 })

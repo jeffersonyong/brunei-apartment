@@ -1,3 +1,4 @@
+import type { HostSplit } from './auth/surfaces'
 import { normaliseOrigin } from './domain/origin'
 
 /**
@@ -35,9 +36,9 @@ export const env = {
   /**
    * The shared secret on the nightly retention job's route (capability G4).
    *
-   * That route is outside the session gate — `proxy.ts` matches `/portal` and
-   * `/field`, and a cron caller has no cookies — so this string is the whole of
-   * its authorisation. Vercel sends it as `Authorization: Bearer` on a
+   * That route is outside the session gate — `proxy.ts` never matches `/api`,
+   * and a cron caller has no cookies — so this string is the whole of its
+   * authorisation. Vercel sends it as `Authorization: Bearer` on a
    * scheduled invocation; locally it is whatever `.env.local` says.
    *
    * Read through `required`, like the rest: a deployment with no secret set
@@ -81,6 +82,52 @@ export const env = {
     }
 
     return origin
+  },
+  /**
+   * Where the staff screens live, for the one staff-facing link an email
+   * carries: the password reset (capability F8).
+   *
+   * Its own variable because production serves the site and the staff side on
+   * two hosts (architecture.md §3). A reset link on the site's host would sign
+   * the person in there, and the portal host would hold no session for them.
+   * Unset, it is `siteOrigin`: locally and on a preview one host serves
+   * everything.
+   */
+  get staffOrigin(): string {
+    const configured = process.env.STAFF_ORIGIN?.trim()
+
+    if (!configured) {
+      return this.siteOrigin
+    }
+
+    const origin = normaliseOrigin(configured)
+
+    if (origin === null) {
+      throw new Error(
+        'STAFF_ORIGIN is not an origin. It must be a scheme and a host with no path — for example https://portal.bruneiapartment.com.',
+      )
+    }
+
+    return origin
+  },
+  /**
+   * The two hosts, when the site and the staff side are split across them.
+   * Read by proxy.ts on every request.
+   *
+   * Null unless `SITE_ORIGIN` and `STAFF_ORIGIN` are both set, both origins,
+   * and on different hosts. Never throws, unlike its neighbours: a misread
+   * variable here would otherwise take every page down, where null only leaves
+   * each path served on whichever host it was asked for.
+   */
+  get hostSplit(): HostSplit | null {
+    const site = normaliseOrigin(process.env.SITE_ORIGIN ?? '')
+    const staff = normaliseOrigin(process.env.STAFF_ORIGIN ?? '')
+
+    if (site === null || staff === null || new URL(site).host === new URL(staff).host) {
+      return null
+    }
+
+    return { site, staff }
   },
   /**
    * The `From` on every customer email — a display name and an address at a

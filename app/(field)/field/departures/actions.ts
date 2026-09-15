@@ -20,7 +20,7 @@ import { turnoverRefusalSentence } from '@/lib/domain/turnover'
  * Housekeeping's two writes from the phone (capabilities C1, C2).
  *
  * The third — marking the unit ready — is `markUnitReadyAction` beside the
- * unit's other actions (app/(portal)/portal/units/[ref]/actions.ts), shared with
+ * unit's other actions (app/(portal)/units/[ref]/actions.ts), shared with
  * the unit's page so there is one path for it. Photographs go through the
  * documents slice's `attachDocumentAction`, one request each, as they do from
  * the portal's inspection dialog.
@@ -71,7 +71,7 @@ export async function guestHasLeftAction(
   }
 
   // The same ordinary transition the desk's Check out button makes
-  // (app/(portal)/portal/bookings/[reference]/stay-actions.ts).
+  // (app/(portal)/bookings/[reference]/stay-actions.ts).
   const result = await transitionBooking(turnover.bookingId, 'check_out', actor.userId)
 
   if (!result.ok) {

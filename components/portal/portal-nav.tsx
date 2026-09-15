@@ -1,5 +1,6 @@
 'use client'
 
+import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -51,7 +52,7 @@ const activeClasses = 'bg-card shadow-lift font-medium text-foreground [&_svg]:t
 const idleClasses =
   'text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground'
 
-export function PortalNav() {
+export function PortalNav({ siteHref }: { siteHref: string }) {
   const pathname = usePathname()
   const active = activeHref(pathname)
 
@@ -84,11 +85,16 @@ export function PortalNav() {
               ))}
               {/* The ways out of the portal, closing Others: links to the other
                   two surfaces rather than portal screens, so they never take
-                  the active chip. */}
+                  the active chip. The public site is the site's own origin
+                  when the hosts are split: on the portal host `/` is the
+                  dashboard. */}
               {'exits' in group
                 ? group.exits.map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} className={cn(linkClasses, idleClasses)}>
+                      <Link
+                        href={item.href === '/' ? (siteHref as Route) : item.href}
+                        className={cn(linkClasses, idleClasses)}
+                      >
                         <item.icon aria-hidden />
                         {item.label}
                       </Link>

@@ -1,21 +1,51 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { safeNextPath } from '@/lib/auth/next-path'
+import { crossHostRedirect, isGatedPath } from '@/lib/auth/surfaces'
+import { env } from '@/lib/env'
 import { updateSession } from '@/lib/supabase/middleware'
 
 /**
- * The gate on the operations surfaces (architecture.md §3): `(portal)` and
- * `(field)` require a signed-in staff member.
+ * The request pipeline's two jobs (architecture.md §3).
  *
- * This answers exactly one question — is anyone signed in. It never answers
- * "may they do this": authorisation is requirePermission() in the server
- * layer (architecture.md §4), called at the top of every server action and
- * again at render time for gated screens. Keeping the two apart means a
- * routing mistake here can leak a page shell, never a mutation or a row.
+ * **Which host.** The customer site and the staff side live on two hosts, and
+ * a path that arrived on the wrong one is sent to the right one before anything
+ * else happens — `bruneiapartment.com/bookings` to the portal host,
+ * `portal.bruneiapartment.com/stay` back to the site. lib/auth/surfaces.ts
+ * decides; with no split configured, nothing moves.
+ *
+ * **Is anyone signed in** — on the portal and the field screens only. This
+ * never answers "may they do this": authorisation is requirePermission() in
+ * the server layer (architecture.md §4), called at the top of every server
+ * action and again at render time for gated screens. Keeping the two apart
+ * means a routing mistake here can leak a page shell, never a mutation or a
+ * row.
  */
 export default async function proxy(request: NextRequest) {
-  const { response, user } = await updateSession(request)
   const { pathname, search } = request.nextUrl
+  // The host the browser asked for, from the headers: `nextUrl` carries the
+  // server's own address wherever the platform does not rewrite it, which
+  // would make every request look like it came from neither host. Reading a
+  // header is safe here because it only decides *whether* to redirect — the
+  // target is always a configured origin (lib/auth/surfaces.ts).
+  const host =
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
+
+  const elsewhere = crossHostRedirect({ host, pathname, search }, env.hostSplit)
+
+  // Temporary, not permanent: a browser caches a 308 indefinitely, and a
+  // mistyped origin would then outlive its own fix.
+  if (elsewhere !== null) {
+    return NextResponse.redirect(elsewhere, 307)
+  }
+
+  // The public site and the recovery screens: no session to check, so no
+  // round-trip to the auth server.
+  if (pathname !== '/login' && !isGatedPath(pathname)) {
+    return NextResponse.next()
+  }
+
+  const { response, user } = await updateSession(request)
 
   if (pathname === '/login') {
     if (!user) {
@@ -26,7 +56,7 @@ export default async function proxy(request: NextRequest) {
     // the (validated) next target. The refreshed session cookies move onto
     // the redirect, or the browser would keep the stale ones.
     const redirect = NextResponse.redirect(
-      new URL(safeNextPath(request.nextUrl.searchParams.get('next')), request.url),
+      onThisHost(safeNextPath(request.nextUrl.searchParams.get('next')), request, host),
     )
 
     for (const cookie of response.cookies.getAll()) {
@@ -39,7 +69,7 @@ export default async function proxy(request: NextRequest) {
   if (!user) {
     // Send them to sign in, remembering where they were headed. No cookie
     // copying: there is no session to preserve.
-    const login = new URL('/login', request.url)
+    const login = onThisHost('/login', request, host)
     login.searchParams.set('next', pathname + search)
 
     return NextResponse.redirect(login)
@@ -48,10 +78,28 @@ export default async function proxy(request: NextRequest) {
   return response
 }
 
+/**
+ * A path on the host this request is already on.
+ *
+ * On the portal host it is built from the configured staff origin, for the
+ * reason `host` is read from the headers above: `request.url` may carry the
+ * server's own address, and a sign-in redirect sent there would set the session
+ * cookie on a host the portal never sees. Anywhere else — one host serving
+ * everything — the request's own URL is the only answer there is.
+ */
+function onThisHost(path: string, request: NextRequest, host: string): URL {
+  const split = env.hostSplit
+
+  return split !== null && host === new URL(split.staff).host
+    ? new URL(path, split.staff)
+    : new URL(path, request.url)
+}
+
 export const config = {
-  // The real URL prefixes of the gated route groups (groups do not appear in
-  // URLs), plus the login screen for the signed-in bounce. `:path*` matches
-  // zero segments, so `/portal` itself is covered. Nothing else — the public
-  // site, static assets and /c/{token} never enter the gate.
-  matcher: ['/portal/:path*', '/field/:path*', '/login'],
+  // Every page, because the host check has to see public paths too — they are
+  // what the portal host sends back to the site. Only the scheduled jobs and
+  // Next's own assets stay out: a cron caller has no cookies and no host to be
+  // wrong about. The staff screens no longer share a URL prefix, so the gate
+  // is decided in code (isGatedPath) rather than by this matcher.
+  matcher: ['/((?!api/|_next/).*)'],
 }

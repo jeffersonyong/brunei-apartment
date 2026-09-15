@@ -15,17 +15,17 @@ import { revalidatePath } from 'next/cache'
  * list of cars to expect, and arrive on the cleaner's list of rooms to turn.
  */
 export function revalidateStayScreens(reference: string, unitRef: string | null): void {
-  revalidatePath('/portal/bookings')
-  revalidatePath(`/portal/bookings/${reference}`)
-  revalidatePath('/portal/deposits')
-  revalidatePath(`/portal/deposits/${reference}`)
-  revalidatePath('/portal/units')
+  revalidatePath('/bookings')
+  revalidatePath(`/bookings/${reference}`)
+  revalidatePath('/deposits')
+  revalidatePath(`/deposits/${reference}`)
+  revalidatePath('/units')
 
   if (unitRef) {
-    revalidatePath(`/portal/units/${unitRef}`)
+    revalidatePath(`/units/${unitRef}`)
   }
 
-  revalidatePath('/portal')
+  revalidatePath('/dashboard')
   revalidatePath('/field/arrivals')
   revalidatePath('/field/departures')
 }

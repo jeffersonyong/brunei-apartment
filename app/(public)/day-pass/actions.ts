@@ -192,8 +192,8 @@ export async function createPublicDayPassAction(
     return { status: 'error', message: created.error.message, submitted }
   }
 
-  revalidatePath('/portal/bookings')
-  revalidatePath('/portal')
+  revalidatePath('/bookings')
+  revalidatePath('/dashboard')
 
   // Before the redirect, which throws — see the stay action for why that is
   // still enough for `after()` to run it.

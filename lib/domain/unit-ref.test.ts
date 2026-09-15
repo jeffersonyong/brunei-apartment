@@ -117,7 +117,7 @@ describe('checkUnitRefs', () => {
   })
 
   test('catches characters that would break the unit URL', () => {
-    // `/portal/units/[ref]` is a path segment; a slash in a ref makes the
+    // `/units/[ref]` is a path segment; a slash in a ref makes the
     // unit unreachable rather than merely ugly.
     expect(checkUnitRefs(['A/1'])).toEqual([{ ref: 'A/1', reason: 'unsafe' }])
   })

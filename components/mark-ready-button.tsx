@@ -4,10 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 
-import {
-  markUnitReadyAction,
-  type UnitActionState,
-} from '@/app/(portal)/portal/units/[ref]/actions'
+import { markUnitReadyAction, type UnitActionState } from '@/app/(portal)/units/[ref]/actions'
 import { DID_NOT_GO_THROUGH } from '@/components/field/did-not-go-through'
 import { Button } from '@/components/ui/button'
 import {

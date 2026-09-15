@@ -13,8 +13,8 @@ import { PrintButton } from './print-button'
  * one screenful of it. A nested layout cannot remove its parent, so a statement
  * rendered inside the portal shell could never print past the fold.
  *
- * It keeps the portal's **URL space** — `/portal/deposits/PV-4821/statement` —
- * so `proxy.ts`, which gates on `/portal/:path*`, still requires a session.
+ * Its path — `/deposits/PV-4821/statement` — is a portal segment
+ * (lib/auth/surfaces.ts), so `proxy.ts` still requires a session.
  * The route group is a layout boundary and nothing else.
  *
  * The page is a document rather than a screen: one column, ordinary flow, and

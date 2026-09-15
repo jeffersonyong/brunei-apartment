@@ -42,7 +42,7 @@ export default async function FieldLayout({ children }: { children: React.ReactN
           <div className="flex items-center">
             {worksInThePortal ? (
               <Button asChild variant="ghost" size="touch">
-                <Link href="/portal">Portal</Link>
+                <Link href="/dashboard">Portal</Link>
               </Button>
             ) : null}
             <form action={signOutAction}>
