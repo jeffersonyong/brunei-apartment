@@ -83,7 +83,7 @@ describe('mayWork', () => {
 describe('landingPathFor', () => {
   test('a guard signs in straight to the gate — taking cash there does not make the portal his job', () => {
     // The trap N54 set: `payment.record_cash` used to be a portal permission
-    // here, and granting it sent the guard to /portal on sign-in.
+    // here, and granting it sent the guard to the portal on sign-in.
     expect(landingPathFor(SECURITY)).toBe('/field/arrivals')
   })
 
@@ -104,20 +104,22 @@ describe('landingPathFor', () => {
   })
 
   test('the office lands on the portal even though it works the gate', () => {
-    expect(landingPathFor(FRONT_OFFICE)).toBe('/portal')
+    expect(landingPathFor(FRONT_OFFICE)).toBe('/dashboard')
   })
 
   test('a field permission alone is not enough without a screen to work', () => {
-    expect(landingPathFor(set('booking.view', 'unit.manage'))).toBe('/portal')
-    expect(landingPathFor(set('booking.view', 'payment.record_cash'))).toBe('/portal')
+    expect(landingPathFor(set('booking.view', 'unit.manage'))).toBe('/dashboard')
+    expect(landingPathFor(set('booking.view', 'payment.record_cash'))).toBe('/dashboard')
   })
 
   test('one portal permission beside the gate keeps a person on the portal', () => {
-    expect(landingPathFor(set('booking.view', 'day_pass.admit', 'report.view'))).toBe('/portal')
-    expect(landingPathFor(set('booking.view', 'day_pass.admit', 'payment.verify'))).toBe('/portal')
+    expect(landingPathFor(set('booking.view', 'day_pass.admit', 'report.view'))).toBe('/dashboard')
+    expect(landingPathFor(set('booking.view', 'day_pass.admit', 'payment.verify'))).toBe(
+      '/dashboard',
+    )
   })
 
   test('somebody holding nothing lands on the portal, which says so', () => {
-    expect(landingPathFor(set())).toBe('/portal')
+    expect(landingPathFor(set())).toBe('/dashboard')
   })
 })

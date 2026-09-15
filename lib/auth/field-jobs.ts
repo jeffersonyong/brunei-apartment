@@ -86,7 +86,7 @@ const FIELD_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
   'unit.manage',
 ])
 
-export const PORTAL_HOME = '/portal'
+export const PORTAL_HOME = '/dashboard'
 export const FIELD_HOME = '/field'
 
 export type LandingPath = typeof PORTAL_HOME | typeof FIELD_HOME | FieldJob['href']

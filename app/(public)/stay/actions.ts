@@ -181,9 +181,9 @@ export async function createPublicStayAction(
 
   // The desk should see the held unit at once — on the calendar, in the
   // register, and on the dashboard's tiles.
-  revalidatePath('/portal/bookings')
-  revalidatePath('/portal/bookings/calendar')
-  revalidatePath('/portal')
+  revalidatePath('/bookings')
+  revalidatePath('/bookings/calendar')
+  revalidatePath('/dashboard')
 
   // Registered before the redirect below, which throws: `after()` runs its
   // callback once the response is finished, and a redirect is a response.

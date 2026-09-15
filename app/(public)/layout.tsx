@@ -166,7 +166,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             © 2026 Palm Villa · Bandar Seri Begawan, Brunei Darussalam
           </p>
           <p className="mt-sm text-caption opacity-70">
-            Staff: <Link href="/portal">Portal</Link> · <Link href="/field">Field</Link>
+            Staff: <Link href="/dashboard">Portal</Link> · <Link href="/field">Field</Link>
           </p>
         </div>
       </footer>

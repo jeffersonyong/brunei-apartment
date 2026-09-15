@@ -6,7 +6,7 @@ import { env } from '@/lib/env'
  * Whether a request to a scheduled route came from the scheduler.
  *
  * The cron routes under `app/api/cron` sit outside `proxy.ts`'s session gate
- * — it matches `/portal` and `/field`, and a scheduled caller has no cookies,
+ * — it never matches `/api`, and a scheduled caller has no cookies,
  * so redirecting it to a sign-in page would silently stop the job. **The
  * shared secret is therefore the whole of the authorisation**, and it is
  * compared in constant time: a byte-by-byte comparison that returns early

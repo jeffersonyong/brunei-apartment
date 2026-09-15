@@ -64,20 +64,20 @@ export const portalExitLinks = [
 // `as const` keeps the hrefs as literals so Next's typed routes can check them;
 // `satisfies` still enforces the shape.
 export const navGroups = [
-  { label: 'Overview', items: [{ href: '/portal', label: 'Dashboard', icon: LayoutDashboard }] },
+  { label: 'Overview', items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] },
   {
     label: 'Bookings',
     items: [
-      { href: '/portal/bookings', label: 'All bookings', icon: List },
-      { href: '/portal/bookings/calendar', label: 'Calendar', icon: CalendarDays },
-      { href: '/portal/bookings/new', label: 'New booking', icon: Plus },
+      { href: '/bookings', label: 'All bookings', icon: List },
+      { href: '/bookings/calendar', label: 'Calendar', icon: CalendarDays },
+      { href: '/bookings/new', label: 'New booking', icon: Plus },
     ],
   },
   {
     label: 'Payments',
     items: [
-      { href: '/portal/payments', label: 'Verification queue', icon: BadgeCheck },
-      { href: '/portal/payments/cash', label: 'Cash payments', icon: Banknote },
+      { href: '/payments', label: 'Verification queue', icon: BadgeCheck },
+      { href: '/payments/cash', label: 'Cash payments', icon: Banknote },
     ],
   },
   /**
@@ -86,29 +86,29 @@ export const navGroups = [
    * rather than a lone item filed under Admin. Units is a daily operations
    * screen, and Admin is where the business is configured.
    */
-  { label: 'Property', items: [{ href: '/portal/units', label: 'Units', icon: DoorOpen }] },
+  { label: 'Property', items: [{ href: '/units', label: 'Units', icon: DoorOpen }] },
   {
     label: 'Finance',
     items: [
-      { href: '/portal/deposits', label: 'Deposits', icon: LockKeyhole },
-      { href: '/portal/reports', label: 'Reports', icon: BarChart3 },
+      { href: '/deposits', label: 'Deposits', icon: LockKeyhole },
+      { href: '/reports', label: 'Reports', icon: BarChart3 },
       // Its own item rather than a tab inside Reports: the cash-up is worked
       // daily and the reports are read occasionally, so filing it behind a
       // screen somebody opens once a month would bury the one Finance uses
-      // most. Every day beneath it (`/portal/reports/cash-up/<date>`) lights
+      // most. Every day beneath it (`/reports/cash-up/<date>`) lights
       // this item, since activeHref matches the longest listed prefix.
-      { href: '/portal/reports/cash-up', label: 'Daily cash-up', icon: Coins },
+      { href: '/reports/cash-up', label: 'Daily cash-up', icon: Coins },
     ],
   },
   {
     label: 'Admin',
     items: [
-      { href: '/portal/settings/property', label: 'Property settings', icon: Tag },
+      { href: '/settings/property', label: 'Property settings', icon: Tag },
       // Under Admin rather than beside Units in Property, deliberately. The
       // Units board is a daily operations screen; naming the building is
       // configuration and is gated on `config.manage`. The board links across
       // to it, which is where anyone looking for it will look first.
-      { href: '/portal/settings/units', label: 'Unit registry', icon: Building2 },
+      { href: '/settings/units', label: 'Unit registry', icon: Building2 },
       // The public site's photographs (capability F7). They were a Website
       // group of one, and a label over a single screen that will not be
       // joined is chrome rather than structure — the photos are what the
@@ -117,17 +117,17 @@ export const navGroups = [
       // work, not who may do it: the screen answers to `site_image.manage`,
       // which whoever runs the Instagram account can hold without being an
       // administrator.
-      { href: '/portal/website/photos', label: 'Website photos', icon: ImageIcon },
+      { href: '/website/photos', label: 'Website photos', icon: ImageIcon },
       // Beside the photos, for the same reason they are here: what the public
       // site says, kept current now and then. Its own permission,
       // `faq.manage` (capability F9).
-      { href: '/portal/website/faqs', label: 'Website FAQs', icon: MessageCircleQuestion },
-      { href: '/portal/settings/roles', label: 'Roles & staff', icon: Users },
-      { href: '/portal/settings/audit', label: 'Audit log', icon: ScrollText },
+      { href: '/website/faqs', label: 'Website FAQs', icon: MessageCircleQuestion },
+      { href: '/settings/roles', label: 'Roles & staff', icon: Users },
+      { href: '/settings/audit', label: 'Audit log', icon: ScrollText },
       // No "Export data" item. The screen it pointed at listed seventeen table
       // names with a Download beside each, which is a schema browser filed
       // under Admin; every table is now taken from the screen holding its
-      // records (lib/db/export.ts — EXPORT_GROUPS), and `/portal/export` is a
+      // records (lib/db/export.ts — EXPORT_GROUPS), and `/export` is a
       // route with no page.
     ],
   },
@@ -138,7 +138,7 @@ export const navGroups = [
    * the work, so it closes the nav under the catch-all label rather than
    * borrowing a permission it does not need.
    *
-   * Addressed `/portal/account`, not `/portal/settings`: the admin screens
+   * Addressed `/account`, not `/settings`: the admin screens
    * share that prefix, and a person's own account is not their parent.
    *
    * It ends with the ways out of the portal, for the same reason it holds
@@ -146,7 +146,7 @@ export const navGroups = [
    */
   {
     label: 'Others',
-    items: [{ href: '/portal/account', label: 'Settings', icon: Settings }],
+    items: [{ href: '/account', label: 'Settings', icon: Settings }],
     exits: portalExitLinks,
   },
 ] as const satisfies readonly NavGroup[]
@@ -159,17 +159,15 @@ const allHrefs = navGroups.flatMap((group) => group.items.map((item) => item.hre
  * The active item is the longest listed route that prefixes the current path.
  *
  * A plain `startsWith` would light up both "All bookings" and "New booking" on
- * `/portal/bookings/new`; matching the longest wins picks the specific one. The
- * portal root only ever matches exactly, since every route is beneath it.
+ * `/bookings/new`; matching the longest wins picks the specific one.
  *
  * The match is on whole segments: a bare `startsWith` would also treat
- * `/portal/bookings-report` as a child of `/portal/bookings` and light up the
+ * `/bookings-report` as a child of `/bookings` and light up the
  * wrong item.
  */
 export function activeHref(pathname: string): string | null {
   return allHrefs.reduce<string | null>((best, href) => {
-    const matches =
-      href === '/portal' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+    const matches = pathname === href || pathname.startsWith(`${href}/`)
 
     if (!matches) return best
 
@@ -200,7 +198,7 @@ export interface Crumb {
 export function breadcrumbTrail(pathname: string): Crumb[] {
   const active = activeHref(pathname)
 
-  if (active === null || active === '/portal') {
+  if (active === null || active === '/dashboard') {
     return [{ label: 'Portal' }]
   }
 
@@ -211,5 +209,5 @@ export function breadcrumbTrail(pathname: string): Crumb[] {
     return [{ label: 'Portal' }]
   }
 
-  return [{ label: 'Portal', href: '/portal' }, { label: group.label }, { label: item.label }]
+  return [{ label: 'Portal', href: '/dashboard' }, { label: group.label }, { label: item.label }]
 }

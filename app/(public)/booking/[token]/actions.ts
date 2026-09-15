@@ -101,9 +101,9 @@ export async function submitTransferAction(
 
   // The queue is where somebody now has work to do, and the dashboard's
   // "awaiting payment" tile counts it.
-  revalidatePath('/portal/payments')
-  revalidatePath('/portal/bookings')
-  revalidatePath('/portal')
+  revalidatePath('/payments')
+  revalidatePath('/bookings')
+  revalidatePath('/dashboard')
   revalidatePath(`/booking/${parsed.data.token}`)
 
   return { status: 'idle' }
@@ -240,9 +240,9 @@ export async function uploadDocumentAction(
   // The payments queue is the one that matters: a slip arriving is the
   // difference between a clerk having evidence in front of them and not.
   revalidatePath(`/booking/${token}`)
-  revalidatePath('/portal/payments')
-  revalidatePath('/portal/bookings')
-  revalidatePath('/portal/deposits')
+  revalidatePath('/payments')
+  revalidatePath('/bookings')
+  revalidatePath('/deposits')
 
   return { status: 'done', kind: attached.data.kind }
 }

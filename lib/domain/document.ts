@@ -488,7 +488,7 @@ export function mayCustomerAttach(kind: DocumentKind): kind is CustomerAttachabl
  * keep. `attach_document(p_uploaded_by_customer)` is where that happens.
  *
  * If this is ever revisited, the thing to change is not this comment but
- * `app/(portal)/portal/documents/[id]/route.ts`, which issues every signed URL
+ * `app/(portal)/documents/[id]/route.ts`, which issues every signed URL
  * in the product after a permission check. Nothing else can.
  */
 

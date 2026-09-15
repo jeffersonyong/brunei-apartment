@@ -1,4 +1,5 @@
 import { getAuthenticatedUser } from '@/lib/auth/session'
+import { env } from '@/lib/env'
 import { PortalAccount, type PortalAccountUser } from '@/components/portal/portal-account'
 import { PortalNav } from '@/components/portal/portal-nav'
 import { PortalPanel } from '@/components/portal/portal-panel'
@@ -43,6 +44,9 @@ export default async function PortalLayout({ children }: { children: React.React
   const account: PortalAccountUser | null = user
     ? { id: user.id, name: user.displayName, email: user.email }
     : null
+  // The nav's way out to the public site. On the portal host `/` is the
+  // dashboard, so when the hosts are split it has to be the site's own origin.
+  const siteHref = env.hostSplit?.site ?? '/'
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background lg:pt-sm lg:pr-sm lg:pl-sm">
@@ -64,7 +68,7 @@ export default async function PortalLayout({ children }: { children: React.React
         {/* The nav is the only part of the column that may scroll; the brand
             block and the account footer stay put. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <PortalNav />
+          <PortalNav siteHref={siteHref} />
         </div>
 
         {/* Who is signed in closes the column, alone under the rule — chrome
@@ -78,7 +82,9 @@ export default async function PortalLayout({ children }: { children: React.React
         ) : null}
       </aside>
 
-      <PortalPanel account={account}>{children}</PortalPanel>
+      <PortalPanel account={account} siteHref={siteHref}>
+        {children}
+      </PortalPanel>
     </div>
   )
 }

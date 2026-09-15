@@ -314,9 +314,9 @@ export async function takeCashAtGateAction(
   }
 
   revalidateStayScreens(booking.reference, booking.unitRef)
-  revalidatePath('/portal/payments')
-  revalidatePath('/portal/payments/cash')
-  revalidatePath('/portal/reports/cash-up')
+  revalidatePath('/payments')
+  revalidatePath('/payments/cash')
+  revalidatePath('/reports/cash-up')
 
   return taken
 }

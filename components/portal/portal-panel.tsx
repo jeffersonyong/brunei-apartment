@@ -27,15 +27,18 @@ import { PortalPanelHeader } from '@/components/portal/portal-panel-header'
  */
 export function PortalPanel({
   account,
+  siteHref,
   children,
 }: {
   account: PortalAccountUser | null
+  /** The public site, for the drawer's way out — see app/(portal)/layout.tsx. */
+  siteHref: string
   children: React.ReactNode
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-panel lg:ml-sm lg:rounded-t-xl lg:border-x lg:border-t lg:border-border">
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <PortalPanelHeader account={account} />
+        <PortalPanelHeader account={account} siteHref={siteHref} />
 
         {/* `2xl` at the head: the header is chrome and the `h1` beneath it
             starts the content, so the boundary between them is a break between

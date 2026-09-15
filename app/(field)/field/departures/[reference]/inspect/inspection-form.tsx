@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
 
-import { attachDocumentAction } from '@/app/(portal)/portal/documents/actions'
+import { attachDocumentAction } from '@/app/(portal)/documents/actions'
 import { DID_NOT_GO_THROUGH } from '@/components/field/did-not-go-through'
 import { PhotoPicker, type ChosenPhoto } from '@/components/field/photo-picker'
 import { preparePhoto } from '@/components/prepare-photo'

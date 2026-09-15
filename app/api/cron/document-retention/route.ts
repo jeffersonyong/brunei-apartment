@@ -19,7 +19,7 @@ import { sweepSiteImages } from '@/lib/db/site-images'
  *
  * ── The first route handler in the product outside the portal ─────────────
  *
- * `proxy.ts` matches `/portal` and `/field`, so this path is not behind the
+ * `proxy.ts` never matches `/api`, so this path is not behind the
  * session gate — deliberately, because a scheduled caller has no cookies and
  * redirecting a cron job to a sign-in page would silently stop the deletions.
  * **The shared secret is therefore the whole of the authorisation**; the

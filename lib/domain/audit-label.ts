@@ -871,7 +871,7 @@ export const AUDIT_ENTITY_LABELS: Readonly<Record<AuditEntityType, string>> = {
  *
  * The subject label doubles as the address for the three records addressed by
  * a human reference rather than by id — a booking, a deposit and a unit are all
- * `/portal/<thing>/<reference>` — which is why a deleted subject, whose label
+ * `/<thing>/<reference>` — which is why a deleted subject, whose label
  * resolves to null, correctly produces no link.
  */
 export function auditSubjectHref(entityType: string, subjectLabel: string | null): string | null {
@@ -883,35 +883,35 @@ export function auditSubjectHref(entityType: string, subjectLabel: string | null
     case 'booking':
     case 'payment':
     case 'document':
-      return `/portal/bookings/${subjectLabel}`
+      return `/bookings/${subjectLabel}`
     case 'deposit':
     case 'deposit_charge':
     case 'inspection':
-      return `/portal/deposits/${subjectLabel}`
+      return `/deposits/${subjectLabel}`
     case 'unit':
-      return `/portal/units/${subjectLabel}`
+      return `/units/${subjectLabel}`
     case 'cash_banking':
-      return `/portal/reports/cash-up/${subjectLabel}`
+      return `/reports/cash-up/${subjectLabel}`
     case 'staff_role':
     case 'staff_user':
-      return '/portal/settings/roles'
+      return '/settings/roles'
     // A settings event points at the tab that changed it, so "what did this
     // change" is one click rather than a hunt through four tabs.
     case 'unit_type':
     case 'property':
-      return '/portal/settings/property?tab=pricing'
+      return '/settings/property?tab=pricing'
     case 'day_pass_band':
     case 'day_pass_bundle':
     case 'facility':
-      return '/portal/settings/property?tab=day-pass'
+      return '/settings/property?tab=day-pass'
     case 'document_retention':
-      return '/portal/settings/property?tab=documents'
+      return '/settings/property?tab=documents'
     case 'bank_account':
-      return '/portal/settings/property?tab=bank-accounts'
+      return '/settings/property?tab=bank-accounts'
     case 'site_image':
-      return '/portal/website/photos'
+      return '/website/photos'
     case 'faq':
-      return '/portal/website/faqs'
+      return '/website/faqs'
     default:
       return null
   }

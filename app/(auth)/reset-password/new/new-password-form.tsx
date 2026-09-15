@@ -40,7 +40,7 @@ export function NewPasswordForm({ email }: { email: string }) {
         description="You're signed in. Use the new password next time — every other device has been signed out."
       >
         <Button asChild className="w-full">
-          <Link href="/portal">Continue to the portal</Link>
+          <Link href="/dashboard">Continue to the portal</Link>
         </Button>
       </AuthScreen>
     )
