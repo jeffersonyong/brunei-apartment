@@ -336,6 +336,23 @@ describe('website FAQs', () => {
   })
 })
 
+describe('website privacy policy', () => {
+  test('tells the first publish apart from a new version', () => {
+    expect(describeAuditEvent(event('privacy_policy.published', { after: { first: true } }))).toBe(
+      'Privacy policy published for the first time',
+    )
+    expect(describeAuditEvent(event('privacy_policy.published', { after: { first: false } }))).toBe(
+      'New version of the privacy policy published',
+    )
+  })
+
+  test('points a privacy policy event at the screen that publishes it', () => {
+    expect(auditSubjectHref('privacy_policy_version', 'Privacy policy')).toBe(
+      '/website/privacy-policy',
+    )
+  })
+})
+
 describe('the vocabulary against the migrations', () => {
   /**
    * Every `(action, entity_type)` pair the SQL writes.

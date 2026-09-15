@@ -45,8 +45,9 @@ describe('toPermissionSet', () => {
     // 21 since `booking.check_in` and `booking.check_out` (20260924000100, N11);
     // 22 since `day_pass.admit` (20260926000100, N54) — the guard taking cash
     // (20260927000200) granted a string that already existed; 23 since
-    // `faq.manage` (20260928000100, F9).
-    expect(set.size).toBe(23)
+    // `faq.manage` (20260928000100, F9); 24 since `privacy_policy.manage`
+    // (20260930000100, F10).
+    expect(set.size).toBe(24)
   })
 })
 

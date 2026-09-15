@@ -21,6 +21,8 @@ import {
   type PublicStage,
 } from '@/lib/domain/public-booking'
 
+import { readPrivacyPolicyPublished } from '../../_components/privacy-policy-link'
+
 import { EntryCodeCard } from './entry-code-card'
 import { SendAFile } from './send-a-file'
 import { TransferInstructions } from './transfer-instructions'
@@ -64,10 +66,11 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   const stage = publicStageOf(booking.status)
   const plan = transferPlanFor(booking)
   // Both kinds in one read: they were two requests differing in one filter.
-  const [settings, deposit, documents] = await Promise.all([
+  const [settings, deposit, documents, hasPrivacyPolicy] = await Promise.all([
     readPropertySettings(),
     getDepositByBookingId(booking.id),
     listDocumentsForBooking(booking.id, ['payment_slip', 'identity']),
+    readPrivacyPolicyPublished(),
   ])
 
   const slips = documents.filter((document) => document.kind === 'payment_slip')
@@ -218,6 +221,7 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             title="Send us your IC"
             description="We need a copy of the lead guest's IC to register the stay. Sending it now saves doing it at the desk when you arrive."
             onFileSince={identityOnFileSince}
+            linksPrivacyPolicy={hasPrivacyPolicy}
           />
         ) : null}
 

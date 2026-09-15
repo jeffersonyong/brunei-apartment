@@ -1,6 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import Link from 'next/link'
 import { useActionState, useRef, useState } from 'react'
 
 import { Callout } from '@/components/ui/callout'
@@ -86,6 +87,13 @@ interface SendAFileProps {
   description: string
   /** When this kind is already on file, the instant it arrived. */
   onFileSince: string | null
+  /**
+   * Points the guest at the privacy policy beside the promise about their file
+   * (capability F10). Given for the IC only — the one upload that is identity
+   * data handed over with no member of staff present — and only once a policy
+   * is published, so it never links to a page that is not there.
+   */
+  linksPrivacyPolicy?: boolean
 }
 
 export function SendAFile({
@@ -95,6 +103,7 @@ export function SendAFile({
   title,
   description,
   onFileSince,
+  linksPrivacyPolicy = false,
 }: SendAFileProps) {
   const [state, action, pending] = useActionState<UploadState, FormData>(uploadDocumentAction, {
     status: 'idle',
@@ -200,6 +209,17 @@ export function SendAFile({
             JPEG, PNG, WebP or PDF, up to {megabytes()} MB. Held privately, shown only to our staff,
             and deleted when its retention period ends.
             {held ? ' Sending another replaces the one we have.' : ''}
+            {linksPrivacyPolicy ? (
+              <>
+                {' '}
+                {/* A new tab: the guest is part-way through sending a file, and
+                    reading the policy should not lose their place. */}
+                <Link href="/privacy" target="_blank" rel="noopener" className="underline">
+                  How we handle your personal data
+                </Link>
+                .
+              </>
+            ) : null}
           </p>
         )}
 
