@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { privacyPolicyWriteMessage } from '@/lib/domain/privacy-policy'
 import { dataClient } from '@/lib/supabase/data'
 
@@ -113,8 +115,11 @@ export async function readPublishedPrivacyPolicy(): Promise<PublishedPrivacyPoli
 /**
  * Whether the website has a policy to link to — the footer's question, asked
  * on every public page, so it reads no text.
+ *
+ * Cached for the request: the footer asks it from the public layout, and a page
+ * that links the policy itself (the customer's booking page) asks again.
  */
-export async function isPrivacyPolicyPublished(): Promise<boolean> {
+export const isPrivacyPolicyPublished = cache(async (): Promise<boolean> => {
   const propertyId = await currentPropertyId()
 
   const { count, error } = await dataClient()
@@ -127,7 +132,7 @@ export async function isPrivacyPolicyPublished(): Promise<boolean> {
   }
 
   return (count ?? 0) > 0
-}
+})
 
 /** Every version published, newest first, without their text. */
 export async function listPrivacyPolicyVersions(): Promise<readonly PrivacyPolicyVersionSummary[]> {
