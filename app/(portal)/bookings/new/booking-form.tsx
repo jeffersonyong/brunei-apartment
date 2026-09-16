@@ -336,8 +336,8 @@ export function BookingForm({
           </div>
           <p className="mt-sm text-body-sm text-muted-foreground">
             Check-in {config.standardCheckInTime ?? 'time not set'}, check-out{' '}
-            {config.standardCheckOutTime}. Early check-in is not sold here — it depends on the unit
-            being ready, and that rule is still to be agreed (open-questions.md N31).
+            {config.standardCheckOutTime}. Early check-in is not sold here: it depends on the unit
+            being ready, so agree it with the guest on the day.
           </p>
         </FormSection>
 

@@ -285,8 +285,8 @@ export default async function ReportsPage({ searchParams }: PageProps) {
         </Table>
 
         <p className="mt-md text-caption text-muted-foreground">
-          A tenancy records no money until the tenancy module lands: a long lease is an occupancy
-          with no booking and no payments, so it appears in occupancy above and at zero here.
+          A long lease is recorded as an occupancy with no booking and no payments, so it appears in
+          occupancy above and at zero here.
         </p>
       </section>
 
@@ -383,7 +383,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             {pagedUnits.length === 0 ? (
               <TableEmpty colSpan={4}>
                 {chosenTypes.length > 0
-                  ? 'No units of that type. The 2-bedroom exists as a type and has no units configured yet.'
+                  ? 'No units of that type. Units are added in the unit registry.'
                   : 'No units are configured. The unit registry is where the building is described.'}
               </TableEmpty>
             ) : null}

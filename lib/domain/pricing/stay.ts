@@ -189,7 +189,7 @@ export function priceStay(
   if (earlyCheckInHours > 0 && config.standardCheckInTime === null) {
     return fail(
       'early_check_in_undefined',
-      'Early check-in cannot be priced until the standard check-in time is confirmed.',
+      'Early check-in cannot be priced without a standard check-in time. Set one in Property settings.',
     )
   }
 

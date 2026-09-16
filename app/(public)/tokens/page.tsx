@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 
 import {
   AvatarDemo,
@@ -19,6 +20,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 
 export const metadata: Metadata = {
   title: 'Design tokens',
+  robots: { index: false, follow: false },
 }
 
 /**
@@ -30,6 +32,10 @@ export const metadata: Metadata = {
  *  - the *semantic* roles everywhere else, which flip with the theme.
  * Nothing is styled with a literal hex or pixel value, so a token that stops
  * resolving shows up immediately. Toggle the theme to check both.
+ *
+ * **A development page only.** It is sample data and notes for whoever is
+ * building the screens, so a deployed site answers it with a 404, as it does
+ * the email preview (app/api/dev/email-preview).
  */
 
 type Swatch = {
@@ -261,6 +267,10 @@ function Section({
 }
 
 export default function TokensPage() {
+  if (process.env.NODE_ENV === 'production') {
+    notFound()
+  }
+
   return (
     <>
       <section className="bg-card px-xl py-3xl">
