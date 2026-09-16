@@ -26,9 +26,10 @@ import { cn } from '@/lib/utils'
  * works, with no socket for a phone on poor signal to hold open.
  *
  * **Opening it marks what it shows seen** — up to the newest item, so
- * something that arrived since the last read still arrives as new. The items that were new stay marked
- * for as long as the panel is open, so the reader can see which they were;
- * the dot on the bell goes at once.
+ * something that arrived since the last read still arrives as new — and
+ * closing it does the same for anything that arrived while it was open. The
+ * items that were new stay marked for as long as the panel is open, so the
+ * reader can see which they were; the dot on the bell goes at once.
  *
  * The dot is ink, not a status hue: "something new" is not a state of the
  * business, and the operations surface is monochrome (design.md §Color).
@@ -102,22 +103,32 @@ export function PortalNotifications() {
     setIsOpen(open)
     isOpenRef.current = open
 
+    const newest = feed?.items[0]
+
     if (!open) {
+      // Whatever arrived while the panel stayed open was on screen, so it is
+      // seen too — or it would come back as new on the next load.
+      if (newest && isAfter(newest.at, feed.seenAt)) {
+        markSeen(newest.at)
+      }
+
       return
     }
 
     setNewSince(feed?.seenAt ?? null)
 
-    const newest = feed?.items[0]
-
     if (feed && newest && feed.unread > 0) {
       setFeed({ ...feed, unread: 0 })
-      void markNotificationsSeenAction(newest.at).then((result) => {
-        if (result.ok) {
-          setFeed((current) => (current ? { ...current, seenAt: result.seenAt } : current))
-        }
-      })
+      markSeen(newest.at)
     }
+  }
+
+  function markSeen(upTo: string) {
+    void markNotificationsSeenAction(upTo).then((result) => {
+      if (result.ok) {
+        setFeed((current) => (current ? { ...current, seenAt: result.seenAt } : current))
+      }
+    })
   }
 
   const unread = feed?.unread ?? 0
@@ -164,7 +175,11 @@ export function PortalNotifications() {
 }
 
 function isNew(item: PortalNotification, since: string | null): boolean {
-  return since === null || new Date(item.at).getTime() > new Date(since).getTime()
+  return isAfter(item.at, since)
+}
+
+function isAfter(instant: string, since: string | null): boolean {
+  return since === null || new Date(instant).getTime() > new Date(since).getTime()
 }
 
 interface NotificationListProps {
