@@ -54,8 +54,13 @@ function required(name) {
 
 /**
  * Runs a command in the repository, throwing when it fails. On Windows `npx`
- * is a .cmd file and needs a shell, so the command is quoted into one string
- * rather than handed to the shell as separate arguments.
+ * is a .cmd file and needs a shell, so the arguments are quoted into one
+ * string rather than handed to the shell separately.
+ *
+ * The command name itself is left bare. cmd.exe resolves `%~dp0` inside a
+ * batch file invoked by a quoted bare name to the current folder rather than
+ * the file's own, so `"npx"` looks for npm in this repository and fails with
+ * MODULE_NOT_FOUND. The names passed here are fixed words with no spaces.
  */
 function run(command, args, { capture = false } = {}) {
   const options = {
@@ -65,7 +70,7 @@ function run(command, args, { capture = false } = {}) {
   }
   const result =
     process.platform === 'win32'
-      ? spawnSync([command, ...args].map((part) => `"${part}"`).join(' '), {
+      ? spawnSync([command, ...args.map((part) => `"${part}"`)].join(' '), {
           ...options,
           shell: true,
         })
