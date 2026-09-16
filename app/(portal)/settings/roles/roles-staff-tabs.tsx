@@ -16,15 +16,21 @@ import { NewStaffDialog, StaffTab } from './staff-tab'
  * right of the same line, shown only while the Staff tab is active so the
  * Roles tab never carries a primary that acts on the other tab. Controlled
  * tabs, because the button's visibility hangs off the active value.
+ *
+ * The screen's CSV export sits on the same row, before the primary (design.md
+ * §Components — a table's own export). It stays on both tabs, because it
+ * exports staff and roles together.
  */
 
 interface RolesStaffTabsProps {
   staff: readonly StaffAccount[]
   roles: readonly RoleWithPermissions[]
   currentUserId: string
+  /** The row's secondary actions, placed before "New staff account". */
+  actions?: React.ReactNode
 }
 
-export function RolesStaffTabs({ staff, roles, currentUserId }: RolesStaffTabsProps) {
+export function RolesStaffTabs({ staff, roles, currentUserId, actions }: RolesStaffTabsProps) {
   const [activeTab, setActiveTab] = useState('staff')
   const [isNewStaffOpen, setIsNewStaffOpen] = useState(false)
 
@@ -36,12 +42,16 @@ export function RolesStaffTabs({ staff, roles, currentUserId }: RolesStaffTabsPr
           <TabsTrigger value="roles">Roles</TabsTrigger>
         </TabsList>
 
-        {activeTab === 'staff' ? (
-          <Button onClick={() => setIsNewStaffOpen(true)}>
-            <Plus aria-hidden />
-            New staff account
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-sm">
+          {actions}
+
+          {activeTab === 'staff' ? (
+            <Button onClick={() => setIsNewStaffOpen(true)}>
+              <Plus aria-hidden />
+              New staff account
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <TabsContent value="staff">
