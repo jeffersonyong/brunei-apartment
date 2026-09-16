@@ -438,6 +438,9 @@ themes:
     # One hairline tone for every drawn edge in light.
     border: "{colors.hairline}"
     divider: "{colors.hairline}"
+    # The clear checkbox's edge — too small to be found by a hairline
+    # (§Components — Checkboxes).
+    control-edge: "mix({colors.mute} 75%, {colors.canvas})"
     primary: "{colors.brand-deep}"
     primary-foreground: "{colors.canvas}"
     primary-hover: "mix({colors.brand-deep} 78%, {colors.brand})"
@@ -501,6 +504,7 @@ themes:
     # 9% / 7% — anything stronger reads as wireframe against the ink ground.
     border: "{colors.canvas} @ 9%"
     divider: "{colors.canvas} @ 7%"
+    control-edge: "{colors.canvas} @ 35%"
     primary: "{colors.brand}"
     primary-foreground: "{colors.ink}"
     primary-hover: "{colors.brand-active}"
@@ -934,7 +938,7 @@ Strictly, 6px items behind 4px of padding want a 10px panel; 12px is taken inste
 
 **Tabs — a segmented control, not underlines.** A `muted` track at control height and `{rounded.md}` with `{spacing.xxs}` padding; the active segment is a white card chip at `{rounded.sm}` (concentric inside the track), stretched to the track's full inner height — a chip floating with track above and below it breaks the concentric geometry. No hairline on the chip: it carries `shadow-lift`, the page's **entire shadow budget**, shared only with the sidebar's active item — an edge felt rather than drawn. Dark grounds swallow shade, so in dark the lift flips to light: a 1px white-alpha edge ring with deeper black shade beneath, and the chip's fill (`tab-chip`) lifts a half-step above card (canvas @ 4% over ink-deep) — dark elevation reads through a lighter surface, held short of `secondary`'s full step. Labels `body-sm`, ink and 500 when active. The same principle as the sidebar's active item — *where am I* is a quiet surface shift, never the action colour; here the track supplies the gray, so the active segment lifts out of it in white. No underline tabs, no pill tabs. **Every segmented control is this construction** — the theme toggle included, which had grown its own (a 12px hairline shell, 9px pips, and the action colour marking the current mode) and now wears the tab track with two icon chips.
 
-**Checkboxes.** 16px, `{rounded.sm}` 4px (6px reads as a circle at that size), hairline on the card fill; checked fills with the action colour. Its tick is the one glyph heavier than the 1.5px icon stroke — a 12px mark reversed out of a filled 16px box needs the weight to hold its shape. Small enough that the fill does not count against the one-primary-per-region rule.
+**Checkboxes.** 16px, `{rounded.sm}` 4px (6px reads as a circle at that size), on the card fill; checked fills with the action colour. **A clear box is edged in `control-edge`, not the hairline**: a hairline bounds a surface the eye already sees by its tone, but a 16px box has no area to be seen by, and in `hairline` it measured 1.2:1 and vanished into a card. `control-edge` is the mute step thinned to clear 3:1, the minimum a control's boundary needs. Its tick is the one glyph heavier than the 1.5px icon stroke — a 12px mark reversed out of a filled 16px box needs the weight to hold its shape. Small enough that the fill does not count against the one-primary-per-region rule.
 
 **Textareas.** The input treatment at multiple lines — same hairline, radius, type and focus — sized to their content rather than fixed.
 
