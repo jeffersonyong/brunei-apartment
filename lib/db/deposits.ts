@@ -618,6 +618,34 @@ async function countReleasedDeposits(
 }
 
 /**
+ * The newest few deposits, held or released, whose booking reference, guest
+ * or unit contains `term` — the portal search's deposits (capability F12).
+ * The ledger's own search is split across its held and released halves; a
+ * quick lookup wants both at once.
+ */
+export async function searchDeposits(term: string, limit: number): Promise<readonly Deposit[]> {
+  const propertyId = await currentPropertyId()
+
+  const query = dataClient()
+    .from('deposit_summary')
+    .select(SUMMARY_COLUMNS)
+    .eq('property_id', propertyId)
+    .order('collected_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
+    .limit(limit)
+
+  applySearch(query, ['booking_reference', 'guest_name', 'unit_ref'], term)
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(`Could not search deposits: ${error.message}`)
+  }
+
+  return (data as unknown as DepositSummaryRow[]).map(toDeposit)
+}
+
+/**
  * The archive's predicates, in one place so the page and its count cannot
  * disagree — the register's rule for a list and its summary.
  *

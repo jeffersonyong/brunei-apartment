@@ -35,7 +35,7 @@ const UNREADABLE: PrivacyPolicyActionState = {
   message: 'That form could not be read. Reload the page and try again.',
 }
 
-const SCREEN = '/website/privacy-policy'
+const SCREEN = '/settings/website'
 
 // `expectedUpdatedAt` is empty for a draft that has never been saved.
 const policySchema = z.object({ text: z.string(), expectedUpdatedAt: z.string() })

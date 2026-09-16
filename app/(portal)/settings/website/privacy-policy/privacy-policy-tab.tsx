@@ -1,14 +1,11 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 
-import { EmptyState } from '@/components/portal/empty-state'
 import { ExportCsvButton } from '@/components/portal/export-csv'
-import { PageHeader } from '@/components/portal/page-header'
 import { SectionCard } from '@/components/portal/section-card'
 import { Button } from '@/components/ui/button'
 import { hasPermission } from '@/lib/auth/permissions'
-import { getActor } from '@/lib/auth/require-permission'
+import type { Actor } from '@/lib/auth/require-permission'
 import { exportGroup } from '@/lib/db/export'
 import {
   listPrivacyPolicyVersions,
@@ -21,45 +18,23 @@ import { formatTimestamp } from '@/lib/domain/dates'
 import { privacyPolicyStatus, type PrivacyPolicyStatus } from '@/lib/domain/privacy-policy'
 import { privacyPolicyTemplate } from '@/lib/domain/privacy-policy-template'
 
+import type { WebsiteTabView } from '../website-tab'
+
 import { PrivacyPolicyEditor } from './privacy-policy-editor'
 
-export const metadata: Metadata = {
-  title: 'Privacy policy',
-}
-
 /**
- * The privacy policy on the public website (capability F10).
+ * The privacy policy on the public website (capability F10) — the Privacy
+ * policy tab of Website settings.
  *
- * Render-gated on `privacy_policy.manage`, the way Website FAQs is gated on
- * `faq.manage`: somebody without it gets a quiet card and this reads nothing.
- * The gate that matters is the first line of both actions in ./actions.ts.
+ * The screen shows this tab only to somebody holding `privacy_policy.manage`;
+ * the gate that matters is the first line of both actions in ./actions.ts.
  *
  * Three parts, in the order somebody needs them: where the website stands now,
  * the editor, and the versions the website has shown. **The wording is the
  * client's to approve** — the screen offers a template and refuses to publish
  * an unfilled gap, and makes no claim beyond that (open question R5).
  */
-export default async function WebsitePrivacyPolicyPage() {
-  const actor = await getActor()
-
-  if (!actor || !hasPermission(actor.permissions, 'privacy_policy.manage')) {
-    return (
-      <>
-        <PageHeader
-          title="Privacy policy"
-          description="What the public website tells guests about their personal data."
-        />
-        <EmptyState
-          className="mt-xl"
-          title="You don't have access to this screen"
-          description={
-            'Changing the privacy policy needs the "Write and publish the privacy policy" permission. Ask an administrator if this is part of your job.'
-          }
-        />
-      </>
-    )
-  }
-
+export async function privacyPolicyTab(actor: Actor): Promise<WebsiteTabView> {
   const [draft, published, versions, staff] = await Promise.all([
     readPrivacyPolicyDraft(),
     readPublishedPrivacyPolicy(),
@@ -71,29 +46,25 @@ export default async function WebsitePrivacyPolicyPage() {
     (id === null ? undefined : names.get(id)) ?? 'a former colleague'
   const status = privacyPolicyStatus({ draft: draft.text, published: published?.body ?? null })
 
-  return (
-    <>
-      <PageHeader
-        title="Privacy policy"
-        description="What the public website tells guests about their personal data. Nothing on the website changes until you publish."
-        actions={
-          <>
-            {hasPermission(actor.permissions, 'config.manage') ? (
-              <ExportCsvButton tables={exportGroup('privacyPolicy')} />
-            ) : null}
-            {published ? (
-              <Button asChild variant="tertiary">
-                <Link href="/privacy" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink aria-hidden />
-                  View the privacy policy page
-                </Link>
-              </Button>
-            ) : null}
-          </>
-        }
-      />
-
-      <div className="mt-xl grid gap-xl">
+  return {
+    lead: 'What the public website tells guests about their personal data. Nothing on the website changes until you publish.',
+    actions: (
+      <>
+        {hasPermission(actor.permissions, 'config.manage') ? (
+          <ExportCsvButton tables={exportGroup('privacyPolicy')} />
+        ) : null}
+        {published ? (
+          <Button asChild variant="tertiary">
+            <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+              <ExternalLink aria-hidden />
+              View the privacy policy page
+            </Link>
+          </Button>
+        ) : null}
+      </>
+    ),
+    content: (
+      <div className="grid gap-xl">
         <SectionCard id="privacy-policy-status" title="On the website">
           <p className="text-body-md text-foreground">
             {statusSentence(
@@ -141,8 +112,8 @@ export default async function WebsitePrivacyPolicyPage() {
           </SectionCard>
         ) : null}
       </div>
-    </>
-  )
+    ),
+  }
 }
 
 function statusSentence(

@@ -3,6 +3,7 @@ import { Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { todayInBrunei } from '@/lib/domain/dates'
 
 import { BookMenu } from './_components/book-menu'
 import {
@@ -176,7 +177,9 @@ export default async function PublicLayout({ children }: { children: React.React
           <ThemeToggle className="mt-2xl sm:hidden" />
 
           <p className="mt-2xl text-caption opacity-70">
-            © 2026 Palm Villa · Bandar Seri Begawan, Brunei Darussalam
+            {/* The year the page was rendered in Brunei, not a typed one that
+                goes stale on 1 January. */}
+            © {todayInBrunei().slice(0, 4)} Palm Villa · Bandar Seri Begawan, Brunei Darussalam
           </p>
           <p className="mt-sm text-caption opacity-70">
             Staff: <Link href="/dashboard">Portal</Link> · <Link href="/field">Field</Link>

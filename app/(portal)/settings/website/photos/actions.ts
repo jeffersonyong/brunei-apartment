@@ -186,5 +186,5 @@ function refused(error: SiteImageWriteError): PhotoActionState {
 
 function revalidateWebsite(): void {
   revalidatePath('/')
-  revalidatePath('/website/photos')
+  revalidatePath('/settings/website')
 }

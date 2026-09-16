@@ -652,6 +652,16 @@
   );
   --input: var(--border);
 
+  /* The edge of a control too small to be found by its fill — the clear
+     checkbox. A 16px box drawn in `hairline` on a card measures 1.2:1 and
+     disappears; a control's boundary needs 3:1 (WCAG 1.4.11). So it is the
+     mute step, thinned: 75% of mute over the canvas in light (3.2:1), 35% of
+     canvas in dark (3.6:1 on the card). Checked, the fill carries it. */
+  --control-edge: light-dark(
+    color-mix(in oklab, var(--color-mute) 75%, var(--color-canvas)),
+    color-mix(in oklab, var(--color-canvas) 35%, transparent)
+  );
+
   /* Row rules and nav edges. One value with `border` in light; a step quieter
      in dark. */
   --divider: light-dark(
@@ -1005,6 +1015,7 @@
   --color-negative-text: var(--negative-text);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-control-edge: var(--control-edge);
   --color-divider: var(--divider);
   --color-group-band: var(--group-band);
   --color-grid-line: var(--grid-line);

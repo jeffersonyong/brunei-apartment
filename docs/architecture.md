@@ -321,6 +321,20 @@ The occupancy update is the statement that wins or loses the race against the §
 
 `rent_period` is one row per period per tenancy (due date, amount, status, paid date, method, reference) — never a boolean on the tenancy (PRD §16 rationale).
 
+### 5.6 Notifications (capability F11)
+
+**Read off the audit trail, not written separately.** The bell's three kinds — `booking.created_public`, `booking.submit_payment` and a booking's `email.failed` — are already append-only events, so a notifications table would be a second copy written by a second path that could miss one. `lib/domain/notifications.ts` names the verbs and the permission each needs (`booking.view`, `payment.verify`, `booking.view`); `lib/db/notifications.ts` reads the last fourteen days from `audit_event_summary`, newest twenty, leaving out the reader's own events (`actor_id is null or <> reader`, since a guest's events have no actor).
+
+**The one new table is `notification_read`**: one `seen_at` per person per property. Opening the bell marks it seen *up to the newest item shown*, not up to now, so an event that landed between the last read and the click still arrives as new. `mark_notifications_seen()` clamps that time to the database clock and never moves it backwards, so two open tabs cannot mark each other's items unread.
+
+**Polled, not pushed.** The bell reads `GET /notifications`, a portal route handler rather than a server action, because server actions run one at a time and a timed read should not wait behind somebody's save. It reads when the portal opens, every 60 s while the tab is visible, and whenever the tab becomes visible again. No realtime channel: nothing else in the stack holds a socket open, and a front desk does not need anything faster than a minute. At this property's volume the existing `(property_id, at desc)` index serves the query; 20260912000200 names the index to add if it is ever measured slow.
+
+### 5.7 Portal search (capability F12)
+
+**No search index; it runs the list screens' own searches.** `GET /search?q=` runs the term through `readSearch()`, the list screens' sanitiser, then runs, in parallel, the same case-insensitive *contains* each list screen uses: `listBookings` (reference, guest, phone, unit), `listPaymentPage` limited to `pending_verification`, `searchDeposits` over `deposit_summary`, and the unit board's states filtered in code. It returns five of each, plus nav screens matched by name. A result here is always one the matching list screen would also show. Postgres full-text search, or a trigram index, is what to reach for the day these `ilike` scans are measured slow — not before.
+
+**Each group runs only for somebody holding the permission its screen checks** (`booking.view`, `payment.verify`, `unit.manage`), and screens are filtered by `SCREEN_PERMISSIONS` in `components/portal/portal-search-results.ts`. That map mirrors each page's own render gate, and a test keeps it in step with the nav. It is a route handler for the same reason as the notification feed: the box asks as the reader types, and each question cancels the last.
+
 ---
 
 ## 6. Payments (manual transfer, v1)
@@ -521,7 +535,7 @@ Resend, transactional only, and **two templates rather than the four this sectio
 
 **The copy dependency is settled.** From 14 September 2026 `/booking/{token}` promised a code, on the client's instruction, in the two places a customer reads before and after paying, while the confirmation email deliberately said nothing — the one surface where the promise would have been a lie the moment it was read. This slice reconciled them. The email now says *show the QR code in this email at the gate, or quote reference …*; the guest's page shows the code itself once the booking is confirmed (§7); and its *checking* sentence says where the code will arrive — by email and on the page, or on the page alone for a guest who gave no address. The transfer instructions keep the client's wording that the code comes by email, which is true for every guest who gave an address.
 
-**The FAQ still does not repeat it** (16 September 2026, capability A10), for the audience reason recorded then: a search-indexed page speaks to people who have not booked. Its answers are staff-written since capability F9, so mentioning the code there is a sentence the desk can add from *Website FAQs* rather than a change to the product.
+**The FAQ still does not repeat it** (16 September 2026, capability A10), for the audience reason recorded then: a search-indexed page speaks to people who have not booked. Its answers are staff-written since capability F9, so mentioning the code there is a sentence the desk can add from *Website settings → FAQs* rather than a change to the product.
 
 **One auth email, and it is not Supabase's.** Staff provisioning stays out-of-band (§3); the only email about an account is the password reset link (capability F8, §3), which `lib/db/password-reset.ts` sends through this same Resend path rather than GoTrue's mailer — one sender, one design, one switch. It is operations mail, so it takes the monochrome register (an ink button, a sans headline, no lagoon and no Fraunces), it is filed on the staff account as `email.sent` / `email.failed` with `kind: 'password_reset'`, and `/api/dev/email-preview?case=password-reset` draws it. Where a customer gives no address, delivery falls back to staff forwarding over WhatsApp (accepted v1 gap, PRD assumption A6), and the booking screen says so on a booking made online without one.
 

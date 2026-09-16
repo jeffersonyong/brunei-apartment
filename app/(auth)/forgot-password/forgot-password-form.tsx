@@ -40,7 +40,7 @@ export function ForgotPasswordForm({ isAvailable }: { isAvailable: boolean }) {
     return (
       <AuthScreen
         title="Reset your password"
-        description="Resetting a password by email isn't switched on yet. Until it is, ask an administrator — they can set you a new one straight away."
+        description="Password reset by email isn't available. Ask an administrator — they can set you a new one straight away."
         footer={BACK_TO_SIGN_IN}
       />
     )

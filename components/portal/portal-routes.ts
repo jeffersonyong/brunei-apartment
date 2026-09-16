@@ -7,29 +7,26 @@ import {
   Coins,
   DoorOpen,
   Globe,
-  Image as ImageIcon,
   LayoutDashboard,
   List,
   LockKeyhole,
-  MessageCircleQuestion,
   Plus,
   ScrollText,
   Settings,
-  ShieldCheck,
   Smartphone,
   Tag,
   Users,
   type LucideIcon,
 } from 'lucide-react'
 
+import { GlobeCode } from './globe-code-icon'
+
 /**
  * The portal's route map — one source of truth for the sidebar, the mobile
  * drawer and the topbar breadcrumbs.
  *
  * The groups map to how the work is divided rather than to the route tree, so
- * the shape of the operation is legible from the sidebar. Screens that are not
- * built yet are listed and render a planned-screen stub — the remaining work is
- * visible instead of hidden.
+ * the shape of the operation is legible from the sidebar.
  */
 
 export interface NavItem {
@@ -110,26 +107,15 @@ export const navGroups = [
       // configuration and is gated on `config.manage`. The board links across
       // to it, which is where anyone looking for it will look first.
       { href: '/settings/units', label: 'Unit registry', icon: Building2 },
-      // The public site's photographs (capability F7). They were a Website
-      // group of one, and a label over a single screen that will not be
-      // joined is chrome rather than structure — the photos are what the
-      // business shows the public, configured once and refreshed now and then,
-      // the same kind of work as the rates above them. The group names that
-      // work, not who may do it: the screen answers to `site_image.manage`,
-      // which whoever runs the Instagram account can hold without being an
-      // administrator.
-      { href: '/website/photos', label: 'Website photos', icon: ImageIcon },
-      // Beside the photos, for the same reason they are here: what the public
-      // site says, kept current now and then. Its own permission,
-      // `faq.manage` (capability F9).
-      { href: '/website/faqs', label: 'Website FAQs', icon: MessageCircleQuestion },
-      // Beside the other two for the same reason: what the public site says.
-      // Its own permission, `privacy_policy.manage` (capability F10).
-      {
-        href: '/website/privacy-policy',
-        label: 'Privacy policy',
-        icon: ShieldCheck,
-      },
+      // What the public site shows and says — its photographs (capability
+      // F7), its FAQs (F9) and its privacy policy (F10) — as tabs of one
+      // screen, the way Property settings holds the business's figures. They
+      // were three items once; one screen leaves room for the next website
+      // setting without growing the nav. The group names the kind of work,
+      // not who may do it: each tab answers to its own permission
+      // (`site_image.manage`, `faq.manage`, `privacy_policy.manage`), any of
+      // which a role holding no other Admin screen can be given.
+      { href: '/settings/website', label: 'Website settings', icon: GlobeCode },
       { href: '/settings/roles', label: 'Roles & staff', icon: Users },
       { href: '/settings/audit', label: 'Audit log', icon: ScrollText },
       // No "Export data" item. The screen it pointed at listed seventeen table

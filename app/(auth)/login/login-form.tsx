@@ -118,7 +118,7 @@ function ForgotPassword({ isAvailable }: { isAvailable: boolean }) {
             Forgot password?
           </span>
         </TooltipTrigger>
-        <TooltipContent>Not switched on yet — ask an administrator to reset it</TooltipContent>
+        <TooltipContent>Not available — ask an administrator to reset it</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )

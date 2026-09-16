@@ -1,14 +1,11 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 
-import { EmptyState } from '@/components/portal/empty-state'
 import { ExportCsvButton } from '@/components/portal/export-csv'
-import { PageHeader } from '@/components/portal/page-header'
 import { SectionCard } from '@/components/portal/section-card'
 import { Button } from '@/components/ui/button'
 import { hasPermission } from '@/lib/auth/permissions'
-import { getActor } from '@/lib/auth/require-permission'
+import type { Actor } from '@/lib/auth/require-permission'
 import { exportGroup } from '@/lib/db/export'
 import { readFaqFacts } from '@/lib/db/faq-facts'
 import { listFaqs } from '@/lib/db/faqs'
@@ -22,47 +19,24 @@ import {
   renderFaqAnswer,
 } from '@/lib/domain/faq'
 
+import type { WebsiteTabView } from '../website-tab'
+
 import { FaqBoard, type FaqRowView, type FaqTopicView } from './faq-board'
 import { NewFaqButton } from './new-faq-button'
 
-export const metadata: Metadata = {
-  title: 'Website FAQs',
-}
-
 /**
- * The questions and answers on the public website (capability F9).
+ * The questions and answers on the public website (capability F9) — the FAQs
+ * tab of Website settings.
  *
- * Render-gated on `faq.manage`, the way Website photos is gated on
- * `site_image.manage`: somebody without it gets a quiet card and this reads
- * nothing. The gate that matters is the first line of every action in
- * ./actions.ts; this one only spares somebody a screen they cannot use.
+ * The screen shows this tab only to somebody holding `faq.manage`; the gate
+ * that matters is the first line of every action in ./actions.ts.
  *
  * Two parts. What the front page shows comes first, because it is the part a
  * visitor sees without looking for it; then every topic, including an empty
  * one, since an empty topic is somewhere staff may want to add a question. The
  * list's previews fill the figures in, so staff read what a guest will read.
  */
-export default async function WebsiteFaqsPage() {
-  const actor = await getActor()
-
-  if (!actor || !hasPermission(actor.permissions, 'faq.manage')) {
-    return (
-      <>
-        <PageHeader
-          title="Website FAQs"
-          description="The questions and answers on the public website."
-        />
-        <EmptyState
-          className="mt-xl"
-          title="You don't have access to this screen"
-          description={
-            'Changing the FAQs on the website needs the "Manage website FAQs" permission. Ask an administrator if this is part of your job.'
-          }
-        />
-      </>
-    )
-  }
-
+export async function faqsTab(actor: Actor): Promise<WebsiteTabView> {
   const [faqs, facts, staff] = await Promise.all([listFaqs(), readFaqFacts(), listStaff()])
   const names = new Map(staff.map((account) => [account.id, account.displayName]))
   const featuredCount = faqs.filter((faq) => faq.featured).length
@@ -88,28 +62,24 @@ export default async function WebsiteFaqsPage() {
     })),
   }))
 
-  return (
-    <>
-      <PageHeader
-        title="Website FAQs"
-        description="The questions and answers on the public website. A change is live as soon as it is saved, and every change is recorded."
-        actions={
-          <>
-            {hasPermission(actor.permissions, 'config.manage') ? (
-              <ExportCsvButton tables={exportGroup('faqs')} />
-            ) : null}
-            <Button asChild variant="tertiary">
-              <Link href="/faq" target="_blank" rel="noopener noreferrer">
-                <ExternalLink aria-hidden />
-                View the FAQs page
-              </Link>
-            </Button>
-            <NewFaqButton facts={facts} featuredCount={featuredCount} />
-          </>
-        }
-      />
-
-      <div className="mt-xl grid gap-xl">
+  return {
+    lead: 'The questions and answers on the public website. A change is live as soon as it is saved.',
+    actions: (
+      <>
+        {hasPermission(actor.permissions, 'config.manage') ? (
+          <ExportCsvButton tables={exportGroup('faqs')} />
+        ) : null}
+        <Button asChild variant="tertiary">
+          <Link href="/faq" target="_blank" rel="noopener noreferrer">
+            <ExternalLink aria-hidden />
+            View the FAQs page
+          </Link>
+        </Button>
+        <NewFaqButton facts={facts} featuredCount={featuredCount} />
+      </>
+    ),
+    content: (
+      <div className="grid gap-xl">
         <SectionCard
           id="faqs-front-page"
           title="On the front page"
@@ -136,6 +106,6 @@ export default async function WebsiteFaqsPage() {
 
         <FaqBoard topics={topics} facts={facts} featuredCount={featuredCount} />
       </div>
-    </>
-  )
+    ),
+  }
 }

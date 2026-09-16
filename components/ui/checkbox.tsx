@@ -38,7 +38,7 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
 }
 
 /**
- * The box itself: hairline and card fill when clear, the action colour when
+ * The box itself: a control edge and card fill when clear, the action colour when
  * checked, with the tick held at full size and faded rather than mounted, so
  * nothing about the box moves as it toggles.
  *
@@ -52,7 +52,9 @@ function CheckboxGlyph({ className }: { className?: string }) {
       data-slot="checkbox-glyph"
       className={cn(
         'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-        'border-border bg-card',
+        // `control-edge`, not the hairline: at 16px the box has no area to be
+        // found by, so its edge has to clear 3:1 on its own.
+        'border-control-edge bg-card',
         'group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary group-data-[state=checked]:text-primary-foreground',
         'group-data-[state=indeterminate]:border-primary group-data-[state=indeterminate]:bg-primary group-data-[state=indeterminate]:text-primary-foreground',
         'group-aria-invalid:border-destructive',

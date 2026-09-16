@@ -20,11 +20,12 @@ export const PORTAL_SEGMENTS = [
   'deposits',
   'documents',
   'export',
+  'notifications',
   'payments',
   'reports',
+  'search',
   'settings',
   'units',
-  'website',
 ] as const
 
 /** The field screens: `app/(field)`. */
