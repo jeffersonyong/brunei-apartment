@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useActionState, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -140,7 +139,6 @@ export function UnitActions(props: UnitActionsProps) {
  */
 function ReturnToServiceButton({ unitId, ref_ }: { unitId: string; ref_: string }) {
   const [state, formAction, isPending] = useActionState(returnToServiceAction, initialState)
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done') {
@@ -149,13 +147,12 @@ function ReturnToServiceButton({ unitId, ref_ }: { unitId: string; ref_: string 
         title: `${ref_} is back in service`,
         description: 'It can be booked again.',
       })
-      router.refresh()
     }
 
     if (state.status === 'error' && state.message) {
       toast({ tone: 'negative', title: 'That did not work', description: state.message })
     }
-  }, [state, ref_, router])
+  }, [state, ref_])
 
   return (
     <form action={formAction}>
@@ -178,7 +175,6 @@ function OutOfServiceDialog({
   onClose: () => void
 }) {
   const [state, formAction, isPending] = useActionState(markOutOfServiceAction, initialState)
-  const router = useRouter()
   // Held here rather than left to the DOM, because React resets an uncontrolled
   // form as soon as its action returns — so a rejected submit used to hand back
   // an error *and* an empty box, asking the person to retype what they had
@@ -194,9 +190,8 @@ function OutOfServiceDialog({
         description: 'It has left availability.',
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, ref_, onClose, router])
+  }, [state.status, ref_, onClose])
 
   return (
     <Dialog open onOpenChange={(next) => (next ? undefined : onClose())}>
@@ -266,7 +261,6 @@ function LeaseDialog({
   onClose: () => void
 }) {
   const [state, formAction, isPending] = useActionState(markLeasedAction, initialState)
-  const router = useRouter()
   const [today] = useState(() => todayInBrunei())
   // Every field is controlled, for the reason `OutOfServiceDialog` gives: React
   // resets an uncontrolled form once its action returns, so the old version
@@ -284,9 +278,8 @@ function LeaseDialog({
         description: 'It will not be offered for those dates.',
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, ref_, onClose, router])
+  }, [state.status, ref_, onClose])
 
   return (
     <Dialog open onOpenChange={(next) => (next ? undefined : onClose())}>
@@ -415,7 +408,6 @@ function EndLeaseDialog({
   onClose: () => void
 }) {
   const [state, formAction, isPending] = useActionState(endLeaseAction, initialState)
-  const router = useRouter()
   const [end, setEnd] = useState<StayDate | null>(lease.end)
 
   // Which outcome the chosen date produces, said before the click rather than
@@ -442,9 +434,8 @@ function EndLeaseDialog({
         description: lease.occupantName,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.outcome, ref_, end, lease.end, lease.occupantName, onClose, router])
+  }, [state.status, state.outcome, ref_, end, lease.end, lease.occupantName, onClose])
 
   return (
     <Dialog open onOpenChange={(next) => (next ? undefined : onClose())}>

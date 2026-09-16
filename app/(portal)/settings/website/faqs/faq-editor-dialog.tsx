@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { Braces, ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -80,7 +79,6 @@ export function FaqEditorDialog({
   const [featured, setFeatured] = useState(faq?.featured ?? false)
   const [result, setResult] = useState<FaqActionState>({ status: 'idle' })
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   const answerRef = useRef<HTMLTextAreaElement>(null)
   // Where the cursor was when the answer lost focus to the figure menu, and
@@ -157,7 +155,6 @@ export function FaqEditorDialog({
 
       toast({ tone: 'positive', title: faq ? 'FAQ saved' : 'FAQ added' })
       onClose()
-      router.refresh()
     })
   }
 

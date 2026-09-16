@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Banknote } from 'lucide-react'
 
 import { CASH_MAY_NOT_HAVE_GONE_THROUGH } from '@/components/field/did-not-go-through'
@@ -102,7 +101,6 @@ function GateCashDialog({
   due,
   onClose,
 }: Omit<GateCashButtonProps, 'className' | 'isPrimary'> & { onClose: () => void }) {
-  const router = useRouter()
   // Opened on what is owed, which is what is handed over almost every time.
   const [amount, setAmount] = useState(formatCents(due.amount))
 
@@ -137,9 +135,8 @@ function GateCashDialog({
   useEffect(() => {
     if (state.status === 'done') {
       onClose()
-      router.refresh()
     }
-  }, [state.status, onClose, router])
+  }, [state.status, onClose])
 
   const isStay = due.kind === 'stay'
   const typed = isStay ? centsFromInput(amount) : due.amount

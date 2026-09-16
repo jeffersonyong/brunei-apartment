@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 
 import { markUnitReadyAction, type UnitActionState } from '@/app/(portal)/units/[ref]/actions'
@@ -71,7 +70,6 @@ function MarkReadyDialog({
   size,
   onClose,
 }: Omit<MarkReadyButtonProps, 'className'> & { onClose: () => void }) {
-  const router = useRouter()
   const [state, formAction, isPending] = useActionState(
     async (previous: UnitActionState, formData: FormData): Promise<UnitActionState> => {
       let result: UnitActionState
@@ -100,13 +98,13 @@ function MarkReadyDialog({
   )
 
   // Only reached when the button is still on screen — the portal's unit page,
-  // which keeps the section and shows the mark.
+  // which keeps the section and shows the mark. The action's response has
+  // already re-rendered it, so all that is left here is the dialog.
   useEffect(() => {
     if (state.status === 'done') {
       onClose()
-      router.refresh()
     }
-  }, [state.status, onClose, router])
+  }, [state.status, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>

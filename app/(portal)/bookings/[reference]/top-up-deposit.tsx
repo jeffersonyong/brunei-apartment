@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -99,7 +98,6 @@ function TopUpDepositDialog({
   onClose,
 }: TopUpDepositProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(topUpDepositAction, initialState)
-  const router = useRouter()
 
   const [typed, setTyped] = useState(() => formatCents(shortfall))
   const [method, setMethod] = useState<PaymentMethod>('cash')
@@ -118,9 +116,8 @@ function TopUpDepositDialog({
             : `Held in full against ${reference}`,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.toppedUp, reference, onClose, router])
+  }, [state.status, state.toppedUp, reference, onClose])
 
   const entered = centsFromInput(typed)
   // Only a well-formed figure short of the gap gets the second sentence; an

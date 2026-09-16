@@ -1,7 +1,6 @@
 'use client'
 
 import { Landmark } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useActionState, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -87,7 +86,6 @@ function RecordBankingDialog({
   onClose,
 }: RecordBankingProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(recordBankingAction, initialState)
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done' && state.recorded) {
@@ -97,9 +95,8 @@ function RecordBankingDialog({
         description: `Banked ${formatStayRange(state.recorded.businessDate, state.recorded.businessDate)}`,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.recorded, onClose, router])
+  }, [state.status, state.recorded, onClose])
 
   const submitted = state.submitted
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -44,7 +43,6 @@ export function EditPhotoDialog({
   const [focus, setFocus] = useState<SiteImageFocus>(current.focus)
   const [result, setResult] = useState<PhotoActionState>({ status: 'idle' })
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   const tidied = altText.replace(/\s+/g, ' ').trim()
   const isDirty = tidied !== current.altText || focus !== current.focus
@@ -66,7 +64,6 @@ export function EditPhotoDialog({
 
       toast({ tone: 'positive', title: 'Photo updated' })
       onClose()
-      router.refresh()
     })
   }
 

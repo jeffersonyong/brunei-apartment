@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -65,7 +64,6 @@ export function RecordCashPayment() {
 
 function RecordCashDialog({ onClose }: { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(recordCashAction, initialState)
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done' && state.recorded) {
@@ -77,9 +75,8 @@ function RecordCashDialog({ onClose }: { onClose: () => void }) {
           : `Cash against ${state.recorded.reference}`,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.recorded, onClose, router])
+  }, [state.status, state.recorded, onClose])
 
   const needsReason = Boolean(state.fieldErrors?.amountOverrideReason)
   // React empties an uncontrolled field once the action resolves, so a refused

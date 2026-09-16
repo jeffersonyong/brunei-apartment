@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -150,7 +149,9 @@ export function DepositActions({
 }
 
 /**
- * Shared: the toast, the close and the refresh a successful write needs.
+ * Shared: the toast and the close a successful write needs. The screen itself
+ * needs nothing more — the action's revalidation re-renders it in the same
+ * response.
  *
  * The toast says what actually happened to the booking, which is not the same
  * sentence every time. A **deposit** verified is what confirms a booking
@@ -167,8 +168,6 @@ function useCompletion(
   guestName: string,
   onClose: () => void,
 ) {
-  const router = useRouter()
-
   useEffect(() => {
     if (state.status === 'done') {
       const done = state.done
@@ -203,9 +202,8 @@ function useCompletion(
               },
       )
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.done, bookingReference, guestName, onClose, router])
+  }, [state.status, state.done, bookingReference, guestName, onClose])
 }
 
 /** The sentences that differ between the two kinds of money. */

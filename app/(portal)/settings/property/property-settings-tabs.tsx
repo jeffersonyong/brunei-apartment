@@ -20,8 +20,9 @@ import { PricingTab } from './pricing-tab'
  * should not block correcting a nightly rate.
  *
  * Each tab is mounted only while it is showing, so it takes its draft from the
- * settings the server just read — and after a save, `router.refresh()` gives
- * every tab the new concurrency token by remounting them with fresh props.
+ * settings the server just read — and a save's own response re-renders the
+ * page, since every settings action revalidates it, which hands every tab the
+ * new concurrency token as fresh props.
  */
 
 interface PropertySettingsTabsProps {

@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { LogIn, LogOut, Ticket, type LucideIcon } from 'lucide-react'
 
 import { DID_NOT_GO_THROUGH } from '@/components/field/did-not-go-through'
@@ -133,7 +132,6 @@ function GateActionDialog({
   note,
   onClose,
 }: Omit<GateActionButtonProps, 'className'> & { onClose: () => void }) {
-  const router = useRouter()
   const copy = MOVES[move]
   const [state, formAction, isPending] = useActionState(
     async (previous: GateActionState, formData: FormData): Promise<GateActionState> => {
@@ -163,14 +161,13 @@ function GateActionDialog({
     initialState,
   )
 
-  // Only reached when the card is still on screen — a list that could not be
-  // re-rendered, say. Everywhere else the card has already moved.
+  // Only reached when the card is still on screen. The action's response has
+  // already re-rendered the list, so all that is left here is the dialog.
   useEffect(() => {
     if (state.status === 'done') {
       onClose()
-      router.refresh()
     }
-  }, [state.status, onClose, router])
+  }, [state.status, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>

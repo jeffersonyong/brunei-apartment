@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Ticket } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -73,7 +72,6 @@ function AdmitPassDialog({
   isOwed,
   onClose,
 }: AdmitPassButtonProps & { onClose: () => void }) {
-  const router = useRouter()
   const [state, formAction, isPending] = useActionState(
     async (previous: PassActionState, formData: FormData): Promise<PassActionState> => {
       const result = await admitAction(previous, formData)
@@ -99,14 +97,13 @@ function AdmitPassDialog({
   const isItsDay = passDate === today
   const canProceed = isItsDay && !isOwed
 
-  // Only reached when the dialog is still mounted — a page that could not be
-  // re-rendered, say.
+  // Only reached when the dialog is still mounted. The action's response has
+  // already re-rendered the page, so all that is left here is the dialog.
   useEffect(() => {
     if (state.status === 'done') {
       onClose()
-      router.refresh()
     }
-  }, [state.status, onClose, router])
+  }, [state.status, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
@@ -131,8 +128,7 @@ function AdmitPassDialog({
 
           {isItsDay && isOwed ? (
             <Notice>
-              This pass is not paid in full. Take the rest from the Money card below, then admit
-              it.
+              This pass is not paid in full. Take the rest from the Money card below, then admit it.
             </Notice>
           ) : null}
 
