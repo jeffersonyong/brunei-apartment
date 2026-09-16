@@ -28,11 +28,28 @@ const EVERYTHING = new Set<Permission>(['booking.view', 'payment.verify'])
 const DAY_MS = 86_400_000
 
 let readerId: string
+// Somebody else at the desk. A real account, because `audit_event.actor_id`
+// references one — and left in place, as `givenStaffAccount`'s are, since the
+// events it acted in now refer to it.
+let colleagueId: string
 let propertyId: string
 
 beforeAll(async () => {
   readerId = await givenStaffAccount()
   propertyId = await currentPropertyId()
+
+  const { data, error } = await dataClient().auth.admin.createUser({
+    email: `colleague-${crypto.randomUUID()}@example.test`,
+    password: crypto.randomUUID(),
+    email_confirm: true,
+    user_metadata: { display_name: 'A colleague' },
+  })
+
+  if (error || !data.user) {
+    throw new Error(`Test setup could not create a colleague: ${error?.message}`)
+  }
+
+  colleagueId = data.user.id
 })
 
 afterEach(async () => {
@@ -73,14 +90,16 @@ describe('the notification feed', () => {
       checkIn: '2031-03-01',
       checkOut: '2031-03-03',
     })
-    const base = Date.now() - 60_000
+    // Seconds old, so events other suites wrote minutes ago cannot crowd these
+    // out of the newest twenty.
+    const base = Date.now() - 3_000
 
     await givenEvent(booking, 'booking.created_public', {
       at: new Date(base),
       after: { stream: 'short_stay' },
     })
     await givenEvent(booking, 'booking.submit_payment', {
-      actorId: crypto.randomUUID(),
+      actorId: colleagueId,
       at: new Date(base + 1_000),
       after: { amount_cents: 10_000 },
     })
@@ -113,7 +132,7 @@ describe('the notification feed', () => {
     await givenEvent(booking, 'booking.created_public', {
       at: new Date(Date.now() - 15 * DAY_MS),
     })
-    await givenEvent(booking, 'booking.submit_payment', { actorId: crypto.randomUUID() })
+    await givenEvent(booking, 'booking.submit_payment', { actorId: colleagueId })
 
     expect(
       forBooking((await readNotificationFeed(readerId, EVERYTHING)).items, booking),
@@ -132,11 +151,11 @@ describe('the notification feed', () => {
       checkIn: '2031-05-01',
       checkOut: '2031-05-03',
     })
-    const earlier = new Date(Date.now() - 120_000)
+    const earlier = new Date(Date.now() - 1_000)
 
     await givenEvent(booking, 'booking.created_public', { at: earlier })
     await markNotificationsSeen(readerId, earlier.toISOString())
-    await givenEvent(booking, 'booking.submit_payment', { actorId: crypto.randomUUID() })
+    await givenEvent(booking, 'booking.submit_payment', { actorId: colleagueId })
 
     const feed = await readNotificationFeed(readerId, EVERYTHING)
 
