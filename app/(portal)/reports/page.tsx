@@ -28,7 +28,8 @@ import { getActor } from '@/lib/auth/require-permission'
 import { listHeldDeposits, listOwedDeposits } from '@/lib/db/deposits'
 import { getUnitTypes, getUnits } from '@/lib/db/inventory'
 import { listKeptDeposits, listOccupanciesOverlapping, listRevenuePayments } from '@/lib/db/reports'
-import { formatStayRange } from '@/lib/domain/dates'
+import { listDayPassHeadroom } from '@/lib/db/day-passes'
+import { formatStayDate, formatStayRange } from '@/lib/domain/dates'
 import { formatCents, type Cents } from '@/lib/domain/money'
 import {
   formatOccupancyRate,
@@ -36,6 +37,7 @@ import {
   occupancyByUnit,
   occupancyTotals,
 } from '@/lib/domain/reports/occupancy'
+import { dayPassVolume, formatDayPassCapacity } from '@/lib/domain/reports/day-passes'
 import {
   keptDepositsInWindow,
   revenueByStream,
@@ -62,10 +64,9 @@ export const dynamic = 'force-dynamic'
  * The reports screen (capability E5, prd.md §14).
  *
  * prd.md §14 is deliberately short — six figures, no dashboard — and this
- * screen is that list and nothing more. Four of the six are here; the daily
+ * screen is that list and nothing more. Five of the six are here; the daily
  * cash-up (E4) is its own screen next door because it is worked daily rather
- * than read occasionally, and day-pass volume against capacity has no data to
- * be about yet (see the panel at the foot).
+ * than read occasionally.
  *
  * Two of the six are **as-of-now** figures rather than period ones: what is
  * held in deposits, and what guests owe. They are stated on the strip and lead
@@ -111,7 +112,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
   const { window, isExplicit } = readReportWindow(params.from, params.to)
   const range = overlapRangeOf(window)
 
-  const [occupancies, units, unitTypes, payments, kept, held, owed] = await Promise.all([
+  const [occupancies, units, unitTypes, payments, kept, held, owed, headroom] = await Promise.all([
     listOccupanciesOverlapping(range),
     getUnits(),
     getUnitTypes(),
@@ -119,7 +120,9 @@ export default async function ReportsPage({ searchParams }: PageProps) {
     listKeptDeposits(window),
     listHeldDeposits(),
     listOwedDeposits(),
+    listDayPassHeadroom(window),
   ])
+  const dayPasses = dayPassVolume(headroom)
 
   const byUnit = occupancyByUnit(units, occupancies, range)
   const byType = occupancyByType(unitTypes, byUnit, range)
@@ -406,15 +409,59 @@ export default async function ReportsPage({ searchParams }: PageProps) {
       </section>
 
       <section aria-labelledby="day-passes" className="mt-2xl">
-        <SectionHeading id="day-passes" title="Day passes against capacity" />
+        <SectionHeading
+          id="day-passes"
+          title="Day passes against capacity"
+          href={exportHref('day-passes')}
+        >
+          Guests on a day pass for each day, counting every pass not cancelled. Capacity is the
+          setting as it stands today, applied to every day of the period. The total compares the
+          period&apos;s guests with capacity on every day of it, including days nobody came.
+        </SectionHeading>
 
-        <EmptyState
-          className="mt-md"
-          title="Not available yet"
-          description={
-            'A day pass carries no date of its own yet, and no facility capacity has been configured — so neither the volume nor the number to compare it against exists. Both arrive with the day-pass booking flow.'
-          }
-        />
+        <p className="mt-xs text-body-sm text-muted-foreground">
+          {dayPasses.capacity === null
+            ? 'No day-pass capacity is set, so nothing limits a day. Set one per facility in Property settings → Day pass.'
+            : `Capacity ${formatDayPassCapacity(dayPasses.capacity)} a day — the smallest set on a facility the pass includes.`}
+        </p>
+
+        <Table containerClassName="mt-md">
+          <TableHeader>
+            <TableHeaderRow>
+              <TableHead>Date</TableHead>
+              <TableHead className="text-right">Guests</TableHead>
+              <TableHead className="text-right">Capacity</TableHead>
+              <TableHead className="text-right">Full</TableHead>
+            </TableHeaderRow>
+          </TableHeader>
+          <TableBody>
+            {dayPasses.days.length === 0 ? (
+              <TableEmpty colSpan={4}>No day passes were sold for a day in this period.</TableEmpty>
+            ) : null}
+            {dayPasses.days.map((row) => (
+              <TableRow key={row.date}>
+                <TableRowHead>{formatStayDate(row.date)}</TableRowHead>
+                <TableCell className="text-right tabular-nums">{row.guests}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatDayPassCapacity(row.capacity)}
+                </TableCell>
+                <TableCell className="text-right text-foreground tabular-nums">
+                  {formatOccupancyRate(row.share)}
+                </TableCell>
+              </TableRow>
+            ))}
+            <TotalRow
+              label={`Period · ${dayPasses.daysWithPasses} of ${dayPasses.daysInPeriod} days`}
+              cells={[
+                dayPasses.guests,
+                dayPasses.capacity === null
+                  ? formatDayPassCapacity(null)
+                  : dayPasses.capacity * dayPasses.daysInPeriod,
+                formatOccupancyRate(dayPasses.share),
+              ]}
+            />
+          </TableBody>
+        </Table>
       </section>
     </>
   )

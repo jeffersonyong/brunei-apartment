@@ -7,6 +7,7 @@ import { cashOnHandBefore, listCashBankings } from '@/lib/db/cash-banking'
 import { listDepositCashArrivals } from '@/lib/db/deposits'
 import { getUnitTypes, getUnits } from '@/lib/db/inventory'
 import { listPayments } from '@/lib/db/payments'
+import { listDayPassHeadroom } from '@/lib/db/day-passes'
 import { listKeptDeposits, listOccupanciesOverlapping, listRevenuePayments } from '@/lib/db/reports'
 import { csvFilename, toCsv, type CsvValue } from '@/lib/domain/csv'
 import { bruneiWindowBounds, todayInBrunei, type StayWindow } from '@/lib/domain/dates'
@@ -18,6 +19,7 @@ import {
   clampWindowToToday,
   isCashUpState,
 } from '@/lib/domain/reports/cash-up'
+import { dayPassVolume } from '@/lib/domain/reports/day-passes'
 import { occupancyByType, occupancyByUnit } from '@/lib/domain/reports/occupancy'
 import {
   keptDepositsInWindow,
@@ -63,13 +65,14 @@ import { readReportWindow } from '../report-window'
 
 export const dynamic = 'force-dynamic'
 
-type ReportTable = 'revenue' | 'occupancy-by-type' | 'occupancy-by-unit' | 'cash-up'
+type ReportTable = 'revenue' | 'occupancy-by-type' | 'occupancy-by-unit' | 'cash-up' | 'day-passes'
 
 const TABLES: readonly ReportTable[] = [
   'revenue',
   'occupancy-by-type',
   'occupancy-by-unit',
   'cash-up',
+  'day-passes',
 ]
 
 function isReportTable(candidate: string): candidate is ReportTable {
@@ -133,6 +136,10 @@ async function build(
     return buildCashUp(window, params)
   }
 
+  if (table === 'day-passes') {
+    return buildDayPasses(window)
+  }
+
   return buildOccupancy(table, window, params)
 }
 
@@ -174,6 +181,25 @@ async function buildRevenue(window: StayWindow): Promise<CsvDocument> {
         centsToDecimal(revenue.total),
         revenue.count,
         revenue.keptCount,
+      ],
+    ],
+  }
+}
+
+async function buildDayPasses(window: StayWindow): Promise<CsvDocument> {
+  const volume = dayPassVolume(await listDayPassHeadroom(window))
+
+  // Blank rather than a sentence where no limit is set: a spreadsheet column
+  // of numbers should stay one.
+  return {
+    headers: ['Date', 'Guests', 'Capacity', 'Full (%)'],
+    rows: [
+      ...volume.days.map((day) => [day.date, day.guests, day.capacity, percent(day.share)]),
+      [
+        'Total',
+        volume.guests,
+        volume.capacity === null ? null : volume.capacity * volume.daysInPeriod,
+        percent(volume.share),
       ],
     ],
   }
