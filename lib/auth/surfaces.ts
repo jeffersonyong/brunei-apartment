@@ -20,6 +20,7 @@ export const PORTAL_SEGMENTS = [
   'deposits',
   'documents',
   'export',
+  'notifications',
   'payments',
   'reports',
   'settings',
