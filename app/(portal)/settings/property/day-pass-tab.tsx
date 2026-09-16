@@ -171,7 +171,7 @@ export function DayPassTab({ settings }: DayPassTabProps) {
                         onChange={(value) => setBand(index, 'price', value)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-middle">
                       <RemoveRow
                         label={`Remove the ${band.label || 'unnamed'} band`}
                         onClick={() =>
@@ -280,7 +280,7 @@ export function DayPassTab({ settings }: DayPassTabProps) {
                         onChange={(value) => setBundle(index, 'price', value)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-middle">
                       <RemoveRow
                         label={`Remove the ${bundle.label || 'unnamed'} bundle`}
                         onClick={() =>
@@ -364,7 +364,7 @@ export function DayPassTab({ settings }: DayPassTabProps) {
                         onChange={(value) => setFacility(index, 'capacity', value)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-middle">
                       <RemoveRow
                         label={`Remove ${facility.name || 'this facility'}`}
                         onClick={() =>
@@ -451,9 +451,17 @@ function RowInput({
   )
 }
 
+/**
+ * The row's remove control, centred on the row.
+ *
+ * `flex` rather than TextAction's own `inline-flex`: an inline box holding
+ * only an icon sits on the text baseline, which left the X a few pixels above
+ * the middle of a row whose height the inputs set. Its cell is `align-middle`
+ * for the same reason.
+ */
 function RemoveRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <TextAction aria-label={label} title={label} onClick={onClick}>
+    <TextAction aria-label={label} title={label} onClick={onClick} className="flex">
       <X aria-hidden className="size-4" />
     </TextAction>
   )

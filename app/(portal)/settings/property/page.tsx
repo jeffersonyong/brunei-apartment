@@ -57,18 +57,18 @@ export default async function PropertySettingsPage({ searchParams }: PageProps) 
 
   return (
     <>
-      {/* Every rate, price, period and account on one sheet — the tabs below
-          are the same settings arranged for editing. Ungated: the screen
-          already answers to `config.manage`. */}
       <PageHeader
         title="Property settings"
         description="What the property charges, what a day pass admits, how long documents are kept, and where customers transfer to. Every change is recorded."
-        actions={<ExportCsvButton tables={exportGroup('settings')} />}
       />
 
       <PropertySettingsTabs
         settings={settings}
         initialTab={tab && isPropertyTab(tab) ? tab : 'pricing'}
+        // Every rate, price, period and account on one sheet — the tabs are
+        // the same settings arranged for editing. Ungated: the screen already
+        // answers to `config.manage`.
+        actions={<ExportCsvButton tables={exportGroup('settings')} />}
       />
     </>
   )
