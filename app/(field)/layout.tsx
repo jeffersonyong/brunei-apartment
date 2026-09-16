@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { signOutAction } from '@/app/(auth)/actions'
 import { FieldNav } from '@/components/field/field-nav'
+import { SignOutButton } from '@/components/field/sign-out-button'
 import { OperationsSurface } from '@/components/operations-surface'
 import { Button } from '@/components/ui/button'
 import { fieldJobsFor, landingPathFor, PORTAL_HOME } from '@/lib/auth/field-jobs'
@@ -26,7 +27,9 @@ import { getActor } from '@/lib/auth/require-permission'
 export default async function FieldLayout({ children }: { children: React.ReactNode }) {
   const actor = await getActor()
   const worksInThePortal =
-    actor !== null && actor.permissions.size > 0 && landingPathFor(actor.permissions) === PORTAL_HOME
+    actor !== null &&
+    actor.permissions.size > 0 &&
+    landingPathFor(actor.permissions) === PORTAL_HOME
   const jobs = actor ? fieldJobsFor(actor.permissions) : []
 
   return (
@@ -46,9 +49,7 @@ export default async function FieldLayout({ children }: { children: React.ReactN
               </Button>
             ) : null}
             <form action={signOutAction}>
-              <Button type="submit" variant="ghost" size="touch">
-                Sign out
-              </Button>
+              <SignOutButton />
             </form>
           </div>
         </div>
