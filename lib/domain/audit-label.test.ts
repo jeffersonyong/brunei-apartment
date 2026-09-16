@@ -302,7 +302,7 @@ describe('website photos (capability F7)', () => {
   })
 
   test('points at the screen the photographs are managed on', () => {
-    expect(auditSubjectHref('site_image', 'Front page')).toBe('/website/photos')
+    expect(auditSubjectHref('site_image', 'Front page')).toBe('/settings/website?tab=photos')
   })
 })
 
@@ -332,7 +332,7 @@ describe('website FAQs', () => {
   })
 
   test('points a FAQ event at the screen that manages them', () => {
-    expect(auditSubjectHref('faq', 'How do we pay?')).toBe('/website/faqs')
+    expect(auditSubjectHref('faq', 'How do we pay?')).toBe('/settings/website?tab=faqs')
   })
 })
 
@@ -348,7 +348,7 @@ describe('website privacy policy', () => {
 
   test('points a privacy policy event at the screen that publishes it', () => {
     expect(auditSubjectHref('privacy_policy_version', 'Privacy policy')).toBe(
-      '/website/privacy-policy',
+      '/settings/website?tab=privacy-policy',
     )
   })
 })

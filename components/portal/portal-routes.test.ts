@@ -100,12 +100,12 @@ describe('breadcrumbTrail', () => {
     ])
   })
 
-  test('files website photos under Admin, beside the rest of the configuration', () => {
-    expect(activeHref('/website/photos')).toBe('/website/photos')
-    expect(breadcrumbTrail('/website/photos')).toEqual([
+  test('files website settings under Admin, beside the rest of the configuration', () => {
+    expect(activeHref('/settings/website')).toBe('/settings/website')
+    expect(breadcrumbTrail('/settings/website')).toEqual([
       { label: 'Portal', href: '/dashboard' },
       { label: 'Admin' },
-      { label: 'Website photos' },
+      { label: 'Website settings' },
     ])
     expect(navGroups.map((group) => group.label)).not.toContain('Website')
   })

@@ -239,5 +239,5 @@ function refused(error: FaqWriteError): FaqActionState {
 function revalidateFaqs(): void {
   revalidatePath('/')
   revalidatePath('/faq')
-  revalidatePath('/website/faqs')
+  revalidatePath('/settings/website')
 }

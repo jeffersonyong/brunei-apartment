@@ -24,7 +24,6 @@ export const PORTAL_SEGMENTS = [
   'reports',
   'settings',
   'units',
-  'website',
 ] as const
 
 /** The field screens: `app/(field)`. */

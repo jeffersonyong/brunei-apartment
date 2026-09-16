@@ -938,11 +938,11 @@ export function auditSubjectHref(entityType: string, subjectLabel: string | null
     case 'bank_account':
       return '/settings/property?tab=bank-accounts'
     case 'site_image':
-      return '/website/photos'
+      return '/settings/website?tab=photos'
     case 'faq':
-      return '/website/faqs'
+      return '/settings/website?tab=faqs'
     case 'privacy_policy_version':
-      return '/website/privacy-policy'
+      return '/settings/website?tab=privacy-policy'
     default:
       return null
   }

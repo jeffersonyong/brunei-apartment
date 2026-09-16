@@ -84,6 +84,22 @@ const nextConfig: NextConfig = {
     },
   },
   /**
+   * The three website screens became tabs of Website settings. A bookmark or
+   * an old link to one still lands on its tab. Redirects run before proxy.ts,
+   * so the host split sees only the new address.
+   */
+  async redirects() {
+    return [
+      { source: '/website/photos', destination: '/settings/website?tab=photos', permanent: true },
+      { source: '/website/faqs', destination: '/settings/website?tab=faqs', permanent: true },
+      {
+        source: '/website/privacy-policy',
+        destination: '/settings/website?tab=privacy-policy',
+        permanent: true,
+      },
+    ]
+  },
+  /**
    * Response headers, on every route.
    *
    * Four of them, each one a default this application never wants to depart
