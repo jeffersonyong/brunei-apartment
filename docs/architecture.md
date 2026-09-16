@@ -329,6 +329,12 @@ The occupancy update is the statement that wins or loses the race against the §
 
 **Polled, not pushed.** The bell reads `GET /notifications`, a portal route handler rather than a server action, because server actions run one at a time and a timed read should not wait behind somebody's save. It reads when the portal opens, every 60 s while the tab is visible, and whenever the tab becomes visible again. No realtime channel: nothing else in the stack holds a socket open, and a front desk does not need anything faster than a minute. At this property's volume the existing `(property_id, at desc)` index serves the query; 20260912000200 names the index to add if it is ever measured slow.
 
+### 5.7 Portal search (capability F12)
+
+**No search index; it runs the list screens' own searches.** `GET /search?q=` runs the term through `readSearch()`, the list screens' sanitiser, then runs, in parallel, the same case-insensitive *contains* each list screen uses: `listBookings` (reference, guest, phone, unit), `listPaymentPage` limited to `pending_verification`, `searchDeposits` over `deposit_summary`, and the unit board's states filtered in code. It returns five of each, plus nav screens matched by name. A result here is always one the matching list screen would also show. Postgres full-text search, or a trigram index, is what to reach for the day these `ilike` scans are measured slow — not before.
+
+**Each group runs only for somebody holding the permission its screen checks** (`booking.view`, `payment.verify`, `unit.manage`), and screens are filtered by `SCREEN_PERMISSIONS` in `components/portal/portal-search-results.ts`. That map mirrors each page's own render gate, and a test keeps it in step with the nav. It is a route handler for the same reason as the notification feed: the box asks as the reader types, and each question cancels the last.
+
 ---
 
 ## 6. Payments (manual transfer, v1)

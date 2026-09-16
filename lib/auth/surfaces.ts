@@ -23,6 +23,7 @@ export const PORTAL_SEGMENTS = [
   'notifications',
   'payments',
   'reports',
+  'search',
   'settings',
   'units',
 ] as const
