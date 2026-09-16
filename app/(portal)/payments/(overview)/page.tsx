@@ -29,12 +29,12 @@ import { elapsedMinutes, formatElapsed, formatStayDate, formatTimestamp } from '
 import { formatCents } from '@/lib/domain/money'
 import type { PaymentStatus } from '@/lib/domain/payment'
 
-import { readPage, readPageSize } from './page-size'
-import { DepositActions, PaymentActions } from './payment-actions'
-import { PaymentsFilters } from './payments-filters'
-import { PaymentsPagination } from './payments-pagination'
-import { buildQueue, queueSlice, type QueueEntry } from './queue-rows'
-import { DEFAULT_PAYMENT_VIEW, readView, statusesForView, type PaymentView } from './views'
+import { readPage, readPageSize } from '../page-size'
+import { DepositActions, PaymentActions } from '../payment-actions'
+import { PaymentsFilters } from '../payments-filters'
+import { PaymentsPagination } from '../payments-pagination'
+import { buildQueue, queueSlice, type QueueEntry } from '../queue-rows'
+import { DEFAULT_PAYMENT_VIEW, readView, statusesForView, type PaymentView } from '../views'
 
 export const metadata: Metadata = {
   title: 'Payment verification',

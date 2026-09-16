@@ -48,12 +48,12 @@ import {
   isCashUpState,
 } from '@/lib/domain/reports/cash-up'
 
-import { readPage, readPageSize } from '../page-size'
-import { ReportsPagination } from '../reports-pagination'
+import { readPage, readPageSize } from '../../page-size'
+import { ReportsPagination } from '../../reports-pagination'
 
-import { readReportWindow } from '../report-window'
-import { CashUpFilters } from './cash-up-filters'
-import { RecordBanking } from './record-banking'
+import { readReportWindow } from '../../report-window'
+import { CashUpFilters } from '../cash-up-filters'
+import { RecordBanking } from '../record-banking'
 
 export const metadata: Metadata = {
   title: 'Daily cash-up',

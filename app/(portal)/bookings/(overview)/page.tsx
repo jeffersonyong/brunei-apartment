@@ -40,10 +40,10 @@ import { BOOKING_STREAMS, BOOKING_STREAM_LABELS, isBookingStream } from '@/lib/d
 
 import { clampPage, pageCountFor } from '@/components/ui/pagination-range'
 
-import { BookingsFilters } from './bookings-filters'
-import { BookingsPagination } from './bookings-pagination'
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from './page-size'
-import { StreamTiles } from './stream-tiles'
+import { BookingsFilters } from '../bookings-filters'
+import { BookingsPagination } from '../bookings-pagination'
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../page-size'
+import { StreamTiles } from '../stream-tiles'
 
 export const metadata: Metadata = {
   title: 'Bookings',

@@ -32,9 +32,9 @@ import {
 import { formatStayDates, formatTimestamp } from '@/lib/domain/dates'
 import { formatCents } from '@/lib/domain/money'
 
-import { DepositTiles } from './deposit-tiles'
-import { DepositsFilters } from './deposits-filters'
-import { DepositsPagination } from './deposits-pagination'
+import { DepositTiles } from '../deposit-tiles'
+import { DepositsFilters } from '../deposits-filters'
+import { DepositsPagination } from '../deposits-pagination'
 import {
   countByStage,
   filterHeld,
@@ -45,8 +45,8 @@ import {
   sortForLedger,
   totalsOf,
   type LedgerView,
-} from './ledger-view'
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from './page-size'
+} from '../ledger-view'
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../page-size'
 
 export const metadata: Metadata = {
   title: 'Deposits',

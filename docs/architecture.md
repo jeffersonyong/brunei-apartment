@@ -67,6 +67,10 @@ supabase/
 - **Two Supabase clients, one purpose each.** `lib/supabase/server.ts` is the *session* client: cookie-backed via `@supabase/ssr`, tied to a request, and used for auth. `lib/supabase/data.ts` is the *data* client that `lib/db` uses — no cookies, service-role key, memoised per process — because the query layer also runs in server components and in Vitest, where there is no request to read cookies from. It refuses to load in a browser. Authorisation for those queries is `requirePermission(...)` in the server layer (§4), not RLS.
 - Mutations are server actions. Every mutation passes through the permission check helper before touching `lib/db`.
 - The pricing engine and booking state machine are **pure functions** in `lib/domain`, unit-testable without a database. These two modules carry most of the correctness risk in the product and are the only parts where test coverage is treated as mandatory rather than pragmatic.
+- **Every portal and field screen has its own `loading.tsx`**, a skeleton built from `components/portal/page-skeletons.tsx` or `components/field/field-list-skeleton.tsx`. Every one of these screens is dynamic, and Next prefetches a dynamic route only as far as its first loading boundary. With a boundary, a click shows the next screen's skeleton at once; without one, the old screen stays up until the server has read everything. Two placement rules follow:
+  - **No boundary at a group root** (`(portal)/loading.tsx`, `(field)/loading.tsx`). Prefetch would stop there, and every screen would open on the same generic placeholder.
+  - **A screen with child routes keeps its page in an `(overview)` route group** (`bookings/(overview)/page.tsx`, beside `bookings/new/`). A `loading.tsx` beside the page would otherwise also cover its children, and `/bookings/new` would open on the register's skeleton. The group changes no URL.
+  - A query-string change never shows the skeleton: Next keys the boundary without search params, so a filter keeps its own pending state.
 
 ---
 
