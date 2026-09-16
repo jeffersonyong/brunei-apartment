@@ -1,7 +1,6 @@
 'use client'
 
 import { ChevronRight } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useActionState, useEffect, useMemo, useState } from 'react'
 
 import { SectionCard } from '@/components/portal/section-card'
@@ -144,7 +143,6 @@ const initialState: RegistryActionState = { status: 'idle' }
 
 export function RegistryEditor({ units, unitTypes }: RegistryEditorProps) {
   const [state, formAction, isPending] = useActionState(saveUnitRegistryAction, initialState)
-  const router = useRouter()
 
   const [drafts, setDrafts] = useState<Record<string, TypeDraft>>(() =>
     Object.fromEntries(
@@ -189,9 +187,8 @@ export function RegistryEditor({ units, unitTypes }: RegistryEditorProps) {
           .filter(Boolean)
           .join(', '),
       })
-      router.refresh()
     }
-  }, [state, router])
+  }, [state])
 
   function updateDraft(typeId: string, next: Partial<TypeDraft>) {
     setDrafts((current) => {

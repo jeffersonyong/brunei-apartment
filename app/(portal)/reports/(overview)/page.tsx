@@ -45,12 +45,12 @@ import {
 } from '@/lib/domain/reports/revenue'
 import { BOOKING_STREAM_LABELS } from '@/lib/domain/stream'
 
-import { owedTotalOf, totalsOf } from '../deposits/ledger-view'
-import { readReportWindow } from './report-window'
-import { ReportsFilters } from './reports-filters'
-import { OccupancyFilter } from './occupancy-filter'
-import { readPage, readPageSize } from './page-size'
-import { ReportsPagination } from './reports-pagination'
+import { owedTotalOf, totalsOf } from '../../deposits/ledger-view'
+import { readReportWindow } from '../report-window'
+import { ReportsFilters } from '../reports-filters'
+import { OccupancyFilter } from '../occupancy-filter'
+import { readPage, readPageSize } from '../page-size'
+import { ReportsPagination } from '../reports-pagination'
 
 export const metadata: Metadata = {
   title: 'Reports',

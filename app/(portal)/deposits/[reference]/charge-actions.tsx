@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -77,7 +76,6 @@ function AddChargeDialog({
   const [state, formAction, isPending] = useActionState(addChargeAction, initialState)
   const [typed, setTyped] = useState(state.submitted?.amount ?? '')
   const [reason, setReason] = useState(state.submitted?.reason ?? '')
-  const router = useRouter()
 
   // Live, from what has been typed, so the sentence about exceeding the
   // deposit appears as the figure crosses it rather than after submitting.
@@ -89,9 +87,8 @@ function AddChargeDialog({
     if (state.status === 'done') {
       toast({ tone: 'positive', title: 'Charge added', description: `Against ${reference}.` })
       onClose()
-      router.refresh()
     }
-  }, [state.status, reference, onClose, router])
+  }, [state.status, reference, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
@@ -206,7 +203,6 @@ function WaiveChargeDialog({
 }: WaiveChargeProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(waiveChargeAction, initialState)
   const [reason, setReason] = useState(state.submitted?.reason ?? '')
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done') {
@@ -216,9 +212,8 @@ function WaiveChargeDialog({
         description: `BND ${formatCents(amount)} no longer comes off this deposit.`,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, amount, onClose, router])
+  }, [state.status, amount, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>

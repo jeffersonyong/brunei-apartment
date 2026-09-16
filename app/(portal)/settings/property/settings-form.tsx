@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useActionState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
@@ -15,7 +14,7 @@ import type { SettingsActionState } from './actions'
  *
  * One card, one Save, one server action — and the four things each tab would
  * otherwise repeat: the dirty gate, the hidden draft and token, the refusal
- * panel, and the toast-then-refresh on success.
+ * panel, and the toast on success.
  *
  * **Save is dirty-gated** (design.md §Components): disabled until the draft
  * actually differs from what is stored, so an idle click cannot fire a no-op
@@ -24,10 +23,13 @@ import type { SettingsActionState } from './actions'
  * but it is the difference between a trail of real changes and a trail of
  * people opening a screen.
  *
- * **`router.refresh()` after a save is not optional.** The concurrency token
+ * **The new concurrency token arrives with the save's own response.** The token
  * moves when a save changes something, and every tab holds the same one; a tab
  * still holding the old value would be refused on its next save with "somebody
- * else changed these settings", when that somebody was this screen.
+ * else changed these settings", when that somebody was this screen. Every
+ * action revalidates this screen, so its response re-renders the page and the
+ * token reaches each tab as a fresh `expectedUpdatedAt` prop — no client
+ * refresh is needed, and one would only render the page a second time.
  */
 
 interface SettingsFormProps<T> {
@@ -56,7 +58,6 @@ export function SettingsForm<T>({
   children,
 }: SettingsFormProps<T>) {
   const [state, formAction, isPending] = useActionState(action, initialState)
-  const router = useRouter()
   const isDirty = isSettingsDraftDirty(draft, saved)
 
   useEffect(() => {
@@ -72,9 +73,7 @@ export function SettingsForm<T>({
           ? 'Nothing had changed, so nothing was recorded.'
           : `${state.changed} ${state.changed === 1 ? 'change' : 'changes'} saved and recorded.`,
     })
-
-    router.refresh()
-  }, [state, savedTitle, router])
+  }, [state, savedTitle])
 
   const problems = state.status === 'error' ? (state.problems ?? []) : []
 

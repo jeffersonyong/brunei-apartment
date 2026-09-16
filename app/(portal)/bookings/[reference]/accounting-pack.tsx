@@ -96,7 +96,6 @@ export function AccountingPack({
   })
   const [isRebuilding, startRebuild] = useTransition()
   const [failure, setFailure] = useState<string | null>(null)
-  const router = useRouter()
 
   const isBusy = isAssembling || isRebuilding
   const isBehind = pendingSince !== null
@@ -118,7 +117,6 @@ export function AccountingPack({
         title: 'Accounting pack rebuilt',
         description: 'It now carries everything on the booking.',
       })
-      router.refresh()
     })
   }
 

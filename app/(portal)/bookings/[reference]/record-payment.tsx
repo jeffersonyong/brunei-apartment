@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -85,7 +84,6 @@ function RecordPaymentDialog({
   onClose,
 }: RecordPaymentProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(recordPaymentAction, initialState)
-  const router = useRouter()
 
   const [method, setMethod] = useState<PaymentMethod>('cash')
   // Defaulted to the outstanding figure, which is what is being settled in
@@ -111,9 +109,8 @@ function RecordPaymentDialog({
             },
       )
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.recorded, reference, onClose, router])
+  }, [state.status, state.recorded, reference, onClose])
 
   const isCash = method === 'cash'
   const typed = centsFromInput(amount)

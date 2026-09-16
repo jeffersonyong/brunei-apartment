@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { LogIn, LogOut } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -141,7 +140,6 @@ function CheckInDialog({
   onClose,
 }: DialogProps) {
   const [state, formAction, isPending] = useActionState(checkInAction, initialState)
-  const router = useRouter()
 
   const depositState = depositStateOf(deposit)
   const canProceed = depositState === 'held' || depositState === 'none_quoted'
@@ -159,9 +157,8 @@ function CheckInDialog({
             : 'No security deposit was due on this booking.',
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.held, guestName, deposit.waiverReason, onClose, router])
+  }, [state.status, state.held, guestName, deposit.waiverReason, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
@@ -246,7 +243,6 @@ function CheckInDialog({
 
 function CheckOutDialog({ bookingId, reference, guestName, onClose }: DialogProps) {
   const [state, formAction, isPending] = useActionState(checkOutAction, initialState)
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done') {
@@ -256,9 +252,8 @@ function CheckOutDialog({ bookingId, reference, guestName, onClose }: DialogProp
         description: 'The deposit stays held until the unit is inspected.',
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, reference, onClose, router])
+  }, [state.status, reference, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>

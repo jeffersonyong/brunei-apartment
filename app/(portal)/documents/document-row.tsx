@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { ExternalLink } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -125,7 +124,6 @@ function RemoveDialog({
 }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   function remove() {
     setError(null)
@@ -144,7 +142,6 @@ function RemoveDialog({
 
       toast({ tone: 'positive', title: 'Document removed' })
       onClose()
-      router.refresh()
     })
   }
 

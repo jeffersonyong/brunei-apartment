@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { MoreHorizontal } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -299,15 +298,17 @@ function NothingKept({ deposit }: { deposit: Exclude<DepositAtClose, { kind: 'he
   }
 }
 
-/** Says what happened, closes the dialog, and asks the server-rendered screen to rebuild. */
+/**
+ * Says what happened and closes the dialog. The status badge, the Money card and
+ * the action set all change, and the action's revalidation re-renders the
+ * screen in its own response.
+ */
 function useClosedToast(
   state: CloseBookingState,
   title: string,
   guestName: string,
   onClose: () => void,
 ): void {
-  const router = useRouter()
-
   useEffect(() => {
     if (state.status !== 'done') {
       return
@@ -323,8 +324,5 @@ function useClosedToast(
 
     toast({ tone: 'positive', title, description })
     onClose()
-    // The status badge, the Money card and the action set all change; the
-    // screen is server rendered, so it has to be asked to rebuild.
-    router.refresh()
-  }, [state.status, state.closed, title, guestName, onClose, router])
+  }, [state.status, state.closed, title, guestName, onClose])
 }

@@ -1,7 +1,6 @@
 'use client'
 
 import { Pencil } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useActionState, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -93,7 +92,6 @@ function NoteForm({
   onDone: () => void
 }) {
   const [state, formAction, isPending] = useActionState(saveUnitNotesAction, initialState)
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done') {
@@ -104,9 +102,8 @@ function NoteForm({
       }
 
       onDone()
-      router.refresh()
     }
-  }, [state, ref_, onDone, router])
+  }, [state, ref_, onDone])
 
   return (
     <form action={formAction} className="grid gap-md">

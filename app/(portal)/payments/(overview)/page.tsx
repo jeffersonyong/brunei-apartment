@@ -29,12 +29,12 @@ import { elapsedMinutes, formatElapsed, formatStayDate, formatTimestamp } from '
 import { formatCents } from '@/lib/domain/money'
 import type { PaymentStatus } from '@/lib/domain/payment'
 
-import { readPage, readPageSize } from './page-size'
-import { DepositActions, PaymentActions } from './payment-actions'
-import { PaymentsFilters } from './payments-filters'
-import { PaymentsPagination } from './payments-pagination'
-import { buildQueue, queueSlice, type QueueEntry } from './queue-rows'
-import { DEFAULT_PAYMENT_VIEW, readView, statusesForView, type PaymentView } from './views'
+import { readPage, readPageSize } from '../page-size'
+import { DepositActions, PaymentActions } from '../payment-actions'
+import { PaymentsFilters } from '../payments-filters'
+import { PaymentsPagination } from '../payments-pagination'
+import { buildQueue, queueSlice, type QueueEntry } from '../queue-rows'
+import { DEFAULT_PAYMENT_VIEW, readView, statusesForView, type PaymentView } from '../views'
 
 export const metadata: Metadata = {
   title: 'Payment verification',
@@ -139,7 +139,19 @@ export default async function PaymentVerificationPage({ searchParams }: PageProp
   const wantsWaiting = view !== 'verified'
   const wantsSettled = view !== 'waiting'
 
-  const [waitingTransfers, promisedDeposits] = await Promise.all([
+  // Everything this view shows that is not still waiting. `all` settles to
+  // verified rows; `verified` is only ever those.
+  const settledFilter = {
+    methods: ['bank_transfer'] as const,
+    statuses: (waitingStatuses.length > 0
+      ? waitingStatuses.filter((status) => status !== 'pending_verification')
+      : (['verified'] as const)) as readonly PaymentStatus[],
+    search: search ?? undefined,
+  }
+
+  // The settled count needs nothing from the waiting half, so all three go out
+  // at once.
+  const [waitingTransfers, promisedDeposits, settledCount] = await Promise.all([
     wantsWaiting
       ? listPayments({
           methods: ['bank_transfer'],
@@ -148,6 +160,7 @@ export default async function PaymentVerificationPage({ searchParams }: PageProp
         })
       : [],
     wantsWaiting ? listPendingDeposits() : [],
+    wantsSettled ? countPayments(settledFilter) : 0,
   ])
 
   const waiting = buildQueue(
@@ -166,17 +179,6 @@ export default async function PaymentVerificationPage({ searchParams }: PageProp
     view,
   )
 
-  // Everything this view shows that is not still waiting. `all` settles to
-  // verified rows; `verified` is only ever those.
-  const settledFilter = {
-    methods: ['bank_transfer'] as const,
-    statuses: (waitingStatuses.length > 0
-      ? waitingStatuses.filter((status) => status !== 'pending_verification')
-      : (['verified'] as const)) as readonly PaymentStatus[],
-    search: search ?? undefined,
-  }
-
-  const settledCount = wantsSettled ? await countPayments(settledFilter) : 0
   const total = waiting.length + settledCount
   const currentPage = clampPage(requestedPage, pageCountFor(total, pageSize))
 

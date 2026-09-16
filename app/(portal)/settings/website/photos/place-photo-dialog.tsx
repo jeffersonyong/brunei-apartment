@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { FileField } from '@/components/portal/file-field'
 import { preparePhoto, type PreparedPhoto } from '@/components/prepare-photo'
@@ -50,7 +49,6 @@ export function PlacePhotoDialog({ slot, onClose }: { slot: PhotoSlotView; onClo
   const [result, setResult] = useState<PhotoActionState>({ status: 'idle' })
   const [isPending, startTransition] = useTransition()
   const attempt = useRef(0)
-  const router = useRouter()
   const isReplacing = slot.current !== null
 
   function forgetPreview() {
@@ -125,7 +123,6 @@ export function PlacePhotoDialog({ slot, onClose }: { slot: PhotoSlotView; onClo
         description: `${slot.name} shows the new photo on the website.`,
       })
       close()
-      router.refresh()
     })
   }
 

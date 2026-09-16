@@ -1,5 +1,6 @@
 'use client'
 
+import { useTransition } from 'react'
 import Link from 'next/link'
 import { LogOut, Settings } from 'lucide-react'
 
@@ -37,6 +38,11 @@ export interface PortalAccountUser {
 }
 
 export function PortalAccount({ user }: { user: PortalAccountUser }) {
+  // Signing out is a round trip and a redirect. The menu stays open on the
+  // item, which says so, instead of closing onto a screen that looks as though
+  // nothing was pressed.
+  const [isSigningOut, startSignOut] = useTransition()
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex w-full items-center gap-sm rounded-md px-sm py-sm text-left transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=open]:bg-muted">
@@ -59,12 +65,14 @@ export function PortalAccount({ user }: { user: PortalAccountUser }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={() => {
-            void signOutAction()
+          disabled={isSigningOut}
+          onSelect={(event) => {
+            event.preventDefault()
+            startSignOut(() => signOutAction())
           }}
         >
           <LogOut aria-hidden />
-          Sign out
+          {isSigningOut ? 'Signing out…' : 'Sign out'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

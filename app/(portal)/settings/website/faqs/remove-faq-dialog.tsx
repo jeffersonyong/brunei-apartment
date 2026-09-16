@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -28,7 +27,6 @@ import type { FaqRowView } from './faq-board'
 export function RemoveFaqDialog({ faq, onClose }: { faq: FaqRowView; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   function remove() {
     setError(null)
@@ -47,7 +45,6 @@ export function RemoveFaqDialog({ faq, onClose }: { faq: FaqRowView; onClose: ()
 
       toast({ tone: 'positive', title: 'FAQ removed' })
       onClose()
-      router.refresh()
     })
   }
 

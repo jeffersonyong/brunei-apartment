@@ -151,22 +151,35 @@ export default async function AuditLogPage({ searchParams }: PageProps) {
   const pageSize = readPageSize(params.size)
   const requestedPage = readPage(params.page)
 
-  const staff = await listStaff()
+  // The staff list names the actors and validates `who`. It is an auth-server
+  // round trip, so it only holds up the trail when there is a staff member's
+  // `who` to check first; otherwise the two are read together.
+  const filterFor = (actorId: string | null) => ({
+    families,
+    entityTypes,
+    actor: actorId,
+    search,
+    ...(window ? { window } : {}),
+  })
+  const whoNeedsChecking = Boolean(params.who) && params.who !== SYSTEM_ACTOR
+  const [staff, earlyTrail] = await Promise.all([
+    listStaff(),
+    whoNeedsChecking
+      ? null
+      : listAuditTrail(
+          filterFor(params.who === SYSTEM_ACTOR ? SYSTEM_ACTOR : null),
+          requestedPage,
+          pageSize,
+        ),
+  ])
   const actorNames = new Map(staff.map((account) => [account.id, account.displayName]))
   // A `who` that names nobody is dropped rather than applied, so a hand-edited
   // URL narrows to nothing visible instead of silently filtering everything out.
   const who =
     params.who === SYSTEM_ACTOR || (params.who && actorNames.has(params.who)) ? params.who : null
+  const filter = filterFor(who)
 
-  const filter = {
-    families,
-    entityTypes,
-    actor: who,
-    search,
-    ...(window ? { window } : {}),
-  }
-
-  const first = await listAuditTrail(filter, requestedPage, pageSize)
+  const first = await (earlyTrail ?? listAuditTrail(filter, requestedPage, pageSize))
   const currentPage = clampPage(requestedPage, pageCountFor(first.total, pageSize))
   const { events, total } =
     currentPage === requestedPage ? first : await listAuditTrail(filter, currentPage, pageSize)

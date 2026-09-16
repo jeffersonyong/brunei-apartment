@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -91,7 +90,6 @@ function ApproveReleaseDialog({
 }: ApproveReleaseProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(approveReleaseAction, initialState)
   const [note, setNote] = useState(state.submitted?.note ?? '')
-  const router = useRouter()
 
   const owes = figures.owed > 0
 
@@ -106,9 +104,8 @@ function ApproveReleaseDialog({
             : `BND ${formatCents(state.released.releasedAmount)} goes back to ${guestName}.`,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.released, guestName, onClose, router])
+  }, [state.status, state.released, guestName, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
@@ -270,7 +267,6 @@ function SettleOwedDialog({
 }: SettleOwedProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(settleOwedAction, initialState)
   const [method, setMethod] = useState<PaymentMethod>('cash')
-  const router = useRouter()
 
   useEffect(() => {
     if (state.status === 'done') {
@@ -280,9 +276,8 @@ function SettleOwedDialog({
         description: `BND ${formatCents(owed)} recovered against ${reference}.`,
       })
       onClose()
-      router.refresh()
     }
-  }, [state.status, owed, reference, onClose, router])
+  }, [state.status, owed, reference, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>

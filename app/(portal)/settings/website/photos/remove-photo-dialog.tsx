@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -37,7 +36,6 @@ export function RemovePhotoDialog({
 }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   function remove() {
     setError(null)
@@ -56,7 +54,6 @@ export function RemovePhotoDialog({
 
       toast({ tone: 'positive', title: 'Photo removed' })
       onClose()
-      router.refresh()
     })
   }
 

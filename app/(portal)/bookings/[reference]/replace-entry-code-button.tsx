@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -67,7 +66,6 @@ function ReplaceEntryCodeDialog({
   reference: string
   onClose: () => void
 }) {
-  const router = useRouter()
   const [state, formAction, isPending] = useActionState(
     async (previous: EntryCodeActionState, formData: FormData): Promise<EntryCodeActionState> => {
       const result = await replaceEntryCodeAction(previous, formData)
@@ -88,9 +86,8 @@ function ReplaceEntryCodeDialog({
   useEffect(() => {
     if (state.status === 'done') {
       onClose()
-      router.refresh()
     }
-  }, [state.status, onClose, router])
+  }, [state.status, onClose])
 
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>

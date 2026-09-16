@@ -20,26 +20,38 @@ import { PricingTab } from './pricing-tab'
  * should not block correcting a nightly rate.
  *
  * Each tab is mounted only while it is showing, so it takes its draft from the
- * settings the server just read — and after a save, `router.refresh()` gives
- * every tab the new concurrency token by remounting them with fresh props.
+ * settings the server just read — and a save's own response re-renders the
+ * page, since every settings action revalidates it, which hands every tab the
+ * new concurrency token as fresh props.
  */
 
 interface PropertySettingsTabsProps {
   settings: PropertySettings
   initialTab: PropertyTab
+  /**
+   * What sits at the end of the tab row, level with the tabs and directly
+   * above the table — the screen's CSV export.
+   */
+  actions?: React.ReactNode
 }
 
-export function PropertySettingsTabs({ settings, initialTab }: PropertySettingsTabsProps) {
+export function PropertySettingsTabs({ settings, initialTab, actions }: PropertySettingsTabsProps) {
   const [activeTab, setActiveTab] = useState<string>(initialTab)
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-xl">
-      <TabsList aria-label="Which settings to edit">
-        <TabsTrigger value="pricing">Rates</TabsTrigger>
-        <TabsTrigger value="day-pass">Day pass</TabsTrigger>
-        <TabsTrigger value="documents">Documents</TabsTrigger>
-        <TabsTrigger value="bank-accounts">Bank accounts</TabsTrigger>
-      </TabsList>
+      {/* The Roles & staff construction: tabs on the left, the row's action at
+          the right edge, so the export lines up with what it exports. */}
+      <div className="flex flex-wrap items-center justify-between gap-lg">
+        <TabsList aria-label="Which settings to edit">
+          <TabsTrigger value="pricing">Rates</TabsTrigger>
+          <TabsTrigger value="day-pass">Day pass</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="bank-accounts">Bank accounts</TabsTrigger>
+        </TabsList>
+
+        {actions}
+      </div>
 
       <TabsContent value="pricing">
         <PricingTab settings={settings} />

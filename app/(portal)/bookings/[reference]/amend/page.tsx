@@ -42,10 +42,7 @@ interface PageProps {
 }
 
 export default async function AmendBookingPage({ params, searchParams }: PageProps) {
-  const { reference } = await params
-  const query = await searchParams
-  const actor = await getActor()
-  const config = await getPropertyConfig()
+  const [{ reference }, query, actor] = await Promise.all([params, searchParams, getActor()])
 
   if (!actor || !hasPermission(actor.permissions, 'booking.amend')) {
     return (
@@ -68,7 +65,12 @@ export default async function AmendBookingPage({ params, searchParams }: PagePro
   // discounted stay back to full price.
   const mayDiscount = hasPermission(actor.permissions, 'booking.discount')
 
-  const booking = await getBookingByReference(decodeURIComponent(reference))
+  // Read together: neither depends on the other, and the rates are only worth
+  // reading once the reader is known to be allowed the screen.
+  const [config, booking] = await Promise.all([
+    getPropertyConfig(),
+    getBookingByReference(decodeURIComponent(reference)),
+  ])
 
   if (!booking) {
     notFound()

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { Paperclip } from 'lucide-react'
 
 import { FileField } from '@/components/portal/file-field'
@@ -89,7 +88,6 @@ function AttachDialog({
   const [files, setFiles] = useState<File[]>([])
   const [failures, setFailures] = useState<readonly string[]>([])
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   const oversized = oversizedFiles(files)
 
@@ -136,7 +134,6 @@ function AttachDialog({
           description:
             refused.length > 0 ? 'Some files were not attached. See the dialog.' : undefined,
         })
-        router.refresh()
       }
 
       // Only close when everything landed. A dialog that closes over an error

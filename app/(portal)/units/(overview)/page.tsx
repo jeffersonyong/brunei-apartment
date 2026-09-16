@@ -28,11 +28,11 @@ import { countByStatus, isUnitStatus, UNIT_STATUSES } from '@/lib/domain/unit-st
 
 import { clampPage, pageCountFor } from '@/components/ui/pagination-range'
 
-import { nextStayStartOf, turnoverStayOf } from './board-row'
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from './page-size'
-import { UnitStatusTiles } from './status-tiles'
-import { UnitsFilters } from './units-filters'
-import { UnitsPagination } from './units-pagination'
+import { nextStayStartOf, turnoverStayOf } from '../board-row'
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../page-size'
+import { UnitStatusTiles } from '../status-tiles'
+import { UnitsFilters } from '../units-filters'
+import { UnitsPagination } from '../units-pagination'
 
 export const metadata: Metadata = {
   title: 'Units',

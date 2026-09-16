@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -121,7 +120,6 @@ function RecordDepositDialog({
   onClose,
 }: RecordDepositProps & { onClose: () => void }) {
   const [state, formAction, isPending] = useActionState(recordDepositAction, initialState)
-  const router = useRouter()
 
   const [method, setMethod] = useState<PaymentMethod>('cash')
 
@@ -143,9 +141,8 @@ function RecordDepositDialog({
             },
       )
       onClose()
-      router.refresh()
     }
-  }, [state.status, state.recorded, reference, onClose, router])
+  }, [state.status, state.recorded, reference, onClose])
 
   const isCash = method === 'cash'
 

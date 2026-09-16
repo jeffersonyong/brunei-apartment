@@ -113,8 +113,12 @@ export function BankAccountsTab({ settings }: BankAccountsTabProps) {
                         <FieldError message={problemFor(`accounts.${index}.accountNumber`)} />
                       </div>
                     </TableCell>
-                    <TableCell>
+                    {/* Centred on the row, as the day-pass tables' RemoveRow is:
+                        an inline box holding only an icon sits on the text
+                        baseline, a few pixels above the middle. */}
+                    <TableCell className="align-middle">
                       <TextAction
+                        className="flex"
                         aria-label={`Remove the ${account.bankName || 'unnamed'} account`}
                         title={`Remove the ${account.bankName || 'unnamed'} account`}
                         onClick={() =>

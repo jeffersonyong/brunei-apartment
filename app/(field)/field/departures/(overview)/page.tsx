@@ -7,7 +7,7 @@ import { listTurnovers } from '@/lib/db/housekeeping'
 import { formatClockTime, formatStayDate, todayInBrunei } from '@/lib/domain/dates'
 import { TURNOVER_STEP_PERMISSION, type TurnoverStep } from '@/lib/domain/turnover'
 
-import { TurnoverCard } from './turnover-card'
+import { TurnoverCard } from '../turnover-card'
 
 export const metadata: Metadata = {
   title: 'Departures',

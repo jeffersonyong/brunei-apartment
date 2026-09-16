@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { refresh, revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { requirePermission } from '@/lib/auth/require-permission'
@@ -137,6 +137,11 @@ export async function updateSiteImageAction(
 
   if (result.changed) {
     revalidateWebsite()
+  } else {
+    // Nothing was written, so nothing else is stale, but this screen may be:
+    // "unchanged" also means someone else made the same change while it was
+    // open. `refresh()` re-renders this screen alone in the response.
+    refresh()
   }
 
   return { status: 'done' }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 
 import { SectionCard } from '@/components/portal/section-card'
@@ -111,7 +110,6 @@ function FaqRow({
   onRemove: () => void
 }) {
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   function run(
     action: typeof moveFaqAction,
@@ -137,8 +135,6 @@ function FaqRow({
       if (success) {
         toast({ tone: 'positive', title: success })
       }
-
-      router.refresh()
     })
   }
 

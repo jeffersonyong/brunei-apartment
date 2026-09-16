@@ -45,13 +45,13 @@ export const dynamic = 'force-dynamic'
  */
 export default async function EntryCodePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const bookingId = await findBookingIdByEntryToken(token)
+  // Who is looking does not depend on which booking the code is for, so the
+  // two are read together rather than one after the other.
+  const [bookingId, actor] = await Promise.all([findBookingIdByEntryToken(token), getActor()])
 
   if (!bookingId) {
     notFound()
   }
-
-  const actor = await getActor()
 
   if (actor && mayWork(actor.permissions, 'arrivals')) {
     const today = todayInBrunei()

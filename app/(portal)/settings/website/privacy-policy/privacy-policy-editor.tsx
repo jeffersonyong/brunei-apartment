@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { FileText } from 'lucide-react'
 
 import { SectionCard } from '@/components/portal/section-card'
@@ -64,7 +63,6 @@ export function PrivacyPolicyEditor({
   const [dialog, setDialog] = useState<'publish' | 'template' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   const isDirty = text !== saved
   const gaps = unfilledPlaceholders(text)
@@ -95,7 +93,6 @@ export function PrivacyPolicyEditor({
       }
 
       onDone(outcome)
-      router.refresh()
     })
   }
 

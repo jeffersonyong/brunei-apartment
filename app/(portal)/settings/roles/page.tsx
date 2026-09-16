@@ -45,16 +45,19 @@ export default async function RolesSettingsPage() {
 
   return (
     <>
-      {/* The screen has no control line of its own — it is two tabs — so the
-          export sits in the header's action slot. Ungated here: the whole
-          screen already answers to `config.manage`. */}
       <PageHeader
         title="Roles & staff"
         description="Staff accounts and what each role may do. One person can hold several roles."
-        actions={<ExportCsvButton tables={exportGroup('staff')} />}
       />
 
-      <RolesStaffTabs staff={staff} roles={roles} currentUserId={actor.userId} />
+      <RolesStaffTabs
+        staff={staff}
+        roles={roles}
+        currentUserId={actor.userId}
+        // On the tab row, before New staff account. Ungated here: the whole
+        // screen already answers to `config.manage`.
+        actions={<ExportCsvButton tables={exportGroup('staff')} />}
+      />
     </>
   )
 }
