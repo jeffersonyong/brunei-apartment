@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
 import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '@/lib/auth/password-policy'
-import { getAuthenticatedUser } from '@/lib/auth/session'
+import { getVerifiedUser } from '@/lib/auth/session'
 import { recordOwnPasswordChange } from '@/lib/db/staff'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -54,7 +54,7 @@ export async function changeOwnPasswordAction(
   _previous: ChangePasswordState,
   formData: FormData,
 ): Promise<ChangePasswordState> {
-  const user = await getAuthenticatedUser()
+  const user = await getVerifiedUser()
 
   if (!user) {
     redirect('/login')
@@ -99,14 +99,14 @@ export interface SignOutOtherDevicesState {
  * Ends every session this person holds except the one asking — the front desk
  * computer somebody forgot to leave, a phone that went missing. GoTrue revokes
  * the other sessions outright: their refresh tokens are refused, and their
- * access tokens stop verifying at once, because every gated render and action
- * checks the session with the auth server (lib/auth/session.ts).
+ * access tokens stop verifying at once, because every request to a gated path
+ * checks the session with the auth server (proxy.ts).
  *
  * Not audited. It changes nothing about the business's records or what anyone
  * may do; the password change it often comes before is recorded.
  */
 export async function signOutOtherDevicesAction(): Promise<SignOutOtherDevicesState> {
-  const user = await getAuthenticatedUser()
+  const user = await getVerifiedUser()
 
   if (!user) {
     redirect('/login')

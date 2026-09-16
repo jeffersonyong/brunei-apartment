@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import { getAuthenticatedUser } from '@/lib/auth/session'
 import { renameStaffAccount } from '@/lib/db/staff'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
  * A staff member's own account, from Settings.
@@ -52,6 +53,15 @@ export async function renameSelfAction(
   const { changed } = await renameStaffAccount(user.id, parsed.data.displayName, user.id)
 
   if (changed) {
+    // The shell reads the name from the session's access token
+    // (lib/auth/session.ts), which still carries the old one. Renewing the
+    // session now issues a token with the new name; an action may write the
+    // cookie, where a render may not. If the renewal fails the name is still
+    // saved, and the sidebar catches up when the token next renews on its own,
+    // so the rename is not reported as failed.
+    const supabase = await createSupabaseServerClient()
+    await supabase.auth.refreshSession()
+
     // The name is in the shell — the sidebar's account row — as well as on
     // this screen, so the portal's layout re-renders, not just the page. At the
     // root: the portal's screens no longer share a prefix to scope it to.

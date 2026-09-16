@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
-import { getAuthenticatedUser } from '@/lib/auth/session'
+import { getVerifiedUser } from '@/lib/auth/session'
 
 import { NewPasswordForm } from './new-password-form'
 
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
  * forgotten password has not reached the portal yet.
  */
 export default async function ChooseNewPasswordPage() {
-  const user = await getAuthenticatedUser()
+  const user = await getVerifiedUser()
 
   if (!user) {
     redirect('/forgot-password')
