@@ -38,9 +38,17 @@ const menuSurfaceClasses = [
   'motion-reduce:animate-none',
 ]
 
-/** An item is a control: 6px, `body-sm`, quiet icons, `muted` on focus. */
+/**
+ * An item is a control: 6px, `body-sm`, quiet icons, `muted` on focus.
+ *
+ * The pointer cursor is set here for the same reason `Button` sets its own —
+ * a menu item is something you click, and Radix's `cursor-default` left the
+ * public header's Book menu reading as text under the pointer. One rule for
+ * every menu, so an item does not mean one thing on the site and another in
+ * the portal.
+ */
 const menuItemClasses = [
-  'relative flex cursor-default items-center gap-sm rounded-md px-md py-sm text-body-sm text-copy outline-none transition-colors select-none',
+  'relative flex cursor-pointer items-center gap-sm rounded-md px-md py-sm text-body-sm text-copy outline-none transition-colors select-none',
   'focus:bg-muted focus:text-foreground',
   'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
   '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
