@@ -58,13 +58,19 @@ import { uploadDocumentAction, type UploadState } from './actions'
  * second file replaces their own; the copy says so, because otherwise "choose a
  * different file" reads as though we will end up with two.
  *
- * ── The retention period is not stated, deliberately ───────────────────────
+ * ── What the line under the picker promises ───────────────────────────────
  *
- * prd.md §13 is explicit: the period is configuration edited on Property
- * settings (F3), and copy that names a number is a second copy of that setting
- * in the one place nobody will think to update. So this says a file is held
- * privately and deleted when its retention period ends, which stays true
- * whatever Jason sets it to.
+ * Two things, and deliberately no third. That the file is held privately, and
+ * that it is used internally to verify the booking — which is the answer to
+ * the question a guest is actually asking as they hand over an IC.
+ *
+ * It names no retention period, because prd.md §13 makes that configuration
+ * edited on Property settings (F3), and copy carrying a number is a second
+ * copy of that setting in the one place nobody will think to update. It no
+ * longer promises deletion either (Jeff, 17 September 2026): the privacy
+ * policy is where the handling of personal data is stated in full, and it is
+ * linked from right here. A retention promise made twice, in a sentence under
+ * a file picker and again in the policy, is one that can drift.
  */
 interface SendAFileProps {
   token: string
@@ -206,8 +212,8 @@ export function SendAFile({
           </p>
         ) : (
           <p className="text-caption text-muted-foreground">
-            JPEG, PNG, WebP or PDF, up to {megabytes()} MB. Held privately, shown only to our staff,
-            and deleted when its retention period ends.
+            JPEG, PNG, WebP or PDF, up to {megabytes()} MB. Held privately, used only internally for
+            verification.
             {held ? ' Sending another replaces the one we have.' : ''}
             {linksPrivacyPolicy ? (
               <>

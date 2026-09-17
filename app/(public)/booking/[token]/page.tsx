@@ -219,7 +219,7 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             kind="identity"
             marker="A"
             title="Send us your IC"
-            description="We need a copy of the lead guest's IC to register the stay. Sending it now saves doing it at the desk when you arrive."
+            description="We need a copy of the lead guest's IC to register the stay."
             onFileSince={identityOnFileSince}
             linksPrivacyPolicy={hasPrivacyPolicy}
           />

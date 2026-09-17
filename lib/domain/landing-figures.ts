@@ -24,6 +24,13 @@ export interface LandingUnitType {
   fromRate: string
 }
 
+/** A facility the day pass admits, as the front page lists it. */
+export interface LandingFacility {
+  /** What the card's photograph and its words hang off (capability F7). */
+  slug: string
+  name: string
+}
+
 export interface LandingFigures {
   unitTypes: readonly LandingUnitType[]
   /** `BND 200` — the cheapest sellable type, or null when nothing is sellable. */
@@ -34,8 +41,16 @@ export interface LandingFigures {
   dayPassLine: string | null
   /** `BND 100 refundable security deposit · bookings open up to 60 days ahead.` */
   stayFinePrint: string
-  /** `The BBQ area is not included in the day pass.`, or null when none is. */
-  dayPassFinePrint: string | null
+  /**
+   * What the pass admits, in the order Property settings lists them.
+   *
+   * This replaced a line of fine print naming what the pass left *out* (Jeff,
+   * 17 September 2026). A page selling a day pass has one job, and listing the
+   * BBQ area, the gym, the billiard room and the sauna under it did the
+   * opposite — four facilities a visitor had not asked about and now knew they
+   * would not get. What they are buying is the thing to say.
+   */
+  dayPassIncluded: readonly LandingFacility[]
 }
 
 /** `BND 200`, not `BND 200.00`: marketing copy, where the cents are noise. */
@@ -75,9 +90,12 @@ export function landingFiguresFrom(
   )
   const cheapestBundle = lowest(settings.bundles.map((bundle) => bundle.priceCents))
 
-  const excluded = settings.facilities
-    .filter((facility) => !facility.includedInDayPass)
-    .map((facility) => facility.name)
+  // `settings.facilities` arrives in `sort_order`, which is the order staff
+  // put them in on Property settings — so the cards follow the portal rather
+  // than a second ordering nobody can see.
+  const dayPassIncluded = settings.facilities
+    .filter((facility) => facility.includedInDayPass)
+    .map((facility) => ({ slug: facility.slug, name: facility.name }))
 
   return {
     unitTypes,
@@ -87,11 +105,7 @@ export function landingFiguresFrom(
     stayFinePrint:
       `${marketingAmount(settings.policy.securityDepositCents)} refundable security deposit · ` +
       `bookings open up to ${settings.policy.maxAdvanceBookingDays} days ahead.`,
-    // Listed rather than made into a sentence: the names are whatever staff
-    // typed, so "The Sauna and the BBQ area is not included" is one rename away
-    // in either direction.
-    dayPassFinePrint:
-      excluded.length > 0 ? `Not included in the day pass: ${excluded.join(', ')}.` : null,
+    dayPassIncluded,
   }
 }
 

@@ -271,6 +271,9 @@ export function StayBooking({
                     onNoVehicleChange={setNoVehicle}
                     error={state.fieldErrors?.vehicles}
                     noVehicleDescription={null}
+                    parking={
+                      unitType ? { unitTypeName: unitType.name, spaces: unitType.carParks } : null
+                    }
                   />
                 </div>
               </fieldset>

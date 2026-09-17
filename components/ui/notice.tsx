@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority'
-import { Info } from 'lucide-react'
+import { Info, TriangleAlert } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -32,30 +32,49 @@ import { cn } from '@/lib/utils'
  * notice that must interrupt a screen reader is an `alert`, which this is not
  * — those are the `role="alert"` error lines beside the field that failed.
  */
-const noticeVariants = cva(
-  'flex items-start gap-sm bg-notice-info text-body-sm text-notice-info-foreground',
-  {
-    variants: {
-      placement: {
-        nested: 'rounded-md p-md',
-        page: 'rounded-lg p-card',
-      },
+const noticeVariants = cva('flex items-start gap-sm text-body-sm', {
+  variants: {
+    /**
+     * `info` is the notice: something to know before acting. `warning` is the
+     * narrower case where what the reader has already done is allowed but
+     * will not go the way they expect — the vehicles section uses it when the
+     * plates entered are past the parking the unit type includes. Both are
+     * status pairs from design.md, and neither is decoration: a notice with no
+     * consequence should not be tinted at all.
+     */
+    tone: {
+      info: 'bg-notice-info text-notice-info-foreground',
+      warning: 'bg-notice-warning text-notice-warning-foreground',
     },
-    defaultVariants: {
-      placement: 'nested',
+    placement: {
+      nested: 'rounded-md p-md',
+      page: 'rounded-lg p-card',
     },
   },
-)
+  defaultVariants: {
+    tone: 'info',
+    placement: 'nested',
+  },
+})
+
+/** The mark repeats the tone, never the sentence. */
+const MARK = {
+  info: Info,
+  warning: TriangleAlert,
+}
 
 export function Notice({
   className,
+  tone,
   placement,
   children,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof noticeVariants>) {
+  const Mark = MARK[tone ?? 'info']
+
   return (
-    <div className={cn(noticeVariants({ placement, className }))} {...props}>
-      <Info aria-hidden className="mt-px size-4 shrink-0" />
+    <div className={cn(noticeVariants({ tone, placement, className }))} {...props}>
+      <Mark aria-hidden className="mt-px size-4 shrink-0" />
       <div className="min-w-0">{children}</div>
     </div>
   )

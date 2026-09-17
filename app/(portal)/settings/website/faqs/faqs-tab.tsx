@@ -11,6 +11,7 @@ import { readFaqFacts } from '@/lib/db/faq-facts'
 import { listFaqs } from '@/lib/db/faqs'
 import { listStaff } from '@/lib/db/staff'
 import { formatInstantAsDate } from '@/lib/domain/dates'
+import { env } from '@/lib/env'
 import {
   FAQ_TOPICS,
   MAX_FEATURED_FAQS,
@@ -49,6 +50,12 @@ export async function faqsTab(actor: Actor): Promise<WebsiteTabView> {
     rows: (grouped.get(topic.id) ?? []).map((faq): FaqRowView => ({
       id: faq.id,
       slug: faq.slug,
+      // The whole link, not the fragment the row prints. Staff send one answer
+      // over WhatsApp (lib/domain/faq.ts), and a fragment is not something
+      // anybody can send — it needs the site's host in front of it, which is
+      // `SITE_ORIGIN` and is not this screen's host once the staff side moves
+      // to its own subdomain (architecture.md §3).
+      url: `${env.siteOrigin}/faq#${faq.slug}`,
       topic: faq.topic,
       question: faq.question,
       answer: faq.answer,

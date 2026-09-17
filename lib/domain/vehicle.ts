@@ -37,8 +37,34 @@ export const MAX_VEHICLE_REGISTRATION_LENGTH = 20
  * system should reject — the allowance is a charging and capacity question for
  * whoever answers R3. This is only a bound on the repeated field, so a stuck
  * key cannot write a thousand rows.
+ *
+ * The allowance is now *shown* beside the rows — see `vehiclesBeyondParking`
+ * — which is a different thing from being enforced by them.
  */
 export const MAX_VEHICLES_PER_BOOKING = 10
+
+/**
+ * How many of a booking's plates sit beyond the unit type's included spaces.
+ *
+ * The count, not a verdict, because nothing refuses the extra car. prd.md
+ * §7.1's `car_allowance` is what a unit *includes*, and until R3 answers how
+ * many bays the property actually has, it is not known to be a physical limit
+ * — so the form states it and lets the guest past it (Jeff, 17 September
+ * 2026). Refusing the third plate would trade a parking problem for a worse
+ * one: §12.5 makes plate lookup the guard's primary path, and a car whose
+ * registration the form turned away is a car nobody can match at the gate.
+ *
+ * Blank rows do not count. A form always shows one empty row and grows by
+ * empty rows, so counting them would warn about cars nobody has typed.
+ * Duplicates do not count twice, because the same plate typed into two rows
+ * is one car, and that is exactly what gets stored.
+ *
+ * Day passes never call this: a pass carries no unit and therefore no
+ * allowance, and their visitor parking is the other half of R3.
+ */
+export function vehiclesBeyondParking(vehicles: readonly string[], spaces: number): number {
+  return Math.max(0, normaliseVehicleRegistrations(vehicles).length - Math.max(0, spaces))
+}
 
 /**
  * One plate as it is stored: upper case, trimmed, internal runs of whitespace

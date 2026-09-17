@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Link2 } from 'lucide-react'
 
 import { SectionCard } from '@/components/portal/section-card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,8 @@ import { RemoveFaqDialog } from './remove-faq-dialog'
 export interface FaqRowView {
   id: string
   slug: string
+  /** The whole address, built from `SITE_ORIGIN` — what the row copies. */
+  url: string
   topic: FaqTopicId
   question: string
   /** As written, figures in braces — what the editor opens on. */
@@ -146,7 +148,7 @@ function FaqRow({
         <p className="text-body-md-strong text-foreground">{row.question}</p>
         <p className="mt-xxs line-clamp-2 text-body-sm text-copy">{row.preview}</p>
         <p className="mt-xxs text-caption text-muted-foreground">
-          <span className="font-mono">/faq#{row.slug}</span> · {row.changed}
+          <CopyAddress row={row} /> · {row.changed}
         </p>
       </div>
 
@@ -196,5 +198,60 @@ function FaqRow({
         </Button>
       </div>
     </li>
+  )
+}
+
+/** How long the row says "Copied" before going back to the address. */
+const COPIED_FEEDBACK_MS = 2000
+
+/**
+ * The answer's address, and the one thing staff want to do with it.
+ *
+ * It printed `/faq#day-pass-what-to-bring` and stopped there, which advertised
+ * a feature it did not deliver: the whole point of freezing a slug when a FAQ
+ * is added is that staff can send one answer over WhatsApp, and a bare
+ * fragment is not something anybody can send. Assembling it by hand meant
+ * knowing the site's host — which is not the host this screen is served from
+ * once staff move to their own subdomain — and retyping the slug on a phone.
+ *
+ * So the address is the control. It copies the absolute URL, and says so for
+ * a moment afterwards; the clipboard is the whole interaction, which is why it
+ * is a button rather than a link to somewhere staff did not ask to go. The
+ * tab's own "View the FAQs page" is there for looking.
+ *
+ * Quiet by construction: caption-sized, mute, a dotted underline to say it is
+ * pressable without becoming a second blue link in a list of twenty rows, and
+ * ink on hover — the operations surface's only emphasis (design.md).
+ */
+function CopyAddress({ row }: { row: FaqRowView }) {
+  const [isCopied, setIsCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(row.url)
+      setIsCopied(true)
+      window.setTimeout(() => setIsCopied(false), COPIED_FEEDBACK_MS)
+    } catch {
+      // Clipboard refused — an insecure context, or a browser that asks. The
+      // address is still on screen and still selectable, so nothing is lost
+      // and a toast about a copy that failed would be noise on a row.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={`Copy ${row.url}`}
+      aria-label={isCopied ? 'Link copied' : `Copy the link to "${row.question}"`}
+      className="inline-flex items-center gap-xxs rounded-md font-mono underline decoration-dotted underline-offset-2 transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {isCopied ? (
+        <Check aria-hidden className="size-3" />
+      ) : (
+        <Link2 aria-hidden className="size-3" />
+      )}
+      {isCopied ? 'Link copied' : `/faq#${row.slug}`}
+    </button>
   )
 }

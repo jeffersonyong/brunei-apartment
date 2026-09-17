@@ -155,6 +155,19 @@ export function AmendForm({
 
   const selectedUnit = units.find((unit) => unit.id === unitId)
 
+  /*
+   * What the chosen unit's type includes, for the vehicles section. Read from
+   * `config` rather than carried on the unit row: `car_parks` is a property of
+   * the type, and the unit list only names its type. Null on a booking with no
+   * unit — a day pass amended here has no unit type and so no allowance.
+   */
+  const selectedUnitType = selectedUnit
+    ? config.unitTypes.find((type) => type.id === selectedUnit.unitTypeId)
+    : undefined
+  const parking = selectedUnitType
+    ? { unitTypeName: selectedUnitType.name, spaces: selectedUnitType.carParks }
+    : null
+
   /**
    * The guest's current unit can be unavailable for a newly requested range —
    * a neighbouring booking has it from part-way through. The select then has no
@@ -353,6 +366,7 @@ export function AmendForm({
               noVehicle={noVehicle}
               onNoVehicleChange={setNoVehicle}
               error={state.fieldErrors?.vehicles}
+              parking={parking}
             />
           </FormSection>
 

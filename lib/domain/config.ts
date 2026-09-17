@@ -338,3 +338,35 @@ export function unitTypeById(config: PropertyConfig, unitTypeId: string): UnitTy
 
   return unitType
 }
+
+/**
+ * An age band as a customer reads it — "Under 1", "Ages 1–11", "12 and over".
+ *
+ * The bands are priced by age and labelled by hand: `label` is free text a
+ * staff member types on Property settings, and nothing made it say what it
+ * covers. On the day-pass form that left the one question a parent actually
+ * has unanswered — whether a nine-year-old is a Child or an Adult — while the
+ * numbers that decide it sat in the same record, unread. So the range is
+ * derived from `minAge` and `maxAgeExclusive` rather than written twice: a
+ * band renamed or re-bounded on settings describes itself correctly on the
+ * public form without anyone remembering to edit copy.
+ *
+ * `maxAgeExclusive` is exclusive, so the band ending at 12 reads "Ages 1–11" —
+ * saying "1–12" would put twelve-year-olds in two bands at once on a form
+ * where being in the wrong one costs money.
+ */
+export function describeAgeBand(band: DayPassAgeBand): string {
+  const { minAge, maxAgeExclusive } = band
+
+  if (maxAgeExclusive === null) {
+    return minAge === 0 ? 'All ages' : `${minAge} and over`
+  }
+
+  const maxAge = maxAgeExclusive - 1
+
+  if (minAge === 0) {
+    return maxAgeExclusive === 1 ? 'Under 1' : `Under ${maxAgeExclusive}`
+  }
+
+  return minAge === maxAge ? `Age ${minAge}` : `Ages ${minAge}–${maxAge}`
+}

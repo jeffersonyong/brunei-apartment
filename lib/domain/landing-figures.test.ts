@@ -166,16 +166,53 @@ describe('the front page figures', () => {
     )
   })
 
-  test('what the day pass leaves out is named, and omitted when it leaves out nothing', () => {
+  test('the day pass lists what it admits, and never what it does not', () => {
     // Act
     const figures = landingFiguresFrom(SETTINGS, BOTH_SELLABLE)
-    const allIncluded = landingFiguresFrom(
-      { ...SETTINGS, facilities: SETTINGS.facilities.filter((f) => f.includedInDayPass) },
-      BOTH_SELLABLE,
-    )
 
     // Assert
-    expect(figures.dayPassFinePrint).toBe('Not included in the day pass: BBQ area.')
-    expect(allIncluded.dayPassFinePrint).toBeNull()
+    expect(figures.dayPassIncluded).toEqual([{ slug: 'swimming-pool', name: 'Swimming pool' }])
+  })
+
+  /**
+   * The tick in Property settings is the whole rule. A facility the client has
+   * not settled is seeded un-ticked, so the front page advertises it the day
+   * somebody ticks it and not a moment before.
+   */
+  test('a facility ticked into the day pass joins the list', () => {
+    // Arrange
+    const withBbq = {
+      ...SETTINGS,
+      facilities: SETTINGS.facilities.map((facility) => ({
+        ...facility,
+        includedInDayPass: true,
+      })),
+    }
+
+    // Act
+    const figures = landingFiguresFrom(withBbq, BOTH_SELLABLE)
+
+    // Assert
+    expect(figures.dayPassIncluded.map((facility) => facility.name)).toEqual([
+      'Swimming pool',
+      'BBQ area',
+    ])
+  })
+
+  test('a day pass admitting nothing lists nothing, rather than every facility', () => {
+    // Arrange
+    const noneIncluded = {
+      ...SETTINGS,
+      facilities: SETTINGS.facilities.map((facility) => ({
+        ...facility,
+        includedInDayPass: false,
+      })),
+    }
+
+    // Act
+    const figures = landingFiguresFrom(noneIncluded, BOTH_SELLABLE)
+
+    // Assert
+    expect(figures.dayPassIncluded).toEqual([])
   })
 })

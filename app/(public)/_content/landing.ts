@@ -9,14 +9,19 @@ import { FerrisWheel, ToyBrick, Waves, type LucideIcon } from 'lucide-react'
  * cannot disagree.
  */
 
-export interface Facility {
-  /**
-   * The `facility.slug` a photograph hangs off (capability F7). Derived once
-   * and never moved by a rename, so the card keeps its photograph when the
-   * facility is renamed in Property settings.
-   */
-  slug: string
-  name: string
+/**
+ * The words for a facility. The name is **not** here, and neither is whether
+ * the pass admits it: both come from Property settings, so the front page
+ * cannot advertise a facility the booking page does not sell (17 September
+ * 2026). A facility with no entry still gets a card — name and photograph —
+ * so a facility staff tick in the portal never produces a broken page, which
+ * is exactly how `unitTypeCopy` below behaves.
+ *
+ * Filed under the `facility.slug` a photograph hangs off (capability F7),
+ * derived once and never moved by a rename, so a card keeps its words and its
+ * photograph when the facility is renamed in Property settings.
+ */
+export interface FacilityCopy {
   description: string
   icon: LucideIcon
   imageLabel: string
@@ -39,30 +44,34 @@ export interface BookingStep {
   description: string
 }
 
-/** The three facilities confirmed as included in the day pass (prd.md §7.2). */
-export const facilities: Facility[] = [
-  {
-    slug: 'swimming-pool',
-    name: 'Swimming pool',
+/**
+ * A line and a photograph label per facility, keyed by its slug.
+ *
+ * Which of these actually appear is Property settings' answer, not this
+ * module's: the section renders the facilities ticked *Included in day pass*
+ * (prd.md §7.2). So un-ticking the water park removes its card, and this entry
+ * simply goes unused rather than advertising a pass that no longer admits it.
+ *
+ * None of these lines names a price or a figure, for the reason at the top of
+ * the file.
+ */
+export const facilityCopy: Readonly<Record<string, FacilityCopy>> = {
+  'swimming-pool': {
     description: 'The centrepiece. Open all day on a single pass — swim as long as you like.',
     icon: Waves,
     imageLabel: 'Pool photo',
   },
-  {
-    slug: 'water-park',
-    name: 'Water park',
+  'water-park': {
     description: 'Slides and splash play for the kids, included in every day pass.',
     icon: FerrisWheel,
     imageLabel: 'Water park photo',
   },
-  {
-    slug: 'indoor-childrens-playground',
-    name: 'Indoor children’s playground',
+  'indoor-childrens-playground': {
     description: 'Air-conditioned play space — somewhere to dry off without winding down.',
     icon: ToyBrick,
     imageLabel: 'Playground photo',
   },
-]
+}
 
 /** A line and a photograph label per unit type, keyed by its slug. */
 export const unitTypeCopy: Readonly<Record<string, UnitTypeCopy>> = {
