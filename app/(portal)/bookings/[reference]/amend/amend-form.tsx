@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { ExtrasFields, type ExtraQuantities } from '@/components/portal/extras-fields'
 import { NumberField, PhoneField, TextField } from '@/components/portal/form-fields'
 import {
   DiscountFields,
@@ -101,6 +102,12 @@ interface AmendFormProps {
    * untouched, rather than reading a removal into the silence.
    */
   mayDiscount: boolean
+  /**
+   * How many of each extra the new range already holds (capability F13), with
+   * this booking's own excluded — its own sofa beds are not competition for
+   * itself. From the page.
+   */
+  extrasInUse: Readonly<Record<string, number>>
 }
 
 export function AmendForm({
@@ -111,6 +118,7 @@ export function AmendForm({
   checkIn,
   checkOut,
   mayDiscount,
+  extrasInUse,
 }: AmendFormProps) {
   const [state, formAction, isPending] = useActionState(amendBookingAction, initialState)
   const router = useRouter()
@@ -120,7 +128,9 @@ export function AmendForm({
   const [unitId, setUnitId] = useState(stay.unitId)
   const [chargeableGuests, setChargeableGuests] = useState(booking.chargeableGuests)
   const [exemptGuests, setExemptGuests] = useState(booking.exemptGuests)
-  const [sofaBeds, setSofaBeds] = useState(existing.sofaBeds)
+  // Prefilled from the lines the booking already carries, so a save that
+  // touches only the dates does not quietly drop what the guest bought.
+  const [extraQuantities, setExtraQuantities] = useState<ExtraQuantities>(existing.extras)
   const [lateCheckOutHours, setLateCheckOutHours] = useState(existing.lateCheckOutHours)
   const [guestName, setGuestName] = useState(booking.guestName)
   const [guestPhone, setGuestPhone] = useState(booking.guestPhone)
@@ -162,7 +172,9 @@ export function AmendForm({
           checkIn,
           checkOut,
           party: { chargeableGuests, exemptGuests },
-          sofaBeds,
+          extras: Object.entries(extraQuantities)
+            .filter(([, quantity]) => quantity > 0)
+            .map(([extraId, quantity]) => ({ extraId, quantity })),
           earlyCheckInHours: 0,
           lateCheckOutHours,
           discount: mayDiscount ? previewDiscount(discount) : booking.discount,
@@ -282,13 +294,18 @@ export function AmendForm({
 
           <FormSection title="Extras">
             <div className="flex flex-wrap gap-lg">
-              <NumberField
-                id="sofaBeds"
-                label="Sofa beds"
-                value={sofaBeds}
-                min={0}
-                onChange={setSofaBeds}
-                error={state.fieldErrors?.sofaBeds}
+              <ExtrasFields
+                extras={config.extras}
+                inUse={extrasInUse}
+                quantities={extraQuantities}
+                // Whatever the booking already holds stays on the form even if
+                // it has since come off sale — hiding it would drop it from
+                // the booking on the next save without anyone deciding to.
+                alsoShow={Object.keys(existing.extras)}
+                onChange={(extraId, quantity) =>
+                  setExtraQuantities((current) => ({ ...current, [extraId]: quantity }))
+                }
+                fieldErrors={state.fieldErrors}
               />
               <NumberField
                 id="lateCheckOutHours"

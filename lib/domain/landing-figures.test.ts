@@ -22,8 +22,6 @@ const SETTINGS: PropertySettings = {
     paxPolicy: 'surcharge_threshold',
     extraPersonPerNightCents: 700,
     paxExemptAgeMax: 3,
-    sofaBedFeeCents: 1500,
-    sofaBedStock: null,
     earlyCheckInPerHourCents: 0,
     lateCheckOutPerHourCents: 1000,
     checkInTime: '15:00',
@@ -31,6 +29,20 @@ const SETTINGS: PropertySettings = {
     securityDepositCents: 10000,
     maxAdvanceBookingDays: 60,
   },
+  extras: [
+    {
+      id: 'e1',
+      slug: 'sofa-bed',
+      name: 'Sofa bed',
+      description: 'Includes one pillow and one blanket.',
+      fee: 1500,
+      stock: null,
+      bookable: true,
+      sortOrder: 1,
+      retiredAt: null,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+  ],
   unitTypes: [
     {
       id: '1',

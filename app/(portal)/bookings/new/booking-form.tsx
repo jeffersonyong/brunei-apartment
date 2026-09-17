@@ -13,6 +13,7 @@ import {
   toDiscountFormValues,
   type DiscountValue,
 } from '@/components/portal/discount-fields'
+import { ExtrasFields, type ExtraQuantities } from '@/components/portal/extras-fields'
 import { NumberField, PhoneField, TextField } from '@/components/portal/form-fields'
 import { FormSection } from '@/components/portal/form-section'
 import { VehicleFields } from '@/components/vehicle-fields'
@@ -93,6 +94,12 @@ interface BookingFormProps {
    */
   preferredUnitId?: string
   config: PropertyConfig
+  /**
+   * How many of each extra are held on the busiest night of these dates
+   * (capability F13), from the page. A preview — the database refuses an
+   * oversell, and can do so between this read and the submit.
+   */
+  extrasInUse: Readonly<Record<string, number>>
   checkIn: string
   checkOut: string
   /**
@@ -120,6 +127,7 @@ export function BookingForm({
   preferredUnitTypeId,
   preferredUnitId,
   config,
+  extrasInUse,
   checkIn,
   checkOut,
   today,
@@ -135,7 +143,7 @@ export function BookingForm({
   const [unitId, setUnitId] = useState(preferredUnitId ?? units[0]?.id ?? '')
   const [chargeableGuests, setChargeableGuests] = useState(2)
   const [exemptGuests, setExemptGuests] = useState(0)
-  const [sofaBeds, setSofaBeds] = useState(0)
+  const [extraQuantities, setExtraQuantities] = useState<ExtraQuantities>({})
   const [lateCheckOutHours, setLateCheckOutHours] = useState(0)
   // Controlled, like every other field here. React 19 resets an uncontrolled
   // field once a form action settles, so a submit refused for a missing
@@ -204,7 +212,9 @@ export function BookingForm({
           checkIn,
           checkOut,
           party: { chargeableGuests, exemptGuests },
-          sofaBeds,
+          extras: Object.entries(extraQuantities)
+            .filter(([, quantity]) => quantity > 0)
+            .map(([extraId, quantity]) => ({ extraId, quantity })),
           earlyCheckInHours: 0,
           lateCheckOutHours,
           discount: previewDiscount(discount),
@@ -318,13 +328,14 @@ export function BookingForm({
 
         <FormSection title="Extras">
           <div className="flex flex-wrap gap-lg">
-            <NumberField
-              id="sofaBeds"
-              label="Sofa beds"
-              value={sofaBeds}
-              min={0}
-              onChange={setSofaBeds}
-              error={state.fieldErrors?.sofaBeds}
+            <ExtrasFields
+              extras={config.extras}
+              inUse={extrasInUse}
+              quantities={extraQuantities}
+              onChange={(extraId, quantity) =>
+                setExtraQuantities((current) => ({ ...current, [extraId]: quantity }))
+              }
+              fieldErrors={state.fieldErrors}
             />
             <NumberField
               id="lateCheckOutHours"

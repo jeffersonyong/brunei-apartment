@@ -24,6 +24,7 @@ import {
 import { getDepositByBookingId } from './deposits'
 import { attachDocument, purge } from './documents'
 import { listPaymentsForBooking } from './payments'
+import { extraUnavailableMessage } from './booking-extras'
 import { currentPropertyId } from './property'
 
 /**
@@ -64,6 +65,8 @@ export type PublicWriteErrorCode =
   | 'booking_closed'
   | 'nothing_to_evidence'
   | 'upload_refused'
+  /** One of the chosen extras was taken while the form was open (F13). */
+  | 'extra_unavailable'
 
 export interface PublicWriteError {
   code: PublicWriteErrorCode
@@ -96,6 +99,9 @@ const MESSAGES: Readonly<Record<PublicWriteErrorCode, string>> = {
   not_found: 'We could not find that booking.',
   already_submitted: 'We have already been told about this transfer.',
   status_changed: 'This booking has moved on since this page was opened. Refresh to see where.',
+  // Replaced by the sentence the trigger raised, which names the extra and how
+  // many are left. This is the fallback for a message that could not be read.
+  extra_unavailable: 'One of the extras you chose has just been taken for those nights.',
 }
 
 function refuse(
@@ -208,6 +214,16 @@ export async function createPublicStayBooking(
   })
 
   if (error) {
+    // The stock trigger (capability F13) is deferred, so it fires at commit —
+    // after the function has returned — and reaches us as a Postgres error
+    // rather than as a refusal. A customer losing the race is an ordinary
+    // outcome on a public form and must read as one, not as a crash.
+    const takenAlready = extraUnavailableMessage(error.message)
+
+    if (takenAlready) {
+      return { ok: false, error: { code: 'extra_unavailable', message: takenAlready } }
+    }
+
     throw new Error(`Could not create the booking: ${error.message}`)
   }
 

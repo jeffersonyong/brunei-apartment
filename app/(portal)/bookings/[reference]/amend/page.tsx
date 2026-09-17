@@ -11,6 +11,7 @@ import { DateField } from '@/components/ui/date-field'
 import { Label } from '@/components/ui/label'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
+import { extrasInUse as extrasInUseFor } from '@/lib/db/booking-extras'
 import { findAvailableUnits, getBookingByReference } from '@/lib/db/bookings'
 import { getPropertyConfig } from '@/lib/db/property-config'
 import { canAmend } from '@/lib/domain/booking-state'
@@ -138,10 +139,17 @@ export default async function AmendBookingPage({ params, searchParams }: PagePro
       ? { start: query.from, end: query.to }
       : stay.range
 
-  const units = await findAvailableUnits({
-    range: requested,
-    excludeBookingId: booking.id,
-  })
+  // Both about the requested range, neither needing the other's answer. The
+  // booking excludes itself from both: its own unit and its own extras are not
+  // competition for itself.
+  const [units, extrasInUse] = await Promise.all([
+    findAvailableUnits({ range: requested, excludeBookingId: booking.id }),
+    extrasInUseFor({
+      checkIn: requested.start,
+      checkOut: requested.end,
+      excludeBookingId: booking.id,
+    }),
+  ])
 
   const today = todayInBrunei()
 
@@ -215,6 +223,7 @@ export default async function AmendBookingPage({ params, searchParams }: PagePro
             checkIn={requested.start}
             checkOut={requested.end}
             mayDiscount={mayDiscount}
+            extrasInUse={extrasInUse}
           />
         </div>
       )}

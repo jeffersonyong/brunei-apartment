@@ -9,6 +9,7 @@ import type { Cents } from '@/lib/domain/money'
 import { dataClient } from '@/lib/supabase/data'
 
 import { type Unit } from './inventory'
+import { extraUnavailableMessage } from './booking-extras'
 import { currentPropertyId } from './property'
 import { applySearch } from './search'
 
@@ -783,7 +784,13 @@ export type CreateBookingResult =
       /** The payment for the stay, or null where the stay is settled on arrival. */
       paymentId: string | null
     }
-  | { ok: false; error: { code: 'unit_not_found' | 'unit_unavailable'; message: string } }
+  | {
+      ok: false
+      error: {
+        code: 'unit_not_found' | 'unit_unavailable' | 'extra_unavailable'
+        message: string
+      }
+    }
 
 /**
  * Creates a booking at the desk, secured as it is made.
@@ -887,6 +894,17 @@ export async function createWalkInBooking(
   })
 
   if (error) {
+    // The stock trigger (capability F13) is deferred, so it fires as the
+    // transaction commits — after this function has already returned its
+    // refusal value, which is why this arrives as a Postgres error rather than
+    // as `result.ok === false`. Losing a race is an ordinary outcome and gets
+    // an ordinary sentence; anything else is still a fault.
+    const takenAlready = extraUnavailableMessage(error.message)
+
+    if (takenAlready) {
+      return { ok: false, error: { code: 'extra_unavailable', message: takenAlready } }
+    }
+
     throw new Error(`Could not create the booking: ${error.message}`)
   }
 
@@ -1068,7 +1086,7 @@ export interface AmendBookingInput {
 }
 
 export interface AmendBookingError {
-  code: 'not_found' | 'changed' | 'unit_unavailable' | 'unit_not_found'
+  code: 'not_found' | 'changed' | 'unit_unavailable' | 'unit_not_found' | 'extra_unavailable'
   /** Written for a staff member to read on screen, not for a log. */
   message: string
 }
@@ -1123,6 +1141,15 @@ export async function amendBooking(input: AmendBookingInput): Promise<AmendBooki
   })
 
   if (error) {
+    // Same deferred trigger, same reason it lands here — see the note in
+    // `createWalkInBooking`. An amendment can lose the race too: extending a
+    // stay over a night whose sofa beds are all out is a refusal, not a fault.
+    const takenAlready = extraUnavailableMessage(error.message)
+
+    if (takenAlready) {
+      return { ok: false, error: { code: 'extra_unavailable', message: takenAlready } }
+    }
+
     throw new Error(`Could not amend the booking: ${error.message}`)
   }
 
@@ -1160,6 +1187,13 @@ async function describeAmendFailure(
       code,
       message: 'Someone else changed this booking while you were working on it. Reload and retry.',
     }
+  }
+
+  // Never reached through this path: the stock refusal arrives as a Postgres
+  // error and is turned into a sentence before the result is read at all. Here
+  // so the union is total rather than narrowed by a cast.
+  if (code === 'extra_unavailable') {
+    return { code, message: 'One of the extras was taken while this form was open.' }
   }
 
   return describeWriteFailure(code, unitId)

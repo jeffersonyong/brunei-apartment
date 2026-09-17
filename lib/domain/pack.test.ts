@@ -41,7 +41,7 @@ function booking(overrides: Partial<PackBookingFacts> = {}): PackBookingFacts {
     stay: { unitRef: '3B-01', range: { start: '2026-09-10', end: '2026-09-12' } },
     lines: [
       line('accommodation', '2 nights, 3-bedroom', 2, bnd(200)),
-      line('sofa_bed', 'Sofa bed', 1, bnd(30)),
+      line('extra', 'Sofa bed', 1, bnd(30)),
     ],
     total: bnd(430),
     paid: bnd(430),

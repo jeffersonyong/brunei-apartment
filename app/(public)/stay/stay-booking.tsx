@@ -8,8 +8,10 @@ import { Card } from '@/components/ui/card'
 import type { StayDateRange } from '@/components/ui/calendar-grid'
 import { Notice } from '@/components/ui/notice'
 import { QuoteLines } from '@/components/quote-lines'
+import { peakExtraUse } from '@/lib/domain/availability-calendar'
 import type { PropertyConfig } from '@/lib/domain/config'
 import { formatStayRange, nightsBetween, type StayDate } from '@/lib/domain/dates'
+import type { PropertyExtra } from '@/lib/domain/extras'
 import { formatCents } from '@/lib/domain/money'
 import { priceStay } from '@/lib/domain/pricing/stay'
 import { cn } from '@/lib/utils'
@@ -23,6 +25,7 @@ import {
   PublicField,
   PublicPhoneField,
 } from '../_components/booking/booking-fields'
+import { ExtrasFields, type ExtraQuantities } from '../_components/booking/extras-fields'
 import { createPublicStayAction, type PublicStayState } from './actions'
 
 /**
@@ -52,6 +55,8 @@ export function StayBooking({
   today,
   lastNight,
   nightsFree,
+  extras,
+  extrasUsed,
 }: {
   config: PropertyConfig
   /** The types the building actually has units of — see the page. */
@@ -60,6 +65,10 @@ export function StayBooking({
   /** One day past the furthest night the advance rule allows. */
   lastNight: StayDate
   nightsFree: Readonly<Record<string, Readonly<Record<string, number>>>>
+  /** The configured extras (capability F13). */
+  extras: readonly PropertyExtra[]
+  /** How many of each extra are held, per night, across the whole window. */
+  extrasUsed: Readonly<Record<string, Readonly<Record<string, number>>>>
 }) {
   const [state, formAction, isPending] = useActionState(createPublicStayAction, initialState)
 
@@ -67,12 +76,31 @@ export function StayBooking({
   const [range, setRange] = useState<StayDateRange | null>(null)
   const [chargeableGuests, setChargeableGuests] = useState(2)
   const [exemptGuests, setExemptGuests] = useState(0)
-  const [sofaBeds, setSofaBeds] = useState(0)
+  const [extraQuantities, setExtraQuantities] = useState<ExtraQuantities>({})
   const [lateCheckOutHours, setLateCheckOutHours] = useState(0)
   const [vehicles, setVehicles] = useState<readonly string[]>([''])
   const [noVehicle, setNoVehicle] = useState(false)
 
   const unitType = unitTypes.find((type) => type.id === unitTypeSlug)
+
+  // What the extras are holding on the busiest night of the chosen range —
+  // the browser's copy of what `extras_in_use` computes in SQL. A preview: the
+  // database is what actually refuses an oversell (see ExtrasFields).
+  const extrasInUse = range
+    ? peakExtraUse(
+        new Map(
+          Object.entries(extrasUsed).map(([night, byExtra]) => [
+            night as StayDate,
+            new Map(Object.entries(byExtra)),
+          ]),
+        ),
+        { start: range.start, end: range.end },
+      )
+    : {}
+
+  const selections = Object.entries(extraQuantities)
+    .filter(([, quantity]) => quantity > 0)
+    .map(([extraId, quantity]) => ({ extraId, quantity }))
 
   const quote = range
     ? priceStay(
@@ -81,7 +109,7 @@ export function StayBooking({
           checkIn: range.start,
           checkOut: range.end,
           party: { chargeableGuests, exemptGuests },
-          sofaBeds,
+          extras: selections,
           earlyCheckInHours: 0,
           lateCheckOutHours,
         },
@@ -192,40 +220,6 @@ export function StayBooking({
               </fieldset>
 
               {/* ── Extras ─────────────────────────────────────────────── */}
-              <fieldset className="mt-xl border-t border-divider pt-lg">
-                <legend className="pe-md micro-label text-muted-foreground">Extras</legend>
-
-                <div className="mt-md flex flex-wrap gap-lg">
-                  <CountField
-                    id="sofaBeds"
-                    name="sofaBeds"
-                    label="Sofa beds"
-                    hint={`BND ${formatCents(config.sofaBedFlatFee)} each, with a pillow and blanket.`}
-                    value={sofaBeds}
-                    max={20}
-                    onChange={setSofaBeds}
-                    error={state.fieldErrors?.sofaBeds}
-                  />
-                  <CountField
-                    id="lateCheckOutHours"
-                    name="lateCheckOutHours"
-                    label="Late check-out (hours)"
-                    hint={`Check-out is ${config.standardCheckOutTime ?? '12:00'}. BND ${formatCents(
-                      config.lateCheckOutPerHour,
-                    )} an hour after that.`}
-                    value={lateCheckOutHours}
-                    max={12}
-                    onChange={setLateCheckOutHours}
-                    error={state.fieldErrors?.lateCheckOutHours}
-                  />
-                </div>
-
-                <p className="mt-md text-caption text-muted-foreground">
-                  Arriving before {config.standardCheckInTime ?? '14:00'}? Ask us when you get here
-                  — it depends on whether the unit is ready.
-                </p>
-              </fieldset>
-
               {/* ── Your details ───────────────────────────────────────── */}
               <fieldset className="mt-xl border-t border-divider pt-lg">
                 <legend className="pe-md micro-label text-muted-foreground">Your details</legend>
@@ -279,6 +273,40 @@ export function StayBooking({
                     noVehicleDescription={null}
                   />
                 </div>
+              </fieldset>
+
+              <fieldset className="mt-xl border-t border-divider pt-lg">
+                <legend className="pe-md micro-label text-muted-foreground">Extras</legend>
+
+                <div className="mt-md flex flex-wrap gap-lg">
+                  <ExtrasFields
+                    extras={extras}
+                    inUse={extrasInUse}
+                    quantities={extraQuantities}
+                    datesChosen={range !== null}
+                    onChange={(extraId, quantity) =>
+                      setExtraQuantities((current) => ({ ...current, [extraId]: quantity }))
+                    }
+                    fieldErrors={state.fieldErrors}
+                  />
+                  <CountField
+                    id="lateCheckOutHours"
+                    name="lateCheckOutHours"
+                    label="Late check-out (hours)"
+                    hint={`Check-out is ${config.standardCheckOutTime ?? '12:00'}. BND ${formatCents(
+                      config.lateCheckOutPerHour,
+                    )} an hour after that.`}
+                    value={lateCheckOutHours}
+                    max={12}
+                    onChange={setLateCheckOutHours}
+                    error={state.fieldErrors?.lateCheckOutHours}
+                  />
+                </div>
+
+                <p className="mt-md text-caption text-muted-foreground">
+                  Arriving before {config.standardCheckInTime ?? '14:00'}? Ask us when you get here
+                  — it depends on whether the unit is ready.
+                </p>
               </fieldset>
 
               <HoneypotField />

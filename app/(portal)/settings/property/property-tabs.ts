@@ -11,7 +11,13 @@
  * settings event to the tab it came from.
  */
 
-export const PROPERTY_TABS = ['pricing', 'day-pass', 'documents', 'bank-accounts'] as const
+export const PROPERTY_TABS = [
+  'pricing',
+  'extras',
+  'day-pass',
+  'documents',
+  'bank-accounts',
+] as const
 
 export type PropertyTab = (typeof PROPERTY_TABS)[number]
 

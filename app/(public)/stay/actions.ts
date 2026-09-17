@@ -11,6 +11,7 @@ import { clientIpFrom, hashPhoneKey, hashPublicKey } from '@/lib/auth/access-tok
 import { createPublicStayBooking, notePublicAttempt } from '@/lib/db/public-bookings'
 import { getPropertyConfig } from '@/lib/db/property-config'
 import { isStayDate } from '@/lib/domain/dates'
+import { extraSelectionsFrom } from '@/lib/domain/extras'
 import {
   isLikelyEmailAddress,
   MAX_GUEST_EMAIL_LENGTH,
@@ -60,7 +61,6 @@ const publicStaySchema = z.object({
   checkOut: stayDate,
   chargeableGuests: z.coerce.number().int().min(1, 'A booking needs at least one guest.').max(50),
   exemptGuests: z.coerce.number().int().min(0).max(50),
-  sofaBeds: z.coerce.number().int().min(0).max(20),
   lateCheckOutHours: z.coerce.number().int().min(0).max(12),
   guestName: z.string().trim().min(1, 'Tell us your name.').max(120),
   guestPhone: z.string().trim().min(5, 'We need a number to confirm your booking.').max(40),
@@ -150,13 +150,20 @@ export async function createPublicStayAction(
   // they chose — never a figure a browser sent. The same call the island made
   // for the live quote, so the two agree unless somebody tampered.
   const config = await getPropertyConfig()
+
+  // The extras are not in the Zod schema, because their field names are not
+  // known until the configured list is read (capability F13). Read off the
+  // FormData against that list, so a field naming an extra that does not exist
+  // is ignored rather than priced.
+  const extras = extraSelectionsFrom((field) => formData.get(field), config.extras)
+
   const quote = priceStay(
     {
       unitTypeId: input.unitTypeSlug,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
       party: { chargeableGuests: input.chargeableGuests, exemptGuests: input.exemptGuests },
-      sofaBeds: input.sofaBeds,
+      extras,
       earlyCheckInHours: 0,
       lateCheckOutHours: input.lateCheckOutHours,
     },

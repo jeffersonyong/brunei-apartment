@@ -10,14 +10,18 @@ import type { PropertyTab } from './property-tabs'
 import { BankAccountsTab } from './bank-accounts-tab'
 import { DayPassTab } from './day-pass-tab'
 import { DocumentsTab } from './documents-tab'
+import { ExtrasTab } from './extras/extras-tab'
 import { PricingTab } from './pricing-tab'
 
 /**
- * The four things a settings screen is (capability F3).
+ * The five things a settings screen is (capabilities F3 and F13).
  *
- * Tabs rather than one long form because they are four separate saves against
- * four separate parts of the configuration: a half-finished day-pass price list
+ * Tabs rather than one long form because they are separate saves against
+ * separate parts of the configuration: a half-finished day-pass price list
  * should not block correcting a nightly rate.
+ *
+ * Extras is the odd one and says so in its own file — it is a list of rows
+ * with their own writers, not a form with a concurrency token.
  *
  * Each tab is mounted only while it is showing, so it takes its draft from the
  * settings the server just read — and a save's own response re-renders the
@@ -45,6 +49,7 @@ export function PropertySettingsTabs({ settings, initialTab, actions }: Property
       <div className="flex flex-wrap items-center justify-between gap-lg">
         <TabsList aria-label="Which settings to edit">
           <TabsTrigger value="pricing">Rates</TabsTrigger>
+          <TabsTrigger value="extras">Extras</TabsTrigger>
           <TabsTrigger value="day-pass">Day pass</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="bank-accounts">Bank accounts</TabsTrigger>
@@ -55,6 +60,10 @@ export function PropertySettingsTabs({ settings, initialTab, actions }: Property
 
       <TabsContent value="pricing">
         <PricingTab settings={settings} />
+      </TabsContent>
+
+      <TabsContent value="extras">
+        <ExtrasTab extras={settings.extras} />
       </TabsContent>
 
       <TabsContent value="day-pass">

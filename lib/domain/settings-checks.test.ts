@@ -40,8 +40,6 @@ function settings(): PropertySettings {
       paxPolicy: 'surcharge_threshold',
       extraPersonPerNightCents: bnd(7),
       paxExemptAgeMax: 3,
-      sofaBedFeeCents: bnd(28),
-      sofaBedStock: null,
       earlyCheckInPerHourCents: bnd(10),
       lateCheckOutPerHourCents: bnd(15),
       checkInTime: '14:00',
@@ -49,6 +47,20 @@ function settings(): PropertySettings {
       securityDepositCents: bnd(100),
       maxAdvanceBookingDays: 62,
     },
+    extras: [
+      {
+        id: 'e1',
+        slug: 'sofa-bed',
+        name: 'Sofa bed',
+        description: 'Includes one pillow and one blanket.',
+        fee: bnd(28),
+        stock: null,
+        bookable: true,
+        sortOrder: 1,
+        retiredAt: null,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     unitTypes: [
       {
         id: 'a2',
@@ -113,7 +125,6 @@ describe('checkPricingDraft', () => {
       car_parks: 2,
     })
     expect(result.value.policy.security_deposit_cents).toBe(bnd(100))
-    expect(result.value.policy.sofa_bed_stock).toBeNull()
   })
 
   test('refuses an amount with a comma rather than repairing it', () => {
@@ -143,18 +154,9 @@ describe('checkPricingDraft', () => {
     expect(result.problems.map((problem) => problem.field)).toContain('policy.checkInTime')
   })
 
-  test('reads a blank sofa bed stock as unknown, not as none', () => {
-    const draft = pricingDraftFrom(settings())
-
-    const result = checkPricingDraft({
-      ...draft,
-      policy: { ...draft.policy, sofaBedStock: '  ' },
-    })
-
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.value.policy.sofa_bed_stock).toBeNull()
-  })
+  // The sofa bed's fee and count left this form on 17 September 2026: since
+  // capability F13 they are a row on the Extras tab with writers of their own,
+  // and "blank means not counted" is pinned in extras.test.ts instead.
 
   test('reports every bad field at once, not just the first', () => {
     const draft = pricingDraftFrom(settings())

@@ -1,4 +1,5 @@
 import type { DateRange } from '@/lib/domain/availability'
+import type { ExtraHolding } from '@/lib/domain/availability-calendar'
 import type { StayDate } from '@/lib/domain/dates'
 import type { BookingStream } from '@/lib/domain/stream'
 import type { OccupancyStatus } from '@/lib/domain/unit-status'
@@ -108,4 +109,48 @@ function toCalendarOccupancy(row: CalendarRow): CalendarOccupancy {
       ? { reference: row.booking.reference, stream: row.booking.stream as BookingStream }
       : null,
   }
+}
+
+/**
+ * Every extra held over a window, one row per booking line (capability F13).
+ *
+ * A function rather than an embedded select, because `booking_line` and
+ * `occupancy` have no relationship to each other — both point at `booking`,
+ * and PostgREST would have to be walked through it. The occupancy range rides
+ * along so `nightlyExtraUse` can place each holding on the nights its unit is
+ * held.
+ *
+ * The status filter is the exclusion constraint's own list, applied in the
+ * function, for the reason every reader repeats it — see `occupiesUnit`.
+ */
+export async function listExtraHoldingsInWindow(
+  window: DateRange,
+): Promise<readonly ExtraHolding[]> {
+  const propertyId = await currentPropertyId()
+
+  const { data, error } = await dataClient().rpc('extras_held_in_window', {
+    p_property_id: propertyId,
+    p_from: window.start,
+    p_to: window.end,
+  })
+
+  if (error) {
+    throw new Error(`Could not read what the extras are holding: ${error.message}`)
+  }
+
+  const rows = (data ?? []) as {
+    extra_id: string
+    quantity: number
+    start_date: StayDate
+    end_date: StayDate | null
+    status: string
+  }[]
+
+  return rows.map((row) => ({
+    extraId: row.extra_id,
+    quantity: row.quantity,
+    start: row.start_date,
+    end: row.end_date,
+    status: row.status,
+  }))
 }

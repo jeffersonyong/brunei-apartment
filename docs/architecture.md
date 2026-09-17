@@ -259,6 +259,31 @@ Half-open ranges `[)` make back-to-back bookings (checkout day = next check-in d
 
 **`end_date` is nullable, and only for a lease.** A month-to-month tenancy has no agreed last day (open-questions.md N19, answered 3 September 2026), and `daterange(start, null, '[)')` is `[start,)` — unbounded above. So an open-ended lease overlaps every future range and the constraint above needs no change to block bookings over it; neither does `available_units()`, whose overlap test is the same `&&`. That is the range model in §6.1 paying for itself a second time. What it does *not* survive is a plain `end_date > some_day` comparison, which is null rather than true for an open-ended row — `unit_state()` and `set_unit_out_of_service()` were the only two, and both are now null-guarded. `occupancy_only_a_lease_is_open_ended` keeps the relaxation where it belongs: a stay is sold and priced by nights, so a booking with no checkout stays structurally impossible.
 
+### 5.2a Extras availability — a sum, not an overlap (capability F13)
+
+The configured extras (20261003000100, prd.md §8.2) carry their own availability rule, and it **cannot be an exclusion constraint**. §5.2 works because "occupied" is a *pairwise* fact: two ranges on one unit overlap or they do not, and two rows are enough to see it. "Three sofa beds" is not pairwise — two bookings each taking two of three are individually fine and jointly impossible, and no GiST constraint that examines a pair of rows can say so. The rule is a SUM over every overlapping booking, per night.
+
+It is therefore a **deferred constraint trigger**:
+
+```sql
+create constraint trigger booking_line_extra_within_stock
+  after insert or update on booking_line
+  deferrable initially deferred
+  for each row
+  when (new.extra_id is not null)
+  execute function assert_extra_within_stock();
+```
+
+Three properties make it the same *kind* of guarantee as §5.2 rather than a weaker one:
+
+- **It is in the database, so every writer is covered** — `create_walk_in_booking()`, `create_public_stay_booking()`, `amend_booking()`, and any writer added later, including one whose author never read this file. A server action that forgot to check is caught anyway. That is the whole content of "not application logic"; the mechanism differing is not the point the promise rests on.
+- **It serialises.** The trigger takes `pg_advisory_xact_lock` on one key per property before counting. Without it two transactions both read "two in use, one free", both pass and both commit. With it the second waits, and under READ COMMITTED its next statement sees the first booking's line. One lock per property rather than per extra, so a booking buying two extras needs no lock ordering.
+- **It is deferred to commit,** because the trigger reads the booking's occupancy and the writers do not agree on the order — creation inserts the occupancy before its lines, amendment rewrites the lines and moves the occupancy. Deferring means the rule reads the transaction as it will be committed rather than half-built.
+
+**Two consequences worth knowing.** A violation surfaces as a Postgres error on the RPC call rather than as a refusal value, because no plpgsql handler inside the function is still on the stack at commit; `extraUnavailableMessage()` in `lib/db/booking-extras.ts` turns it into a sentence naming the extra and how many are free. And the booking forms' "2 free" is a **preview** computed from `extras_in_use()`, which can be stale by the time somebody submits — the trigger is what is actually true.
+
+**"In use" means exactly what it means for a unit:** the same three releasing statuses, so one booking never holds a room but not the sofa bed in it. If that list moves, it moves in both places.
+
 `occupancy.status` mirrors `booking.status`, maintained by an `after update` trigger on the booking and by nothing else. The constraint's `where` clause needs the status on the occupancy row, and two hand-maintained copies would drift; the booking stays the single writer. Availability reads (`available_units()`) apply the identical half-open predicate, so the list a screen renders and the write it then attempts cannot disagree at the boundary.
 
 The constraint is covered by `lib/db/no-double-booking.test.ts`, which fires eight simultaneous bookings at one unit and asserts exactly one wins. That file documents how to watch it fail with the constraint dropped — a concurrency test nobody has seen fail is not evidence.

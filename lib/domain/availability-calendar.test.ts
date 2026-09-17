@@ -3,12 +3,15 @@ import { describe, expect, test } from 'vitest'
 import {
   firstBlockedNight,
   freeOn,
+  nightlyExtraUse,
   nightlyFreeCounts,
   occupiesUnit,
+  peakExtraUse,
   publicBookingWindow,
   unitsByType,
   type CalendarOccupancyRange,
   type CalendarUnit,
+  type ExtraHolding,
 } from './availability-calendar'
 
 /**
@@ -253,5 +256,141 @@ describe('the window a public calendar may show', () => {
       start: '2026-09-10',
       end: '2026-09-12',
     })
+  })
+})
+
+/**
+ * The extras a booking holds, per night (capability F13).
+ *
+ * The browser's copy of `extras_in_use`. These tests pin the two things that
+ * make it agree with the database: the same half-open boundary a unit uses, so
+ * back-to-back stays do not compete for the same sofa bed, and the same list of
+ * statuses that release one.
+ */
+describe('nightlyExtraUse', () => {
+  const window = { start: '2026-11-01', end: '2026-11-08' }
+
+  function holding(overrides: Partial<ExtraHolding> = {}): ExtraHolding {
+    return {
+      extraId: 'sofa-bed',
+      quantity: 1,
+      start: '2026-11-02',
+      end: '2026-11-04',
+      status: 'confirmed',
+      ...overrides,
+    }
+  }
+
+  function on(nightly: ReadonlyMap<string, ReadonlyMap<string, number>>, night: string): number {
+    return nightly.get(night)?.get('sofa-bed') ?? 0
+  }
+
+  test('holds an extra on every night of the stay but the last date', () => {
+    const nightly = nightlyExtraUse({ window, holdings: [holding()] })
+
+    expect(on(nightly, '2026-11-01')).toBe(0)
+    expect(on(nightly, '2026-11-02')).toBe(1)
+    expect(on(nightly, '2026-11-03')).toBe(1)
+    // Half-open: the guest leaves on the 4th, so the bed is free that night.
+    expect(on(nightly, '2026-11-04')).toBe(0)
+  })
+
+  test('back-to-back stays never compete for the same one', () => {
+    const nightly = nightlyExtraUse({
+      window,
+      holdings: [
+        holding({ start: '2026-11-02', end: '2026-11-04' }),
+        holding({ start: '2026-11-04', end: '2026-11-06' }),
+      ],
+    })
+
+    expect(on(nightly, '2026-11-03')).toBe(1)
+    expect(on(nightly, '2026-11-04')).toBe(1)
+    expect(on(nightly, '2026-11-05')).toBe(1)
+  })
+
+  test('adds up what overlapping stays hold on the same night', () => {
+    const nightly = nightlyExtraUse({
+      window,
+      holdings: [
+        holding({ quantity: 2, start: '2026-11-02', end: '2026-11-05' }),
+        holding({ quantity: 1, start: '2026-11-03', end: '2026-11-06' }),
+      ],
+    })
+
+    expect(on(nightly, '2026-11-02')).toBe(2)
+    expect(on(nightly, '2026-11-03')).toBe(3)
+    expect(on(nightly, '2026-11-05')).toBe(1)
+  })
+
+  test.each(['expired', 'cancelled', 'no_show'])('%s releases what it held', (status) => {
+    const nightly = nightlyExtraUse({ window, holdings: [holding({ status })] })
+
+    expect(on(nightly, '2026-11-02')).toBe(0)
+  })
+
+  test('a guest who has checked out early still holds it, exactly as they hold the unit', () => {
+    // One booking never holds a room but not the bed in it. Changing this
+    // would give two different answers about the same night.
+    const nightly = nightlyExtraUse({ window, holdings: [holding({ status: 'completed' })] })
+
+    expect(on(nightly, '2026-11-02')).toBe(1)
+  })
+
+  test('clips an open-ended lease to the window rather than running past it', () => {
+    const nightly = nightlyExtraUse({
+      window,
+      holdings: [holding({ start: '2026-10-01', end: null })],
+    })
+
+    expect(on(nightly, '2026-11-01')).toBe(1)
+    expect(on(nightly, '2026-11-07')).toBe(1)
+  })
+
+  test('ignores a stay that misses the window entirely', () => {
+    const nightly = nightlyExtraUse({
+      window,
+      holdings: [holding({ start: '2026-12-01', end: '2026-12-03' })],
+    })
+
+    expect(nightly.size).toBe(0)
+  })
+})
+
+describe('peakExtraUse', () => {
+  const nightly = nightlyExtraUse({
+    window: { start: '2026-11-01', end: '2026-11-08' },
+    holdings: [
+      {
+        extraId: 'sofa-bed',
+        quantity: 3,
+        start: '2026-11-03',
+        end: '2026-11-04',
+        status: 'confirmed',
+      },
+      {
+        extraId: 'sofa-bed',
+        quantity: 1,
+        start: '2026-11-01',
+        end: '2026-11-07',
+        status: 'confirmed',
+      },
+    ],
+  })
+
+  test('is the busiest night of the range, not the average or the last', () => {
+    // Three out on the Tuesday is what stops a fourth being sold for a stay
+    // that merely covers the Tuesday.
+    expect(peakExtraUse(nightly, { start: '2026-11-01', end: '2026-11-07' })['sofa-bed']).toBe(4)
+  })
+
+  test('a range that misses the busy night sees only what its own nights hold', () => {
+    expect(peakExtraUse(nightly, { start: '2026-11-05', end: '2026-11-07' })['sofa-bed']).toBe(1)
+  })
+
+  test('reports nothing for an extra nobody is holding', () => {
+    expect(
+      peakExtraUse(nightly, { start: '2026-11-01', end: '2026-11-07' })['karaoke'],
+    ).toBeUndefined()
   })
 })
