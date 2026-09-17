@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card'
 import { DateField } from '@/components/ui/date-field'
 import { Notice } from '@/components/ui/notice'
 import { QuoteLines } from '@/components/quote-lines'
-import type { DayPassAgeBand, PropertyConfig } from '@/lib/domain/config'
+import { describeAgeBand, type DayPassAgeBand, type PropertyConfig } from '@/lib/domain/config'
 import { formatStayDate, type StayDate } from '@/lib/domain/dates'
 import { formatCents } from '@/lib/domain/money'
 import { priceDayPass } from '@/lib/domain/pricing/day-pass'
@@ -149,11 +149,7 @@ export function DayPassBooking({
                       id={`band-${band.id}`}
                       name={`band-${band.id}`}
                       label={band.label}
-                      hint={
-                        band.pricePerPerson === 0
-                          ? 'Free'
-                          : `BND ${formatCents(band.pricePerPerson)} each`
-                      }
+                      hint={bandHint(band)}
                       value={counts[band.id] ?? 0}
                       onChange={(value) =>
                         setCounts((current) => ({ ...current, [band.id]: value }))
@@ -303,6 +299,26 @@ export function DayPassBooking({
  * lib/domain/config.ts requires bands not to overlap), which survives a rename,
  * a re-price, and a property that bands its guests differently.
  */
+/**
+ * What a band's caption says: which ages it covers, then what it costs.
+ *
+ * The ages come first because they are what the customer is deciding. A
+ * parent of a nine-year-old is not choosing between BND 5 and BND 10 — they
+ * are working out which row their child belongs in, and until now the form
+ * only ever showed the price, leaving them to guess and find out at the gate.
+ *
+ * The range is dropped when the label already is it, so a band a staff member
+ * named "Under 1" does not read "Under 1 · Under 1 · Free". Comparing the two
+ * is safe precisely because the range is derived: they coincide only when the
+ * ages were written into the name by hand.
+ */
+function bandHint(band: DayPassAgeBand): string {
+  const price = band.pricePerPerson === 0 ? 'Free' : `BND ${formatCents(band.pricePerPerson)} each`
+  const ages = describeAgeBand(band)
+
+  return ages.toLowerCase() === band.label.trim().toLowerCase() ? price : `${ages} · ${price}`
+}
+
 function adultBandOf(bands: PropertyConfig['dayPassAgeBands']): DayPassAgeBand | null {
   return bands.find((band) => band.maxAgeExclusive === null) ?? bands.at(-1) ?? null
 }
