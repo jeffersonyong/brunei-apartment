@@ -254,7 +254,8 @@ export function StayBooking({
                     id="guestEmail"
                     name="guestEmail"
                     label="Email"
-                    hint="For your confirmation. We will not email you anything else."
+                    required
+                    hint="Your confirmation and entry QR code are sent here. We will not email you anything else."
                     type="email"
                     inputMode="email"
                     placeholder="john@email.com"

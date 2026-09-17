@@ -41,7 +41,9 @@ import {
  *   2. **A honeypot**, refused silently. A script that fills every field gets
  *      the same "thanks" a customer does, because telling it which check it
  *      failed is telling it what to change.
- *   3. **Rate limits**, per address and per phone number.
+ *   3. **Rate limits**, per address, per phone number and per email address
+ *      — the last because every accepted booking sends mail to whatever
+ *      address was typed, and nobody verifies that the sender owns it.
  *   4. **The price re-derived on the server.** Nothing submitted is trusted:
  *      not the total, not the deposit, not the nights.
  *
@@ -62,12 +64,17 @@ const publicStaySchema = z.object({
   lateCheckOutHours: z.coerce.number().int().min(0).max(12),
   guestName: z.string().trim().min(1, 'Tell us your name.').max(120),
   guestPhone: z.string().trim().min(5, 'We need a number to confirm your booking.').max(40),
+  /**
+   * Required since 17 September 2026. It was optional, and a guest who left it
+   * blank got no confirmation and no entry QR code — the two things the email
+   * carries (capability A8) — so the gate had nothing to scan on arrival.
+   */
   guestEmail: z
     .string()
     .trim()
+    .min(1, 'We send your confirmation and entry QR code here.')
     .max(MAX_GUEST_EMAIL_LENGTH)
-    .refine((value) => value === '' || isLikelyEmailAddress(value), 'Check the email address.')
-    .default(''),
+    .refine(isLikelyEmailAddress, 'Check the email address.'),
   vehicles: z.array(z.string().max(MAX_VEHICLE_REGISTRATION_LENGTH)).max(MAX_VEHICLES_PER_BOOKING),
   noVehicle: z.enum(['true', 'false']).default('false'),
   /** The honeypot. A person never sees it, so anything in it is a robot. */
@@ -119,7 +126,7 @@ export async function createPublicStayAction(
     return { status: 'error', message: 'Something went wrong. Please try again.', submitted }
   }
 
-  const refusal = await checkPublicLimits(input.guestPhone)
+  const refusal = await checkPublicLimits(input.guestPhone, input.guestEmail)
 
   if (refusal) {
     return { status: 'error', message: refusal, submitted }
@@ -165,7 +172,7 @@ export async function createPublicStayAction(
     range: { start: input.checkIn, end: input.checkOut },
     guestName: input.guestName,
     guestPhone: input.guestPhone,
-    guestEmail: input.guestEmail === '' ? null : input.guestEmail,
+    guestEmail: input.guestEmail,
     vehicles,
     noVehicle,
     chargeableGuests: input.chargeableGuests,
@@ -204,7 +211,7 @@ export async function createPublicStayAction(
  * somebody exactly how to stay under them. The number to ring is the one thing
  * a genuinely stuck customer needs.
  */
-async function checkPublicLimits(phone: string): Promise<string | null> {
+async function checkPublicLimits(phone: string, email: string): Promise<string | null> {
   const requestHeaders = await headers()
   const ip = clientIpFrom(requestHeaders)
 
@@ -230,6 +237,20 @@ async function checkPublicLimits(phone: string): Promise<string | null> {
 
   if (!allowedForPhone) {
     return 'That is a lot of bookings against this number today. Please call us and we will book you in.'
+  }
+
+  // The address is required, and every accepted booking emails it, so it is
+  // counted like the number beside it — otherwise one caller could have our
+  // mail server deliver to a stranger as often as the hourly cap allows.
+  const allowedForEmail = await notePublicAttempt({
+    kind: 'booking:email',
+    keyHash: hashPublicKey(email),
+    windowSeconds: DAY_IN_SECONDS,
+    limit: PUBLIC_LIMITS.bookingsPerEmailPerDay,
+  })
+
+  if (!allowedForEmail) {
+    return 'That is a lot of bookings against this email address today. Please call us and we will book you in.'
   }
 
   return null

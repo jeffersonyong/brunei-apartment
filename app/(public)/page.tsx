@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 
-import { readFaqFacts } from '@/lib/db/faq-facts'
+import { readLandingFacts } from '@/lib/db/faq-facts'
 import { listFaqs } from '@/lib/db/faqs'
+import type { LandingFigures } from '@/lib/domain/landing-figures'
 import { listCurrentSiteImages } from '@/lib/db/site-images'
 import { frontPageFaqs } from '@/lib/domain/faq'
 import {
@@ -20,10 +21,25 @@ import { SocialStrip } from './_components/social-strip'
 import { LongTermSection } from './_components/long-term-section'
 import { StaysSection } from './_components/stays-section'
 
-export const metadata: Metadata = {
-  title: 'Palm Villa — day passes and stays in Bandar Seri Begawan',
-  description:
-    'Facility day passes for the swimming pool, water park and indoor children’s playground, plus apartment stays from BND 180 a night at Palm Villa, Bandar Seri Begawan.',
+/**
+ * The description quotes the cheapest rate a guest can actually book, so it is
+ * read at render rather than written down (17 September 2026). A failed read
+ * describes the property without a figure: a search result with no price is a
+ * smaller problem than one with the wrong price.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const figures = await readLandingFigures()
+  const stays =
+    figures?.fromNightlyRate === null || figures === null
+      ? 'plus apartment stays'
+      : `plus apartment stays from ${figures.fromNightlyRate} a night`
+
+  return {
+    title: 'Palm Villa — day passes and stays in Bandar Seri Begawan',
+    description:
+      'Facility day passes for the swimming pool, water park and indoor children’s ' +
+      `playground, ${stays} at Palm Villa, Bandar Seri Begawan.`,
+  }
 }
 
 /**
@@ -47,15 +63,15 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function PublicHomePage() {
-  const [images, faqs] = await Promise.all([readLandingImages(), readLandingFaqs()])
+  const [images, { faqs, figures }] = await Promise.all([readLandingImages(), readLandingContent()])
 
   return (
     <>
-      <Hero image={images.hero} />
-      <DayPassSection images={images.facilities} />
-      <StaysSection images={images.unitTypes} />
+      <Hero image={images.hero} fromNightlyRate={figures?.fromNightlyRate ?? null} />
+      <DayPassSection images={images.facilities} figures={figures} />
+      <StaysSection images={images.unitTypes} figures={figures} />
       <LongTermSection />
-      <HowBookingWorks />
+      <HowBookingWorks figures={figures} />
       <SocialStrip images={images.feed} />
       {faqs.length > 0 ? <FaqSection items={faqs} /> : null}
       <FinalCta />
@@ -70,15 +86,29 @@ export default async function PublicHomePage() {
  * fails because a section could not be read. A failed read logs and leaves the
  * section out, and the FAQs page is still one link away in the footer.
  */
-async function readLandingFaqs(): Promise<FaqItem[]> {
+async function readLandingContent(): Promise<{
+  faqs: FaqItem[]
+  figures: LandingFigures | null
+}> {
   try {
-    const [faqs, facts] = await Promise.all([listFaqs(), readFaqFacts()])
+    const [faqs, { facts, figures }] = await Promise.all([listFaqs(), readLandingFacts()])
 
-    return frontPageFaqs(faqs).map((faq) => faqItemFrom(faq, facts))
+    return { faqs: frontPageFaqs(faqs).map((faq) => faqItemFrom(faq, facts)), figures }
   } catch (error) {
-    console.error('The landing page could not read its FAQs; leaving the section out.', error)
+    console.error('The landing page could not read its FAQs and figures; leaving both out.', error)
 
-    return []
+    return { faqs: [], figures: null }
+  }
+}
+
+/** The figures alone, for the description `generateMetadata` writes. */
+async function readLandingFigures(): Promise<LandingFigures | null> {
+  try {
+    return (await readLandingFacts()).figures
+  } catch (error) {
+    console.error('The landing page could not read its figures for the page description.', error)
+
+    return null
   }
 }
 

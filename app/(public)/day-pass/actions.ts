@@ -45,12 +45,13 @@ const dayPassSchema = z.object({
   passDate: z.string().refine(isStayDate, 'Pick the day you are coming.'),
   guestName: z.string().trim().min(1, 'Tell us your name.').max(120),
   guestPhone: z.string().trim().min(5, 'We need a number to confirm your booking.').max(40),
+  /** Required since 17 September 2026, for the reason `/stay`'s copy states. */
   guestEmail: z
     .string()
     .trim()
+    .min(1, 'We send your confirmation and entry QR code here.')
     .max(MAX_GUEST_EMAIL_LENGTH)
-    .refine((value) => value === '' || isLikelyEmailAddress(value), 'Check the email address.')
-    .default(''),
+    .refine(isLikelyEmailAddress, 'Check the email address.'),
   vehicles: z.array(z.string().max(MAX_VEHICLE_REGISTRATION_LENGTH)).max(MAX_VEHICLES_PER_BOOKING),
   noVehicle: z.enum(['true', 'false']).default('false'),
   website: z.string().default(''),
@@ -98,7 +99,7 @@ export async function createPublicDayPassAction(
     return { status: 'error', message: 'Something went wrong. Please try again.', submitted }
   }
 
-  const refusal = await checkPublicLimits(input.guestPhone)
+  const refusal = await checkPublicLimits(input.guestPhone, input.guestEmail)
 
   if (refusal) {
     return { status: 'error', message: refusal, submitted }
@@ -181,7 +182,7 @@ export async function createPublicDayPassAction(
     exemptGuests: party.exemptGuests,
     guestName: input.guestName,
     guestPhone: input.guestPhone,
-    guestEmail: input.guestEmail === '' ? null : input.guestEmail,
+    guestEmail: input.guestEmail,
     vehicles,
     noVehicle,
     total: quote.total,
@@ -202,7 +203,7 @@ export async function createPublicDayPassAction(
   redirect(`/booking/${created.data.accessToken}` as Route)
 }
 
-async function checkPublicLimits(phone: string): Promise<string | null> {
+async function checkPublicLimits(phone: string, email: string): Promise<string | null> {
   const requestHeaders = await headers()
   const ip = clientIpFrom(requestHeaders)
 
@@ -228,6 +229,20 @@ async function checkPublicLimits(phone: string): Promise<string | null> {
 
   if (!allowedForPhone) {
     return 'That is a lot of bookings against this number today. Please call us and we will book you in.'
+  }
+
+  // The address is required, and every accepted booking emails it, so it is
+  // counted like the number beside it — otherwise one caller could have our
+  // mail server deliver to a stranger as often as the hourly cap allows.
+  const allowedForEmail = await notePublicAttempt({
+    kind: 'booking:email',
+    keyHash: hashPublicKey(email),
+    windowSeconds: DAY_IN_SECONDS,
+    limit: PUBLIC_LIMITS.bookingsPerEmailPerDay,
+  })
+
+  if (!allowedForEmail) {
+    return 'That is a lot of bookings against this email address today. Please call us and we will book you in.'
   }
 
   return null

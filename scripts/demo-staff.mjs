@@ -1,6 +1,6 @@
-// Creates two demo field accounts — Demo Security and Demo Housekeeping — so
-// the phone screens can be tried against the local stack as the people they
-// are for.
+// Creates a demo account per role — Security, Housekeeping, Front Office and
+// Finance — so every screen can be tried against the local stack as the person
+// it was built for. The Admin account comes from scripts/bootstrap-admin.mjs.
 //
 //   node --env-file=.env.local scripts/demo-staff.mjs
 //   (or: npm run db:demo-staff; `npm run db:seed-demo` runs it last)
@@ -22,6 +22,11 @@ import { createClient } from '@supabase/supabase-js'
 const ACCOUNTS = [
   { email: 'security@demo.palmvilla.test', name: 'Demo Security', role: 'security' },
   { email: 'housekeeping@demo.palmvilla.test', name: 'Demo Housekeeping', role: 'housekeeping' },
+  // The two desk roles, added 17 September 2026: walking somebody through the
+  // booking screens as an Admin shows a portal no clerk ever sees, and the
+  // cash-up is Finance's screen rather than the desk's (N26).
+  { email: 'frontoffice@demo.palmvilla.test', name: 'Demo Front Office', role: 'front-office' },
+  { email: 'finance@demo.palmvilla.test', name: 'Demo Finance', role: 'finance' },
 ]
 
 function required(name) {
@@ -38,7 +43,7 @@ function required(name) {
 const password = process.env.DEMO_STAFF_PASSWORD
 
 if (!password) {
-  console.log('DEMO_STAFF_PASSWORD is not set, so no demo field accounts were created.')
+  console.log('DEMO_STAFF_PASSWORD is not set, so no demo staff accounts were created.')
   process.exit(0)
 }
 

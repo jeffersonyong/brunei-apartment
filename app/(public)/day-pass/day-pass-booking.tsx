@@ -204,7 +204,8 @@ export function DayPassBooking({
                     id="guestEmail"
                     name="guestEmail"
                     label="Email"
-                    hint="For your confirmation."
+                    required
+                    hint="Your confirmation and entry QR code are sent here."
                     type="email"
                     inputMode="email"
                     placeholder="john@email.com"

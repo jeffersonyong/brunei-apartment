@@ -10,6 +10,7 @@ import { isStayDate, todayInBrunei } from '@/lib/domain/dates'
 import { parseDepositWaiver, MAX_DEPOSIT_WAIVER_REASON_LENGTH } from '@/lib/domain/deposit-waiver'
 import { parseDiscount, MAX_DISCOUNT_REASON_LENGTH } from '@/lib/domain/discount'
 import { priceStay } from '@/lib/domain/pricing/stay'
+import { isLikelyEmailAddress, MAX_GUEST_EMAIL_LENGTH } from '@/lib/domain/public-booking'
 import {
   hasVehicleAnswer,
   normaliseVehicleRegistrations,
@@ -67,6 +68,18 @@ const walkInBookingSchema = z.object({
   lateCheckOutHours: z.coerce.number().int().min(0).max(12),
   guestName: z.string().trim().min(1, 'Enter the guest name.').max(120),
   guestPhone: z.string().trim().min(1, 'Enter a contact number.').max(40),
+  /**
+   * Required here as it is on the website (17 September 2026). The
+   * confirmation and the entry QR code are sent to it, so a booking taken at
+   * the desk or held at the gate without one leaves the guest with no code and
+   * the guard with nothing to scan.
+   */
+  guestEmail: z
+    .string()
+    .trim()
+    .min(1, 'Enter an email address — the guest’s confirmation and entry code are sent to it.')
+    .max(MAX_GUEST_EMAIL_LENGTH)
+    .refine(isLikelyEmailAddress, 'Check the email address.'),
   /**
    * One entry per row of the repeated field. Read with `getAll`, not
    * `Object.fromEntries`, which keeps only the last of a repeated name — a
@@ -265,6 +278,7 @@ export async function createWalkInBookingAction(
     range: { start: input.checkIn, end: input.checkOut },
     guestName: input.guestName,
     guestPhone: input.guestPhone,
+    guestEmail: input.guestEmail,
     vehicles,
     noVehicle: input.noVehicle,
     chargeableGuests: input.chargeableGuests,

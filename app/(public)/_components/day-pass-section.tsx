@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { LandingImage } from '@/lib/domain/landing-images'
 
-import { facilities, pricingCopy } from '../_content/landing'
+import type { LandingFigures } from '@/lib/domain/landing-figures'
+
+import { facilities } from '../_content/landing'
 import { SiteMedia } from './site-media'
 
 /** A third of the container from `lg`, half from `md`, the full width below. */
@@ -21,7 +23,14 @@ const FACILITY_SIZES = '(min-width: 1024px) 363px, (min-width: 768px) 50vw, 100v
  * Each card's photograph is found by the facility's slug (capability F7), so a
  * rename in Property settings keeps it.
  */
-export function DayPassSection({ images }: { images: Readonly<Record<string, LandingImage>> }) {
+export function DayPassSection({
+  images,
+  figures,
+}: {
+  images: Readonly<Record<string, LandingImage>>
+  /** The day-pass prices, read from Property settings. Null when unreadable. */
+  figures: LandingFigures | null
+}) {
   return (
     <section
       aria-labelledby="day-pass-heading"
@@ -34,7 +43,9 @@ export function DayPassSection({ images }: { images: Readonly<Record<string, Lan
           id="day-pass-heading"
           className="mt-md max-w-[24ch] font-display text-display-md text-balance text-foreground sm:text-display-lg"
         >
-          A full pool day, from BND 5
+          {figures?.dayPassFrom == null
+            ? 'A full pool day'
+            : `A full pool day, from ${figures.dayPassFrom}`}
         </h2>
         <p className="mt-md max-w-[52ch] text-body-lg text-copy">
           One pass covers everything below — pay per person, or take a family bundle.
@@ -60,16 +71,20 @@ export function DayPassSection({ images }: { images: Readonly<Record<string, Lan
         <Card className="mt-lg flex flex-col gap-lg sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-display-xs text-foreground">Day pass</p>
-            <p className="mt-xs text-body-sm-strong text-accent-foreground">
-              {pricingCopy.dayPassLine}
-            </p>
+            {figures?.dayPassLine == null ? null : (
+              <p className="mt-xs text-body-sm-strong text-accent-foreground">
+                {figures.dayPassLine}
+              </p>
+            )}
           </div>
           <Button asChild className="w-full sm:w-auto">
             <Link href="/day-pass">Book a day pass</Link>
           </Button>
         </Card>
 
-        <p className="mt-lg text-caption text-muted-foreground">{pricingCopy.dayPassFinePrint}</p>
+        {figures?.dayPassFinePrint == null ? null : (
+          <p className="mt-lg text-caption text-muted-foreground">{figures.dayPassFinePrint}</p>
+        )}
       </div>
     </section>
   )

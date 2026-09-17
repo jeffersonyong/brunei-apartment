@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { facilities, unitTypes } from '@/app/(public)/_content/landing'
+import { facilities } from '@/app/(public)/_content/landing'
 import type { SiteImage } from '@/lib/db/site-images'
 
 import { photoSections } from './photo-sections'
@@ -10,6 +10,11 @@ import { photoSections } from './photo-sections'
  */
 
 const STAFF = new Map([['user-1', 'Jason']])
+/** What Property settings holds, which is where the stays cards come from. */
+const UNIT_TYPES = [
+  { slug: 'three-bedroom', name: '3-bedroom' },
+  { slug: 'four-bedroom', name: '4-bedroom' },
+]
 const nameFor = (userId: string) => STAFF.get(userId) ?? 'a former colleague'
 
 function image(placement: SiteImage['placement']): SiteImage {
@@ -28,7 +33,7 @@ function image(placement: SiteImage['placement']): SiteImage {
 
 describe('photoSections', () => {
   test('mirrors the front page: its four sections, in its order, with every card it renders', () => {
-    const sections = photoSections([], nameFor)
+    const sections = photoSections([], nameFor, UNIT_TYPES)
 
     expect(sections.map((section) => section.title)).toEqual([
       'Front page',
@@ -37,12 +42,12 @@ describe('photoSections', () => {
       'Follow along',
     ])
     expect(sections.flatMap((section) => section.slots)).toHaveLength(
-      1 + facilities.length + unitTypes.length + 4,
+      1 + facilities.length + UNIT_TYPES.length + 4,
     )
   })
 
   test('crops each preview to the shape the site shows it at', () => {
-    const [front, dayPass, , follow] = photoSections([], nameFor)
+    const [front, dayPass, , follow] = photoSections([], nameFor, UNIT_TYPES)
 
     expect(front!.slots[0]!.aspect).toBe('photo')
     expect(dayPass!.slots.every((slot) => slot.aspect === 'photo')).toBe(true)
@@ -50,7 +55,11 @@ describe('photoSections', () => {
   })
 
   test('puts a current photograph on its card, naming who put it up', () => {
-    const sections = photoSections([image({ kind: 'facility', slug: 'water-park' })], nameFor)
+    const sections = photoSections(
+      [image({ kind: 'facility', slug: 'water-park' })],
+      nameFor,
+      UNIT_TYPES,
+    )
     const waterPark = sections[1]!.slots.find((slot) => slot.key === 'facility:water-park')
 
     expect(waterPark?.current).toMatchObject({ focus: 'top', uploadedBy: 'Jason' })
@@ -58,7 +67,7 @@ describe('photoSections', () => {
   })
 
   test('numbers the "Follow along" tiles in order', () => {
-    const follow = photoSections([], nameFor)[3]!
+    const follow = photoSections([], nameFor, UNIT_TYPES)[3]!
 
     expect(follow.slots.map((slot) => [slot.key, slot.name])).toEqual([
       ['feed-1', 'Tile 1'],

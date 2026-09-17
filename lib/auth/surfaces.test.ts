@@ -130,6 +130,14 @@ describe('crossHostRedirect', () => {
     expect(crossHostRedirect(at('portal.bruneiapartment.com', '/login'), split)).toBeNull()
   })
 
+  test('each host answers /robots.txt itself, so the staff rules are the staff host’s own', () => {
+    // The staff host's robots.txt asks not to be indexed. Sent to the site's
+    // copy, a crawler would read "Allow: /" and index the portal — the exact
+    // opposite of what the file it was refused says.
+    expect(crossHostRedirect(at('portal.bruneiapartment.com', '/robots.txt'), split)).toBeNull()
+    expect(crossHostRedirect(at('bruneiapartment.com', '/robots.txt'), split)).toBeNull()
+  })
+
   test('never redirects a request on any other host', () => {
     expect(crossHostRedirect(at('palm-villa.vercel.app', '/bookings'), split)).toBeNull()
     expect(crossHostRedirect(at('palm-villa.vercel.app', '/stay'), split)).toBeNull()

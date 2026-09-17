@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run db:push:hosted)",
+      "Bash(npm run db:push:hosted -- --dry-run)"
+    ]
+  }
+}

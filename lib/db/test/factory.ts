@@ -64,6 +64,7 @@ export interface BookingSpec {
   checkOut: StayDate
   guestName?: string
   guestPhone?: string
+  guestEmail?: string
   /** Plates on the booking. Defaults to one, since prd.md §13 [C] requires it. */
   vehicles?: readonly string[]
   /** Set instead of `vehicles` to exercise the deliberate no-car exception. */
@@ -113,6 +114,9 @@ export async function bookingInput(spec: BookingSpec): Promise<CreateWalkInBooki
     range: { start: spec.checkIn, end: spec.checkOut },
     guestName: spec.guestName ?? 'Test Guest',
     guestPhone: spec.guestPhone ?? '+673 000 0000',
+    // Required by the write path since 17 September 2026, so a fixture with no
+    // opinion carries one, exactly as it carries a plate.
+    guestEmail: spec.guestEmail ?? 'test.guest@example.test',
     // A plate by default rather than none: the write path now refuses a
     // booking that records neither a vehicle nor the exception, so a fixture
     // with no opinion has to have a car like a real booking does.
