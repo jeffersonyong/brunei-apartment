@@ -99,7 +99,7 @@ export function ExtraEditorDialog({
               id="extra-name"
               value={name}
               maxLength={MAX_EXTRA_NAME_LENGTH}
-              placeholder="Karaoke set"
+              placeholder="Extra towel"
               onChange={(event) => setName(event.target.value)}
               aria-invalid={result.fieldErrors?.name ? true : undefined}
             />
@@ -111,7 +111,7 @@ export function ExtraEditorDialog({
             <Input
               id="extra-description"
               value={description}
-              placeholder="Includes two microphones."
+              placeholder="A fresh bath towel, brought to the unit."
               onChange={(event) => setDescription(event.target.value)}
               aria-invalid={result.fieldErrors?.description ? true : undefined}
             />
@@ -130,7 +130,7 @@ export function ExtraEditorDialog({
                 id="extra-fee"
                 inputMode="decimal"
                 value={fee}
-                placeholder="28.00"
+                placeholder="5.00"
                 className="w-[130px] tabular-nums"
                 onChange={(event) => setFee(event.target.value)}
                 aria-invalid={result.fieldErrors?.fee ? true : undefined}

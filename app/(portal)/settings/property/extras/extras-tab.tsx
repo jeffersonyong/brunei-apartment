@@ -138,7 +138,7 @@ function ExtraRow({
   }
 
   return (
-    <li className="grid gap-sm py-md first:pt-0 last:pb-0 md:grid-cols-[1fr_auto] md:items-start md:gap-xl">
+    <li className="grid gap-sm py-md first:pt-0 last:pb-0 md:grid-cols-[1fr_auto] md:items-center md:gap-xl">
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-sm text-body-md-strong text-foreground">
           {extra.name}
