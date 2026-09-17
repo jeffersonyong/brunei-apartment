@@ -92,6 +92,17 @@ export const PUBLIC_LIMITS = {
   bookingsPerIpPerHour: 10,
   /** Bookings attempted against one phone number in a day. */
   bookingsPerPhonePerDay: 5,
+  /**
+   * Bookings attempted against one email address in a day (17 September 2026).
+   *
+   * The address became required on the same day, which is what makes this
+   * counter necessary: every accepted booking sends mail to whatever address
+   * was typed, so without it one caller could have the property's own mail
+   * server deliver an unwanted message to a stranger, ten an hour, and spend
+   * the sending quota doing it. The same figure as the phone, because the two
+   * identify the same person and neither is verified.
+   */
+  bookingsPerEmailPerDay: 5,
   /** Unpaid bookings one phone number may be holding at once. */
   openBookingsPerPhone: 3,
   /** "I've made the transfer" presses from one address in an hour. */

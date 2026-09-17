@@ -397,3 +397,9 @@ grant execute on function create_walk_in_booking(
   integer, integer, integer, integer, jsonb, text, boolean,
   text, integer, text, text, uuid
 ) to service_role;
+
+comment on function create_walk_in_booking(
+  uuid, uuid, text, date, date, text, text, text, text[], boolean,
+  integer, integer, integer, integer, jsonb, text, boolean, text, integer, text, text, uuid
+) is
+  'Creates a booking at the desk in one transaction: guest (name, phone and a required email address), booking, vehicles, occupancy, lines, the security deposit (collected in cash or promised by transfer) and, when asked, the payment for the stay — or, paid at the gate, only the hold, for a stay starting today that the guard collects on arrival. The status is the one the state machine derived.';

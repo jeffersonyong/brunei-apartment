@@ -10,7 +10,7 @@ import { isStayDate, todayInBrunei } from '@/lib/domain/dates'
 import { parseDepositWaiver, MAX_DEPOSIT_WAIVER_REASON_LENGTH } from '@/lib/domain/deposit-waiver'
 import { parseDiscount, MAX_DISCOUNT_REASON_LENGTH } from '@/lib/domain/discount'
 import { priceStay } from '@/lib/domain/pricing/stay'
-import { isLikelyEmailAddress } from '@/lib/domain/public-booking'
+import { isLikelyEmailAddress, MAX_GUEST_EMAIL_LENGTH } from '@/lib/domain/public-booking'
 import {
   hasVehicleAnswer,
   normaliseVehicleRegistrations,
@@ -78,7 +78,7 @@ const walkInBookingSchema = z.object({
     .string()
     .trim()
     .min(1, 'Enter an email address — the guest’s confirmation and entry code are sent to it.')
-    .max(200)
+    .max(MAX_GUEST_EMAIL_LENGTH)
     .refine(isLikelyEmailAddress, 'Check the email address.'),
   /**
    * One entry per row of the repeated field. Read with `getAll`, not

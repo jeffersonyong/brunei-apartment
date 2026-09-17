@@ -137,6 +137,10 @@ begin
       v_check_in + spec.nights,
       spec.guest_name,
       spec.phone,
+      -- Required since 20261002000100. Derived from the number rather than
+      -- given a column of its own: each demo guest gets a distinct address at
+      -- the reserved .test domain, and nothing can be delivered to it.
+      'demo' || right(spec.phone, 4) || '@demo.palmvilla.test',
       spec.vehicles,
       spec.no_vehicle,
       spec.chargeable_guests,
@@ -335,6 +339,7 @@ begin
     v_today + 2,
     'DEMO — Pays at the gate',
     '+673 000 0011',
+    'demo0011@demo.palmvilla.test',
     array['BAM 7788'],
     false,
     2,

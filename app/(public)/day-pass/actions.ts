@@ -99,7 +99,7 @@ export async function createPublicDayPassAction(
     return { status: 'error', message: 'Something went wrong. Please try again.', submitted }
   }
 
-  const refusal = await checkPublicLimits(input.guestPhone)
+  const refusal = await checkPublicLimits(input.guestPhone, input.guestEmail)
 
   if (refusal) {
     return { status: 'error', message: refusal, submitted }
@@ -182,7 +182,7 @@ export async function createPublicDayPassAction(
     exemptGuests: party.exemptGuests,
     guestName: input.guestName,
     guestPhone: input.guestPhone,
-    guestEmail: input.guestEmail === '' ? null : input.guestEmail,
+    guestEmail: input.guestEmail,
     vehicles,
     noVehicle,
     total: quote.total,
@@ -203,7 +203,7 @@ export async function createPublicDayPassAction(
   redirect(`/booking/${created.data.accessToken}` as Route)
 }
 
-async function checkPublicLimits(phone: string): Promise<string | null> {
+async function checkPublicLimits(phone: string, email: string): Promise<string | null> {
   const requestHeaders = await headers()
   const ip = clientIpFrom(requestHeaders)
 
@@ -229,6 +229,20 @@ async function checkPublicLimits(phone: string): Promise<string | null> {
 
   if (!allowedForPhone) {
     return 'That is a lot of bookings against this number today. Please call us and we will book you in.'
+  }
+
+  // The address is required, and every accepted booking emails it, so it is
+  // counted like the number beside it — otherwise one caller could have our
+  // mail server deliver to a stranger as often as the hourly cap allows.
+  const allowedForEmail = await notePublicAttempt({
+    kind: 'booking:email',
+    keyHash: hashPublicKey(email),
+    windowSeconds: DAY_IN_SECONDS,
+    limit: PUBLIC_LIMITS.bookingsPerEmailPerDay,
+  })
+
+  if (!allowedForEmail) {
+    return 'That is a lot of bookings against this email address today. Please call us and we will book you in.'
   }
 
   return null

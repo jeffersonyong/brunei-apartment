@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import { bnd } from '@/lib/domain/money'
+import { dataClient } from '@/lib/supabase/data'
 
 import { buildBookingEmailMessage } from './booking-emails'
 import { createWalkInBooking } from './bookings'
@@ -172,13 +173,41 @@ describe('the email a created booking produces', () => {
 })
 
 describe('a booking with nowhere to send', () => {
-  test('a booking taken at the desk has no address, so nothing is built', async () => {
+  /**
+   * Every booking made from 17 September 2026 carries an address — the two
+   * public forms and the desk all refuse a blank one, and
+   * `create_walk_in_booking()` refuses it again. The bookings taken before
+   * that do not, and they are still in the database, so the branch that
+   * declines to build a message for them is still the one that runs.
+   * Written by nulling the address a booking was made with, because no writer
+   * will produce one that way any more.
+   */
+  test('a booking made before an address was required has nowhere to send', async () => {
     const walkIn = await createWalkInBooking(
       await bookingInput({ checkIn: CHECK_IN, checkOut: CHECK_OUT, unitRef: '3B-01' }),
     )
 
     if (!walkIn.ok) {
       throw new Error(`Test setup could not create a walk-in: ${walkIn.error.message}`)
+    }
+
+    const { data: row, error: readError } = await dataClient()
+      .from('booking')
+      .select('guest_id')
+      .eq('id', walkIn.booking.id)
+      .single()
+
+    if (readError || !row) {
+      throw new Error(`Test setup could not find the guest: ${readError?.message}`)
+    }
+
+    const { error } = await dataClient()
+      .from('guest')
+      .update({ email: null })
+      .eq('id', row.guest_id)
+
+    if (error) {
+      throw new Error(`Test setup could not clear the address: ${error.message}`)
     }
 
     await expect(
