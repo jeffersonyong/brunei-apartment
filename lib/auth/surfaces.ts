@@ -83,6 +83,23 @@ export function isStaffPath(path: string): boolean {
 }
 
 /**
+ * Paths both hosts answer for themselves, rather than one sending them to the
+ * other (17 September 2026).
+ *
+ * `/robots.txt` is the whole set. It is the one file whose answer *depends* on
+ * which host was asked — the staff host asks not to be indexed, the site asks
+ * to be — so redirecting it to the site's copy would hand a crawler the site's
+ * permissive rules for the staff host, which is the opposite of what it says.
+ */
+const SHARED_SEGMENTS = new Set<string>(['robots.txt'])
+
+export function isSharedPath(path: string): boolean {
+  const segment = firstSegment(path)
+
+  return segment !== null && SHARED_SEGMENTS.has(segment)
+}
+
+/**
  * The roots that take the monochrome operations register on first paint.
  * `/login` fronts the operations surfaces and takes their register; the
  * recovery screens never did, and still do not.
@@ -118,6 +135,11 @@ export function crossHostRedirect(
   }
 
   const { host, pathname, search } = request
+
+  // Answered where it was asked, on either host.
+  if (isSharedPath(pathname)) {
+    return null
+  }
 
   if (host === new URL(split.site).host) {
     return isStaffPath(pathname) ? `${split.staff}${pathname}${search}` : null
