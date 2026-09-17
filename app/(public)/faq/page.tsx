@@ -22,15 +22,25 @@ export const metadata: Metadata = {
  *
  * **Staff write the questions; settings write the figures.** The questions and
  * answers are rows staff manage from Admin → Website FAQs, and an answer's
- * `{live figures}` are filled in from Property settings as the page renders —
- * so `force-dynamic`, for the reason `/stay` has it: a rate somebody changed a
- * second ago is the rate the next visitor is quoted.
+ * `{live figures}` are filled in from Property settings.
+ *
+ * **Cached, and revalidated by the saves** (17 September 2026) — the treatment
+ * `/` already has (§8.3), off these same two reads. This was `force-dynamic`
+ * for the reason `/stay` has it: a rate somebody changed a second ago is the
+ * rate the next visitor is quoted. But the two pages are not alike. `/stay`
+ * must be dynamic because availability changes with every booking made
+ * anywhere, and no action can enumerate the paths that go stale. Everything
+ * here changes only when a staff member saves a form, and every one of those
+ * saves revalidates this path: the FAQ actions, the pricing, day-pass and
+ * bank-account saves, and the unit registry, which decides which types have
+ * their rates quoted at all. The hourly floor is the backstop, not the
+ * mechanism.
  *
  * Under the five fixed topics, in the order staff put them, each question
  * closed until it is opened (`FaqDisclosures`). A topic with nothing in it is
  * left out rather than shown empty.
  */
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export default async function FaqPage() {
   const [faqs, facts] = await Promise.all([listFaqs(), readFaqFacts()])
