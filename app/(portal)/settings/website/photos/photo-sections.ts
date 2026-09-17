@@ -1,4 +1,4 @@
-import { facilities, unitTypes } from '@/app/(public)/_content/landing'
+import { facilities } from '@/app/(public)/_content/landing'
 import type { SiteImage } from '@/lib/db/site-images'
 import {
   SITE_IMAGE_SLOTS,
@@ -13,9 +13,11 @@ import {
  * The photographs screen, laid out the way the front page is (capability F7).
  *
  * Four sections in the landing page's own order, and within each exactly the
- * cards the page renders — read from the landing page's own lists, so a card
- * added there appears here too and the screen never offers a place the site
- * does not show. Pure, so the arrangement is tested without a page.
+ * cards the page renders. The facilities come from the landing page's own
+ * list; the unit types are passed in from Property settings (17 September
+ * 2026), because that is where the stays section gets its cards — so a type
+ * staff add has a place to hang a photograph on the same day. Pure, so the
+ * arrangement is tested without a page.
  */
 
 export interface CurrentPhotoView {
@@ -49,6 +51,7 @@ const FEED_SLOTS = SITE_IMAGE_SLOTS.filter((slot) => slot !== 'hero')
 export function photoSections(
   images: readonly SiteImage[],
   nameFor: (userId: string) => string,
+  unitTypes: readonly { slug: string; name: string }[],
 ): readonly PhotoSectionView[] {
   const byKey = new Map(images.map((image) => [placementKey(image.placement), image]))
 

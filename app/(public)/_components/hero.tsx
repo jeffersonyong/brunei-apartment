@@ -10,7 +10,14 @@ const HERO_SIZES = '(min-width: 1024px) 544px, 100vw'
  * The one place `display-xl` appears on any surface (design.md §Typography).
  * White ground, one lagoon CTA; the eyebrow is the section's brand text moment.
  */
-export function Hero({ image }: { image: LandingImage | null }) {
+export function Hero({
+  image,
+  fromNightlyRate,
+}: {
+  image: LandingImage | null
+  /** The cheapest rate a guest can book, or null when none can be read. */
+  fromNightlyRate: string | null
+}) {
   return (
     <section aria-labelledby="hero-heading" className="bg-card px-xl py-3xl">
       <div className="mx-auto grid w-full max-w-[1120px] gap-2xl lg:grid-cols-2 lg:items-center">
@@ -24,7 +31,8 @@ export function Hero({ image }: { image: LandingImage | null }) {
           </h1>
           <p className="mt-lg max-w-[52ch] text-body-lg text-copy">
             Day passes for the swimming pool, water park and indoor children’s playground — and
-            apartment stays from BND 180 a night. One place, in Bandar Seri Begawan.
+            apartment stays{fromNightlyRate === null ? '' : ` from ${fromNightlyRate} a night`}. One
+            place, in Bandar Seri Begawan.
           </p>
           <div className="mt-xl flex flex-wrap gap-sm">
             <Button asChild>

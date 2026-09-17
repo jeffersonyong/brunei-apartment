@@ -1,4 +1,5 @@
 import { faqFactsFrom, type FaqFacts } from '@/lib/domain/faq'
+import { landingFiguresFrom, type LandingFigures } from '@/lib/domain/landing-figures'
 
 import { getUnits } from './inventory'
 import { readPropertySettings } from './settings'
@@ -13,11 +14,39 @@ import { readPropertySettings } from './settings'
  * the types it offers.
  */
 export async function readFaqFacts(): Promise<FaqFacts> {
-  const [settings, units] = await Promise.all([readPropertySettings(), getUnits()])
-
-  const sellable = new Set(
-    units.filter((unit) => unit.outOfServiceSince === null).map((unit) => unit.unitTypeId),
-  )
+  const { settings, sellable } = await readSellableSettings()
 
   return faqFactsFrom(settings, sellable)
+}
+
+/**
+ * Everything the landing page quotes, from one pair of reads.
+ *
+ * The page renders both — the FAQs staff put on it, and the rates its sections
+ * quote (17 September 2026) — and they come from the same settings and the same
+ * sellable-type filter, so reading them twice would be two round trips for one
+ * answer.
+ */
+export async function readLandingFacts(): Promise<{
+  facts: FaqFacts
+  figures: LandingFigures
+}> {
+  const { settings, sellable } = await readSellableSettings()
+
+  return {
+    facts: faqFactsFrom(settings, sellable),
+    figures: landingFiguresFrom(settings, sellable),
+  }
+}
+
+/** The settings, and which unit types the building can actually sell. */
+async function readSellableSettings() {
+  const [settings, units] = await Promise.all([readPropertySettings(), getUnits()])
+
+  return {
+    settings,
+    sellable: new Set(
+      units.filter((unit) => unit.outOfServiceSince === null).map((unit) => unit.unitTypeId),
+    ),
+  }
 }

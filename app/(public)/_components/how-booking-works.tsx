@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import type { LandingFigures } from '@/lib/domain/landing-figures'
+
 import { bookingSteps, pricingCopy } from '../_content/landing'
 
 /**
@@ -8,7 +10,7 @@ import { bookingSteps, pricingCopy } from '../_content/landing'
  * step markers are hairline tiles, not coloured discs; colour has no job
  * here.
  */
-export function HowBookingWorks() {
+export function HowBookingWorks({ figures }: { figures: LandingFigures | null }) {
   return (
     <section
       aria-labelledby="how-heading"
@@ -36,7 +38,8 @@ export function HowBookingWorks() {
         </ol>
 
         <p className="mt-2xl text-caption text-muted-foreground">
-          {pricingCopy.stayFinePrint} {pricingCopy.paymentMethods}
+          {figures === null ? null : `${figures.stayFinePrint} `}
+          {pricingCopy.paymentMethods}
         </p>
 
         {/* The way back in (capability A9), in the fine print rather than as a

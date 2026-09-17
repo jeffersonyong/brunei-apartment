@@ -3,9 +3,10 @@ import { FerrisWheel, ToyBrick, Waves, type LucideIcon } from 'lucide-react'
 /**
  * Landing-page content. Copy here is restricted to [C]-confirmed facts from
  * prd.md — no occupancy ("sleeps N"), bed-configuration, or age-band claims,
- * all of which carry open [O] items. Rates are display integers for marketing
- * copy only; the pricing engine (lib/domain) works in integer cents and is the
- * sole source of charged amounts.
+ * all of which carry open [O] items. Nothing here quotes a figure: every rate,
+ * price and deposit on the page is read from Property settings at render
+ * (`lib/domain/landing-figures.ts`), so the front page and the booking pages
+ * cannot disagree.
  */
 
 export interface Facility {
@@ -21,10 +22,14 @@ export interface Facility {
   imageLabel: string
 }
 
-export interface UnitType {
-  slug: string
-  name: string
-  fromRateBnd: number
+/**
+ * The words for a unit type. The name and the rate are **not** here: they come
+ * from Property settings, so the front page cannot advertise a figure the
+ * booking page disagrees with (`lib/domain/landing-figures.ts`, 17 September
+ * 2026). A type with no entry still gets a card — name, photograph and rate —
+ * so staff adding one in the portal never produces a broken page.
+ */
+export interface UnitTypeCopy {
   description: string
   imageLabel: string
 }
@@ -59,37 +64,25 @@ export const facilities: Facility[] = [
   },
 ]
 
-/** The four unit types and nightly base rates (prd.md §7.1, BND). */
-export const unitTypes: UnitType[] = [
-  {
-    slug: 'two-bedroom',
-    name: '2-bedroom',
-    fromRateBnd: 180,
+/** A line and a photograph label per unit type, keyed by its slug. */
+export const unitTypeCopy: Readonly<Record<string, UnitTypeCopy>> = {
+  'two-bedroom': {
     description: 'The compact option for a night or a weekend.',
     imageLabel: '2-bedroom unit photo',
   },
-  {
-    slug: 'three-bedroom',
-    name: '3-bedroom',
-    fromRateBnd: 200,
+  'three-bedroom': {
     description: 'Room for the whole family without anyone on the sofa.',
     imageLabel: '3-bedroom unit photo',
   },
-  {
-    slug: 'four-bedroom',
-    name: '4-bedroom',
-    fromRateBnd: 250,
+  'four-bedroom': {
     description: 'The big apartment — space to spread out properly.',
     imageLabel: '4-bedroom unit photo',
   },
-  {
-    slug: 'semi-detached',
-    name: 'Semi-detached',
-    fromRateBnd: 320,
+  'semi-detached': {
     description: 'Four rooms and the most space on the property.',
     imageLabel: 'Semi-detached house photo',
   },
-]
+}
 
 /**
  * Written for the product as delivered, not for the current build — by the
@@ -123,44 +116,10 @@ export const bookingSteps: BookingStep[] = [
 export { contact } from '@/lib/domain/contact'
 
 /**
- * Open [O] items from prd.md §18 that a customer would expect answered before
- * booking. Rendered as visible markers rather than left silent, so reviewing
- * the page surfaces the questions instead of hiding them. Each entry is
- * deleted once the answer lands in the PRD.
+ * Display strings with no figure in them. Everything that quotes a number now
+ * comes from Property settings — see `lib/domain/landing-figures.ts`.
  */
-export const pendingDayPassDetails = ['Opening hours']
-
-/**
- * The last three were per-unit markers on the landing grid until 2026-08-27.
- * They read as missing facts, but each is a policy question (N2, N9, N1)
- * rather than a per-unit unknown — max pax and bed configurations are
- * confirmed in prd.md §7.1 — so they belong on the stay detail, asked once,
- * not repeated on four marketing cards.
- *
- * **Three markers were removed on 2026-09-16, a week after their answers
- * landed.** Check-in and check-out times (N6) and whether the deposit comes
- * back on a cancellation (N5) were both answered on 10 September, and the
- * day-pass age bands (N3, part) on 5 September — and all three are now stated
- * plainly on the FAQ from live settings. A marker outliving its answer is not
- * a harmless leftover: it puts two contradictory claims on one site, where
- * one page says a thing is unknown and another quotes the figure.
- *
- * The FAQ no longer carries open items at all (capability F9, 14 September
- * 2026): a question the business cannot answer is left off it, and staff add
- * it from the portal once it is.
- */
-export const pendingStayDetails = [
-  'Cancellation notice period',
-  'Guest limit — cap or surcharge',
-  'Bed setup requests',
-  'How many 2-bedroom units',
-]
-
-/** Display strings shared by the landing sections and the stub routes. */
 export const pricingCopy = {
-  dayPassLine: 'From BND 5 per person · family bundles from BND 20',
-  dayPassFinePrint: 'The BBQ area is not included in the day pass.',
-  stayFinePrint: 'BND 100 refundable security deposit · bookings open up to 2 months ahead.',
   paymentMethods: 'Pay by bank transfer (BIBD / Baiduri) or cash.',
   /**
    * Capability A9, offered where somebody reading how booking works would

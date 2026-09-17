@@ -9,6 +9,7 @@ import { hasPermission } from '@/lib/auth/permissions'
 import type { Actor } from '@/lib/auth/require-permission'
 import { exportGroup } from '@/lib/db/export'
 import { listCurrentSiteImages } from '@/lib/db/site-images'
+import { readPropertySettings } from '@/lib/db/settings'
 import { listStaff } from '@/lib/db/staff'
 import { env } from '@/lib/env'
 
@@ -29,9 +30,17 @@ import { PhotoSlot } from './photo-slot'
  * records sees no download here.
  */
 export async function photosTab(actor: Actor): Promise<WebsiteTabView> {
-  const [images, staff] = await Promise.all([listCurrentSiteImages(), listStaff()])
+  const [images, staff, settings] = await Promise.all([
+    listCurrentSiteImages(),
+    listStaff(),
+    readPropertySettings(),
+  ])
   const names = new Map(staff.map((account) => [account.id, account.displayName]))
-  const sections = photoSections(images, (userId) => names.get(userId) ?? 'a former colleague')
+  const sections = photoSections(
+    images,
+    (userId) => names.get(userId) ?? 'a former colleague',
+    settings.unitTypes,
+  )
 
   return {
     lead: 'The photographs on the public website, in the order the front page shows them. A change is live as soon as it is saved.',
