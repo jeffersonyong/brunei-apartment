@@ -127,6 +127,11 @@ export async function saveUnitRegistryAction(
   revalidatePath('/bookings')
   revalidatePath('/bookings/new')
   revalidatePath('/dashboard')
+  // The public pages quote a rate only for a type the building has a
+  // serviceable unit of (`readSellableSettings()`), so the registry decides
+  // what they advertise. Both are cached, and neither was on this list.
+  revalidatePath('/')
+  revalidatePath('/faq')
 
   return { status: 'done', applied: result.outcome }
 }

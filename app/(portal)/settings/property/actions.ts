@@ -114,6 +114,7 @@ function revalidatePricing(): void {
   revalidatePath('/bookings')
   revalidatePath('/dashboard')
   revalidatePath('/')
+  revalidatePath('/faq')
 }
 
 export async function savePricingAction(
@@ -186,8 +187,9 @@ export async function saveDayPassAction(
   revalidatePath(SETTINGS_PATH)
   // The reports screen names where a day-pass capacity would come from.
   revalidatePath('/reports')
-  // The landing page's FAQs quote the day-pass prices and facilities.
+  // Both public pages whose FAQs quote the day-pass prices and facilities.
   revalidatePath('/')
+  revalidatePath('/faq')
 
   return { status: 'done', changed: saved.changed }
 }
@@ -264,8 +266,9 @@ export async function saveBankAccountsAction(
   }
 
   revalidatePath(SETTINGS_PATH)
-  // The landing page's FAQs quote the accounts to transfer to.
+  // Both public pages whose FAQs quote the accounts to transfer to.
   revalidatePath('/')
+  revalidatePath('/faq')
 
   return { status: 'done', changed: saved.changed }
 }
