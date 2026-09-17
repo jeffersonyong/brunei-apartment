@@ -52,7 +52,6 @@ describe('getPropertyConfig', () => {
       paxPolicy: config.paxPolicy,
       extraPersonPerNight: config.extraPersonPerNight,
       paxExemptAgeMax: config.paxExemptAgeMax,
-      extras: config.extras.map((extra) => ({ slug: extra.slug, fee: extra.fee })),
       earlyCheckInPerHour: config.earlyCheckInPerHour,
       lateCheckOutPerHour: config.lateCheckOutPerHour,
       standardCheckInTime: config.standardCheckInTime,
@@ -63,13 +62,32 @@ describe('getPropertyConfig', () => {
       paxPolicy: palmVillaConfig.paxPolicy,
       extraPersonPerNight: palmVillaConfig.extraPersonPerNight,
       paxExemptAgeMax: palmVillaConfig.paxExemptAgeMax,
-      extras: palmVillaConfig.extras.map((extra) => ({ slug: extra.slug, fee: extra.fee })),
       earlyCheckInPerHour: palmVillaConfig.earlyCheckInPerHour,
       lateCheckOutPerHour: palmVillaConfig.lateCheckOutPerHour,
       standardCheckInTime: palmVillaConfig.standardCheckInTime,
       standardCheckOutTime: palmVillaConfig.standardCheckOutTime,
       securityDeposit: palmVillaConfig.securityDeposit,
       maxAdvanceBookingDays: palmVillaConfig.maxAdvanceBookingDays,
+    })
+
+    /*
+     * The extras are asserted differently from the unit types above, and the
+     * asymmetry is the point (capability F13).
+     *
+     * A unit type appearing from nowhere means the seed and the fixture have
+     * come apart, so that list is compared whole. An *extra* appearing from
+     * nowhere means somebody used the feature — adding one is the ordinary
+     * thing staff do with this screen, and a database where they have is not a
+     * database that disagrees with its seed. Comparing the whole list would
+     * make this test fail on every property that ever bought a cot.
+     *
+     * What the seed still has to document is the sofa bed it ships with.
+     */
+    const sofaBed = palmVillaConfig.extras.find((extra) => extra.slug === 'sofa-bed')
+
+    expect(config.extras.find((extra) => extra.slug === 'sofa-bed')).toMatchObject({
+      name: sofaBed?.name,
+      fee: sofaBed?.fee,
     })
 
     expect(
