@@ -39,8 +39,6 @@ export interface PropertySettingsRow {
     pax_policy: PaxPolicy
     extra_person_per_night_cents: number
     pax_exempt_age_max: number
-    sofa_bed_fee_cents: number
-    sofa_bed_stock: number | null
     early_check_in_per_hour_cents: number
     late_check_out_per_hour_cents: number
     check_in_time: string
@@ -48,6 +46,18 @@ export interface PropertySettingsRow {
     security_deposit_cents: number
     max_advance_booking_days: number
   }
+  extras: {
+    id: string
+    slug: string
+    name: string
+    description: string | null
+    fee_cents: number
+    stock: number | null
+    bookable: boolean
+    sort_order: number
+    retired_at: string | null
+    updated_at: string
+  }[]
   unit_types: {
     id: string
     slug: string
@@ -98,8 +108,6 @@ function toSettings(row: PropertySettingsRow): PropertySettings {
       paxPolicy: row.policy.pax_policy,
       extraPersonPerNightCents: row.policy.extra_person_per_night_cents,
       paxExemptAgeMax: row.policy.pax_exempt_age_max,
-      sofaBedFeeCents: row.policy.sofa_bed_fee_cents,
-      sofaBedStock: row.policy.sofa_bed_stock,
       earlyCheckInPerHourCents: row.policy.early_check_in_per_hour_cents,
       lateCheckOutPerHourCents: row.policy.late_check_out_per_hour_cents,
       checkInTime: row.policy.check_in_time,
@@ -107,6 +115,18 @@ function toSettings(row: PropertySettingsRow): PropertySettings {
       securityDepositCents: row.policy.security_deposit_cents,
       maxAdvanceBookingDays: row.policy.max_advance_booking_days,
     },
+    extras: row.extras.map((extra) => ({
+      id: extra.id,
+      slug: extra.slug,
+      name: extra.name,
+      description: extra.description,
+      fee: extra.fee_cents,
+      stock: extra.stock,
+      bookable: extra.bookable,
+      sortOrder: extra.sort_order,
+      retiredAt: extra.retired_at,
+      updatedAt: extra.updated_at,
+    })),
     unitTypes: row.unit_types.map((unitType) => ({
       id: unitType.id,
       slug: unitType.slug,

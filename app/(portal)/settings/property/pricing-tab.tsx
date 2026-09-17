@@ -189,30 +189,6 @@ export function PricingTab({ settings }: PricingTabProps) {
                 error={problemFor('policy.paxExemptAgeMax')}
                 onChange={(value) => setPolicy('paxExemptAgeMax', value)}
               />
-
-              <MoneyField
-                id="sofaBedFee"
-                label="Sofa bed, per stay"
-                value={draft.policy.sofaBedFee}
-                hint="Includes one pillow and one blanket."
-                error={problemFor('policy.sofaBedFee')}
-                onChange={(value) => setPolicy('sofaBedFee', value)}
-              />
-
-              <PlainField
-                id="sofaBedStock"
-                label="Sofa beds available"
-                value={draft.policy.sofaBedStock}
-                width="w-[110px]"
-                // Not `0`: blank means no limit (lib/domain/pricing/stay.ts),
-                // where zero would refuse every sofa bed asked for. A
-                // placeholder that says the wrong one of those is worse than
-                // an empty box.
-                placeholder="No limit"
-                hint="Leave blank if nobody has counted them — the system will not limit bookings."
-                error={problemFor('policy.sofaBedStock')}
-                onChange={(value) => setPolicy('sofaBedStock', value)}
-              />
             </div>
           </FormSection>
 

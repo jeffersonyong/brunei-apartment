@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 
-import { listOccupanciesInWindow } from '@/lib/db/calendar'
+import { listExtraHoldingsInWindow, listOccupanciesInWindow } from '@/lib/db/calendar'
 import { getUnits } from '@/lib/db/inventory'
 import { getPropertyConfig } from '@/lib/db/property-config'
 import {
+  nightlyExtraUse,
   nightlyFreeCounts,
   publicBookingWindow,
   type CalendarUnit,
@@ -44,7 +45,11 @@ export default async function StayPage() {
   const config = await getPropertyConfig()
   const window = publicBookingWindow(today, config.maxAdvanceBookingDays)
 
-  const [units, occupancies] = await Promise.all([getUnits(), listOccupanciesInWindow(window)])
+  const [units, occupancies, extraHoldings] = await Promise.all([
+    getUnits(),
+    listOccupanciesInWindow(window),
+    listExtraHoldingsInWindow(window),
+  ])
 
   const calendarUnits: CalendarUnit[] = units.map((unit) => ({
     id: unit.id,
@@ -72,6 +77,16 @@ export default async function StayPage() {
     nightsFree[night] = Object.fromEntries(byType)
   }
 
+  // The same trick for the extras (capability F13): a whole window of nights,
+  // so the counter under "Sofa beds" can say how many are free the instant the
+  // customer picks a range, without a round trip per click. A few hundred more
+  // integers on a page that already carries a few hundred.
+  const extrasUsed: Record<StayDate, Record<string, number>> = {}
+
+  for (const [night, byExtra] of nightlyExtraUse({ window, holdings: extraHoldings })) {
+    extrasUsed[night] = Object.fromEntries(byExtra)
+  }
+
   // A type the building has no units of cannot be sold, so it is not offered.
   // The 2-bedroom is exactly that until open question N1 is answered — it
   // exists and prices correctly with zero units — and a customer landing on a
@@ -88,6 +103,8 @@ export default async function StayPage() {
       today={today}
       lastNight={window.end}
       nightsFree={nightsFree}
+      extras={config.extras}
+      extrasUsed={extrasUsed}
     />
   )
 }

@@ -1,5 +1,6 @@
 import type { PaxPolicy, PropertyConfig } from './config'
 import type { DocumentKind } from './document'
+import type { PropertyExtra } from './extras'
 import type { Cents } from './money'
 
 /**
@@ -20,9 +21,6 @@ export interface PolicySettings {
   paxPolicy: PaxPolicy
   extraPersonPerNightCents: Cents
   paxExemptAgeMax: number
-  sofaBedFeeCents: Cents
-  /** Null means "unknown, do not constrain" (open-questions.md N8). */
-  sofaBedStock: number | null
   earlyCheckInPerHourCents: Cents
   lateCheckOutPerHourCents: Cents
   /** `HH:MM`, 24-hour. */
@@ -99,6 +97,15 @@ export interface PropertySettings {
    */
   settingsUpdatedAt: string
   policy: PolicySettings
+  /**
+   * The bookable extras (capability F13), retired ones included — the Extras
+   * tab shows those under their own heading so they can be restored, and the
+   * engine needs them to reprice a booking that still holds one.
+   *
+   * Not part of `policy` because they are not saved with it: they are rows
+   * edited one at a time from their own screen, like FAQs and photographs.
+   */
+  extras: readonly PropertyExtra[]
   unitTypes: readonly UnitTypeSettings[]
   bands: readonly AgeBandSettings[]
   bundles: readonly BundleSettings[]
@@ -140,8 +147,7 @@ export function configFromSettings(settings: PropertySettings): PropertyConfig {
     extraPersonPerNight: settings.policy.extraPersonPerNightCents,
     paxExemptAgeMax: settings.policy.paxExemptAgeMax,
 
-    sofaBedFlatFee: settings.policy.sofaBedFeeCents,
-    sofaBedStock: settings.policy.sofaBedStock,
+    extras: settings.extras,
 
     earlyCheckInPerHour: settings.policy.earlyCheckInPerHourCents,
     lateCheckOutPerHour: settings.policy.lateCheckOutPerHourCents,

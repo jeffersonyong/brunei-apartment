@@ -29,8 +29,6 @@ function seededSettings(): PropertySettings {
       paxPolicy: 'surcharge_threshold',
       extraPersonPerNightCents: bnd(7),
       paxExemptAgeMax: 3,
-      sofaBedFeeCents: bnd(28),
-      sofaBedStock: null,
       earlyCheckInPerHourCents: bnd(10),
       lateCheckOutPerHourCents: bnd(15),
       checkInTime: '14:00',
@@ -38,6 +36,20 @@ function seededSettings(): PropertySettings {
       securityDepositCents: bnd(100),
       maxAdvanceBookingDays: 62,
     },
+    extras: [
+      {
+        id: 'e1',
+        slug: 'sofa-bed',
+        name: 'Sofa bed',
+        description: 'Includes one pillow and one blanket.',
+        fee: bnd(28),
+        stock: null,
+        bookable: true,
+        sortOrder: 1,
+        retiredAt: null,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     unitTypes: [
       {
         id: 'a1',
@@ -174,10 +186,25 @@ describe('configFromSettings', () => {
     ])
   })
 
-  test('carries an unknown sofa bed stock through as null rather than zero', () => {
+  test('carries an unknown extra stock through as null rather than zero', () => {
     // Zero would mean "there are none, refuse every request"; null means
     // nobody has counted them (open-questions.md N8).
-    expect(configFromSettings(seededSettings()).sofaBedStock).toBeNull()
+    expect(configFromSettings(seededSettings()).extras[0]?.stock).toBeNull()
+  })
+
+  test('hands the engine every extra, retired ones included', () => {
+    // The engine needs them all: a booking being amended may still hold
+    // something that has come off sale, and repricing it has to find the fee.
+    const settings = seededSettings()
+    const withRetired = {
+      ...settings,
+      extras: [
+        ...settings.extras,
+        { ...settings.extras[0]!, id: 'e2', slug: 'gone', retiredAt: '2026-09-01T00:00:00.000Z' },
+      ],
+    }
+
+    expect(configFromSettings(withRetired).extras).toHaveLength(2)
   })
 })
 

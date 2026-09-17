@@ -1,3 +1,4 @@
+import type { PropertyExtra } from './extras'
 import { bnd, type Cents } from './money'
 
 /**
@@ -104,16 +105,21 @@ export interface PropertyConfig {
    */
   paxExemptAgeMax: number
 
-  /** [C] BND 28, includes one pillow and one blanket (prd.md §8.2). */
-  sofaBedFlatFee: Cents
-
   /**
-   * TODO(client): prd.md §18 N8 — total sofa beds across the property is
-   * unknown. Modelled as property-level add-on stock, per §8.2, not per unit.
-   * `null` means "unknown, do not constrain" so the fee still prices correctly;
-   * a number here starts enforcing availability.
+   * The optional items a stay can add (capability F13), as staff configured
+   * them. Each is a flat fee per stay.
+   *
+   * **Every one of them, including retired and non-bookable ones.** A booking
+   * being amended may hold an extra that has since been taken off the form,
+   * and repricing it must still find the fee it was sold at. `bookableExtras`
+   * in ./extras.ts is the filter a form applies; the engine refuses a *new*
+   * selection of an unbookable extra by name.
+   *
+   * The sofa bed used to be two fields here. 20261003000100 made it the first
+   * row of this list, and open-questions.md N8 — how many there are — is now a
+   * number Jason can type rather than a column nobody could fill.
    */
-  sofaBedStock: number | null
+  extras: readonly PropertyExtra[]
 
   /** [C] BND 10 per hour (prd.md §8.2). */
   earlyCheckInPerHour: Cents
@@ -254,8 +260,24 @@ export const palmVillaConfig: PropertyConfig = {
   extraPersonPerNight: bnd(7),
   paxExemptAgeMax: 3,
 
-  sofaBedFlatFee: bnd(28),
-  sofaBedStock: null,
+  // The fixture's copy of what 20261003000100 seeds. `id` is the slug here
+  // because the fixture has no database to draw uuids from, and the engine
+  // only ever compares ids to the ones it was handed.
+  extras: [
+    {
+      id: 'sofa-bed',
+      slug: 'sofa-bed',
+      name: 'Sofa bed',
+      description: 'Includes one pillow and one blanket.',
+      fee: bnd(28),
+      // [O] prd.md §18 N8: nobody has counted them, so nothing is constrained.
+      stock: null,
+      bookable: true,
+      sortOrder: 1,
+      retiredAt: null,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+  ],
 
   earlyCheckInPerHour: bnd(10),
   lateCheckOutPerHour: bnd(15),

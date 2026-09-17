@@ -320,7 +320,7 @@ any → out_of_service → available
 
 Pricing is a line-item calculation, never a single stored price. Every booking produces itemised `BookingLine` records that sum to a total.
 
-**[C] Every figure below is a setting, not a constant** (capability F3, 12 September 2026). Rates, the extra-person charge, the sofa bed, early and late hours, the deposit and the advance window are rows the client edits on Property settings; the values stated in this section are what the property was **seeded** with. A figure carrying **[O]** is now a provisional *setting* rather than provisional code — he can answer it by typing.
+**[C] Every figure below is a setting, not a constant** (capability F3, 12 September 2026). Rates, the extra-person charge, the extras (F13), early and late hours, the deposit and the advance window are rows the client edits on Property settings; the values stated in this section are what the property was **seeded** with. A figure carrying **[O]** is now a provisional *setting* rather than provisional code — he can answer it by typing.
 
 **[A] There is no effective dating, and that is a decision** ([N33](open-questions.md)). A rate change touches no stored `booking_line`: a booking already taken keeps the figures it was quoted, and an amendment reprices the whole stay at today's — which is §9.6's rule, unchanged. Nobody has asked for a rate that starts on a date, and a valid-from column nothing reads would be a second copy of the fact F3 exists to hold once. The screen says so where somebody changes a rate, because "does this change what I already sold" is the first thing anybody wonders.
 
@@ -340,7 +340,7 @@ Pricing is a line-item calculation, never a single stored price. Every booking p
 ```
 total = (base_rate × nights)
       + (extra_persons × 7 × nights)
-      + (sofa_beds × 28)
+      + Σ (extra_quantity × extra_fee)
       + (early_checkin_hours × 10)
       + (late_checkout_hours × 15)
 ```
@@ -352,8 +352,15 @@ total = (base_rate × nights)
 **[A] It ships as a threshold, not a ceiling.** `config.paxPolicy` is `surcharge_threshold`, so a 9th guest in a 3-bedroom books and pays 7 per night rather than being refused. This is the only reading under which the confirmed extra-person charge is ever chargeable at all — under a hard cap the rate is unreachable dead code. One field flips it.
 
 **[O] The 2-bedroom is a second question inside the same one.** Its stated maximum is a shape ("4 adults + 2 children"), not a count, so "six people" and "at most four adults" are different rules — see the [A] in §7.1 for which one ships.
-**[C]** Sofa bed: 28, includes one pillow and one blanket, subject to availability.
-**[O]** Total number of sofa beds available across the property is unknown. Model as property-level add-on stock, not per unit.
+**[C] The extras are a list staff keep, not a fixed set** (capability F13, 17 September 2026). The sofa bed used to be the only one and was written into the schema, the pricing engine and all three booking forms; it is now the first row of a list staff add to and remove from at *Admin → Property settings → Extras*. Each extra carries a name, an optional description, a price and — optionally — how many the property owns. A new item the building buys is a row somebody types, not a developer deploy.
+
+**[C] An extra is charged once for the whole stay, however many nights it is** (17 September 2026) — which is how the sofa bed's 28 already worked. Extras are for short stays only; day passes keep their own bundle pricing.
+
+**[C]** Sofa bed: 28, includes one pillow and one blanket, subject to availability. Seeded as the first extra, and now a figure the client edits.
+
+**[C] Availability is enforced across overlapping bookings, once a count is given.** Before 17 September 2026 the sofa bed's stock was checked only against a single booking's own quantity, so two bookings could each take two of two beds on the same night. An extra is now held for exactly the nights its unit is held, released by the same three statuses that release a unit (`expired`, `cancelled`, `no_show`), and the booking that would take one more than there are is refused **by the database** — see architecture.md §5.2a for why this is a trigger rather than an exclusion constraint.
+
+**[O]** Total number of sofa beds available across the property is still unknown, so nothing is constrained — a blank count means "nobody has counted these", which is deliberately not the same as zero. **This is now a number the client can type** rather than a column nobody could fill: answering [N8](open-questions.md) is a settings change.
 
 **[C] Standard check-in is 14:00 and standard check-out is 12:00** (10 September 2026, answering [N6](open-questions.md)). "Early" and "late" now have a baseline, and the pricing engine no longer refuses to count early check-in hours against an undefined one. `config.standardCheckInTime` carries the time.
 
@@ -509,7 +516,7 @@ All three bullets above are built, and so is the no-show itself, which nothing c
 
 The PRD has never stated rules for changing a booking after it exists — §4 grants Front Office `booking.amend` and nothing defines what may be amended. The following are **[A]** assumptions made when capability B3 was built, and are the ones to put in front of the client.
 
-**[A] What can be changed:** dates, unit, party size, sofa beds, late check-out, and the guest's name, phone and vehicle. Every change reprices through the same engine as creation; the price charged is always the one the server derives, never one submitted by a screen.
+**[A] What can be changed:** dates, unit, party size, the extras, late check-out, and the guest's name, phone and vehicle. An extra the booking already holds stays on the form even if it has since come off sale, so a save that only moves the dates cannot silently drop what the guest bought. Every change reprices through the same engine as creation; the price charged is always the one the server derives, never one submitted by a screen.
 
 **[A] Which bookings can be changed:** anything not yet checked in and not closed — `draft`, `held`, `awaiting_payment_verification`, `confirmed`. Closed bookings (`completed`, `expired`, `cancelled`, `no_show`) are kept as a record.
 

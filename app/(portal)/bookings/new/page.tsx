@@ -9,6 +9,7 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
 import { countAvailableByType, findAvailableUnits } from '@/lib/db/bookings'
 import { getUnitCounts } from '@/lib/db/inventory'
+import { extrasInUse as extrasInUseFor } from '@/lib/db/booking-extras'
 import { getPropertyConfig } from '@/lib/db/property-config'
 import { addDays, isStayDate, todayInBrunei } from '@/lib/domain/dates'
 
@@ -58,7 +59,7 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
   const checkOut = hasDates ? range.end : ''
 
   /*
-   * Five reads, none of which needs another's answer, so they go out together.
+   * Six reads, none of which needs another's answer, so they go out together.
    *
    * They used to be awaited one after the next — config, then the free units,
    * then the per-type counts, then the totals, then the actor — which made the
@@ -67,17 +68,22 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
    * named, which unit to pre-select) is a pure computation below, not another
    * query, which is what makes the whole set parallel.
    */
-  const [config, availableUnits, availableByType, totalByType, actor] = await Promise.all([
-    getPropertyConfig(),
-    hasDates ? findAvailableUnits({ range: { start: checkIn, end: checkOut } }) : [],
-    hasDates
-      ? countAvailableByType({ start: checkIn, end: checkOut })
-      : ({} as Record<string, number>),
-    // Serviceable only: this is the denominator of "3 of 36 free", and a unit
-    // that is out of service is not one of the thirty-six anyone can be sold.
-    getUnitCounts({ serviceableOnly: true }),
-    getActor(),
-  ])
+  const [config, availableUnits, availableByType, totalByType, actor, extrasInUse] =
+    await Promise.all([
+      getPropertyConfig(),
+      hasDates ? findAvailableUnits({ range: { start: checkIn, end: checkOut } }) : [],
+      hasDates
+        ? countAvailableByType({ start: checkIn, end: checkOut })
+        : ({} as Record<string, number>),
+      // Serviceable only: this is the denominator of "3 of 36 free", and a unit
+      // that is out of service is not one of the thirty-six anyone can be sold.
+      getUnitCounts({ serviceableOnly: true }),
+      getActor(),
+      // What the extras are already holding over these nights (capability F13),
+      // so the counters can say how many are free. Empty before dates are
+      // chosen, because "free" has no meaning without a range.
+      hasDates ? extrasInUseFor({ checkIn, checkOut }) : ({} as Record<string, number>),
+    ])
 
   /*
    * The unit type the calendar was pointing at, when it sent us here.
@@ -247,6 +253,7 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
           preferredUnitTypeId={unitTypeId}
           preferredUnitId={preferredUnitId}
           config={config}
+          extrasInUse={extrasInUse}
           checkIn={checkIn}
           checkOut={checkOut}
           mayDiscount={mayDiscount}

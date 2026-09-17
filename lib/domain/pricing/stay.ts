@@ -1,7 +1,8 @@
 import { unitTypeById, type PropertyConfig } from '../config'
 import { nightsBetween, todayInBrunei, type StayDate } from '../dates'
 import { resolveDiscount, type Discount } from '../discount'
-import { line, totalOf, type BookingLine } from '../lines'
+import { extraById, type ExtraSelection } from '../extras'
+import { extraLine, line, totalOf, type BookingLine } from '../lines'
 import type { Cents } from '../money'
 
 /**
@@ -9,9 +10,13 @@ import type { Cents } from '../money'
  *
  *   total = (base_rate × nights)
  *         + (extra_persons × 7 × nights)
- *         + (sofa_beds × 28)
+ *         + Σ (extra_quantity × extra_fee)
  *         + (early_checkin_hours × 10)
  *         + (late_checkout_hours × 15)
+ *
+ * The extras term used to be the single hard-coded `sofa_beds × 28`. Since
+ * capability F13 the set is configured by staff, and each one is still a flat
+ * fee per stay — nights do not multiply it.
  *
  * Pure: no database, no clock, no configuration read from module scope. Every
  * input arrives as an argument, including today's date, which is what lets the
@@ -49,7 +54,12 @@ export interface StayPricingInput {
   checkIn: StayDate
   checkOut: StayDate
   party: StayParty
-  sofaBeds: number
+  /**
+   * How many of which configured extras (capability F13). Ids, not names: the
+   * line that comes out carries the id so the database can count it against
+   * stock even after staff rename the row.
+   */
+  extras: readonly ExtraSelection[]
   earlyCheckInHours: number
   lateCheckOutHours: number
   /**
@@ -66,7 +76,9 @@ export type StayPricingErrorCode =
   | 'exceeds_max_pax'
   | 'no_guests'
   | 'early_check_in_undefined'
-  | 'sofa_bed_stock_exceeded'
+  | 'unknown_extra'
+  | 'extra_not_bookable'
+  | 'extra_stock_exceeded'
   | 'negative_quantity'
   | 'invalid_discount'
 
@@ -115,13 +127,13 @@ export function priceStay(
   config: PropertyConfig,
   today: StayDate = todayInBrunei(),
 ): StayPricingResult {
-  const { party, sofaBeds, earlyCheckInHours, lateCheckOutHours } = input
+  const { party, extras, earlyCheckInHours, lateCheckOutHours } = input
 
   if (
-    sofaBeds < 0 ||
     earlyCheckInHours < 0 ||
     lateCheckOutHours < 0 ||
-    party.chargeableGuests < 0
+    party.chargeableGuests < 0 ||
+    extras.some((selection) => selection.quantity < 0)
   ) {
     return fail('negative_quantity', 'Quantities cannot be negative.')
   }
@@ -176,13 +188,6 @@ export function priceStay(
 
   const extraPersons = config.paxPolicy === 'surcharge_threshold' ? guestsAboveMax : 0
 
-  if (config.sofaBedStock !== null && sofaBeds > config.sofaBedStock) {
-    return fail(
-      'sofa_bed_stock_exceeded',
-      `Only ${config.sofaBedStock} sofa beds are available across the property.`,
-    )
-  }
-
   // prd.md §18 N6: without a standard check-in time, "early" has no definition,
   // so the hours cannot be counted and the extra is not sellable. Refusing is
   // the honest behaviour — charging against an undefined baseline is not.
@@ -213,15 +218,43 @@ export function priceStay(
     )
   }
 
-  if (sofaBeds > 0) {
-    lines.push(
-      line(
-        'sofa_bed',
-        `Sofa bed${sofaBeds === 1 ? '' : 's'} (includes pillow and blanket)`,
-        sofaBeds,
-        config.sofaBedFlatFee,
-      ),
-    )
+  // Extras, in the order staff put them in, so a receipt reads the way the
+  // booking form did. A quantity of zero is not a line: a receipt should show
+  // what was bought, not what was considered.
+  //
+  // The stock check here is the per-booking half of the rule — "you cannot ask
+  // for four of three". The half that matters, "not while somebody else has
+  // two of them that night", is a question about every other booking in the
+  // building and cannot be answered by a pure function. The database answers
+  // it, in booking_line_extra_within_stock; this catches the ordinary mistake
+  // early and in a sentence.
+  for (const selection of [...extras].sort(
+    (a, b) =>
+      (extraById(config.extras, a.extraId)?.sortOrder ?? 0) -
+      (extraById(config.extras, b.extraId)?.sortOrder ?? 0),
+  )) {
+    if (selection.quantity === 0) {
+      continue
+    }
+
+    const extra = extraById(config.extras, selection.extraId)
+
+    if (!extra) {
+      return fail('unknown_extra', 'That extra is no longer on the list.')
+    }
+
+    if (!extra.bookable || extra.retiredAt !== null) {
+      return fail('extra_not_bookable', `${extra.name} is not available to book.`)
+    }
+
+    if (extra.stock !== null && selection.quantity > extra.stock) {
+      return fail(
+        'extra_stock_exceeded',
+        `There ${extra.stock === 1 ? 'is' : 'are'} only ${extra.stock} ${extra.name.toLowerCase()} across the property.`,
+      )
+    }
+
+    lines.push(extraLine(extra.id, extra.name, selection.quantity, extra.fee))
   }
 
   if (earlyCheckInHours > 0) {

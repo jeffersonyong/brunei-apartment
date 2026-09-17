@@ -38,8 +38,6 @@ insert into property (
   pax_policy,
   extra_person_per_night_cents,
   pax_exempt_age_max,
-  sofa_bed_fee_cents,
-  sofa_bed_stock,
   early_check_in_per_hour_cents,
   late_check_out_per_hour_cents,
   check_in_time,
@@ -56,9 +54,6 @@ values (
   'surcharge_threshold',
   700,
   3,
-  2800,
-  -- [O] prd.md §18 N8: total sofa beds is unknown, so nothing is constrained.
-  null,
   1000,
   1500,
   -- [C] 14:00 / 12:00, answering N6 on 10 September 2026.
@@ -245,3 +240,12 @@ select seed_property_settings(id) from property;
 -- reset from nothing. Staff edit them from Admin → Website FAQs.
 
 select seed_faqs(id) from property;
+
+-- ── The extras a booking can add (capability F13) ──────────────────────────
+--
+-- The sofa bed, and nothing else. Defined once in seed_booking_extras()
+-- (20261003000100) for the reason seed_faqs() is: that migration built the row
+-- for a database that already had a property, and this builds it for one reset
+-- from nothing. Staff add the rest from Admin → Property settings → Extras.
+
+select seed_booking_extras(id) from property;

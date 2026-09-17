@@ -54,9 +54,6 @@ export interface PolicyDraft {
   paxPolicy: PaxPolicy
   extraPersonPerNight: string
   paxExemptAgeMax: string
-  sofaBedFee: string
-  /** Blank means "unknown, do not constrain" (open-questions.md N8). */
-  sofaBedStock: string
   earlyCheckInPerHour: string
   lateCheckOutPerHour: string
   checkInTime: string
@@ -133,8 +130,6 @@ export interface PolicyPayload {
   pax_policy: PaxPolicy
   extra_person_per_night_cents: Cents
   pax_exempt_age_max: number
-  sofa_bed_fee_cents: Cents
-  sofa_bed_stock: number | null
   early_check_in_per_hour_cents: Cents
   late_check_out_per_hour_cents: Cents
   check_in_time: string
@@ -369,15 +364,6 @@ export function checkPricingDraft(draft: PricingDraft): SettingsCheck<PricingPay
       readCount(problems, 'policy.paxExemptAgeMax', policy.paxExemptAgeMax, 'The exempt age', {
         max: MAX_AGE - 1,
       }) ?? 0,
-    sofa_bed_fee_cents:
-      readCents(problems, 'policy.sofaBedFee', policy.sofaBedFee, 'The sofa bed fee') ?? 0,
-    sofa_bed_stock: readOptionalCount(
-      problems,
-      'policy.sofaBedStock',
-      policy.sofaBedStock,
-      'Sofa beds available',
-      { max: 999 },
-    ),
     early_check_in_per_hour_cents:
       readCents(
         problems,
@@ -702,8 +688,6 @@ export function pricingDraftFrom(settings: PropertySettings): PricingDraft {
       paxPolicy: settings.policy.paxPolicy,
       extraPersonPerNight: amountField(settings.policy.extraPersonPerNightCents),
       paxExemptAgeMax: String(settings.policy.paxExemptAgeMax),
-      sofaBedFee: amountField(settings.policy.sofaBedFeeCents),
-      sofaBedStock: countField(settings.policy.sofaBedStock),
       earlyCheckInPerHour: amountField(settings.policy.earlyCheckInPerHourCents),
       lateCheckOutPerHour: amountField(settings.policy.lateCheckOutPerHourCents),
       checkInTime: settings.policy.checkInTime,

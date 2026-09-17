@@ -35,11 +35,30 @@ interface NumberFieldProps {
   label: string
   value: number
   min: number
+  /** The ceiling, when there is one — a configured extra's stock, say. */
+  max?: number
+  /**
+   * A line under the field. Added for the extras counters (capability F13),
+   * which have to carry a price and how many are free — a label alone cannot
+   * say "BND 28.00 each, 2 free for those nights" without becoming a sentence.
+   */
+  hint?: string
   onChange: (value: number) => void
   error?: string
 }
 
-export function NumberField({ id, label, value, min, onChange, error }: NumberFieldProps) {
+export function NumberField({
+  id,
+  label,
+  value,
+  min,
+  max,
+  hint,
+  onChange,
+  error,
+}: NumberFieldProps) {
+  const hintId = hint ? `${id}-hint` : undefined
+
   return (
     <div className="grid w-[150px] gap-sm">
       <Label htmlFor={id}>{label}</Label>
@@ -49,11 +68,18 @@ export function NumberField({ id, label, value, min, onChange, error }: NumberFi
         type="number"
         inputMode="numeric"
         min={min}
+        max={max}
         value={value}
         aria-invalid={error ? true : undefined}
+        aria-describedby={hintId}
         className="tabular-nums"
         onChange={(event) => onChange(Math.max(min, Number(event.target.value) || 0))}
       />
+      {hint ? (
+        <p id={hintId} className="text-caption text-muted-foreground">
+          {hint}
+        </p>
+      ) : null}
       <FieldError message={error} />
     </div>
   )

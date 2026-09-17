@@ -1,7 +1,7 @@
 import { transition, type BookingEvent, type BookingStatus } from '@/lib/domain/booking-state'
 import { nightsBetween, type StayDate } from '@/lib/domain/dates'
 import type { Discount } from '@/lib/domain/discount'
-import { line, totalOf } from '@/lib/domain/lines'
+import { extraLine, line, totalOf } from '@/lib/domain/lines'
 import { bnd, type Cents } from '@/lib/domain/money'
 import { dataClient } from '@/lib/supabase/data'
 
@@ -72,6 +72,13 @@ export interface BookingSpec {
   chargeableGuests?: number
   exemptGuests?: number
   /**
+   * Configured extras the booking buys (capability F13), as `extra` lines.
+   * The write path is unchanged — they ride in `lines` like everything else —
+   * but the stock trigger reads them, so a test about availability sets them
+   * here rather than assembling lines by hand.
+   */
+  extras?: readonly { extraId: string; name?: string; quantity: number; fee?: Cents }[]
+  /**
    * Defaults to cash, which confirms the booking outright — so every test
    * written before payments existed keeps producing exactly the booking it
    * used to. A transfer booking is the payment tests' business; see
@@ -107,7 +114,12 @@ export interface BookingSpec {
 export async function bookingInput(spec: BookingSpec): Promise<CreateWalkInBookingInput> {
   const unitId = spec.unitId ?? (await unitIdByRef(spec.unitRef ?? '3B-01'))
   const nights = nightsBetween(spec.checkIn, spec.checkOut)
-  const lines = [line('accommodation', `${nights} nights`, nights, NIGHTLY_RATE)]
+  const lines = [
+    line('accommodation', `${nights} nights`, nights, NIGHTLY_RATE),
+    ...(spec.extras ?? []).map((extra) =>
+      extraLine(extra.extraId, extra.name ?? 'Extra', extra.quantity, extra.fee ?? bnd(28)),
+    ),
+  ]
 
   return {
     unitId,

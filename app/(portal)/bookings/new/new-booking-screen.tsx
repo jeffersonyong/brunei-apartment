@@ -36,6 +36,8 @@ interface NewBookingScreenProps {
   /** The unit to open on, when the calendar already chose one. */
   preferredUnitId?: string
   config: PropertyConfig
+  /** How many of each extra these dates already hold (capability F13). */
+  extrasInUse: Readonly<Record<string, number>>
   checkIn: string
   checkOut: string
   /** Whether this staff member holds `booking.discount`. Decided by the page. */

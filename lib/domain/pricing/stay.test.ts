@@ -21,7 +21,7 @@ function input(overrides: Partial<StayPricingInput> = {}): StayPricingInput {
     checkIn: '2026-09-12',
     checkOut: '2026-09-14',
     party: { chargeableGuests: 4, exemptGuests: 0 },
-    sofaBeds: 0,
+    extras: [],
     earlyCheckInHours: 0,
     lateCheckOutHours: 0,
     ...overrides,
@@ -30,6 +30,19 @@ function input(overrides: Partial<StayPricingInput> = {}): StayPricingInput {
 
 function withConfig(overrides: Partial<PropertyConfig>): PropertyConfig {
   return { ...palmVillaConfig, ...overrides }
+}
+
+/** The seeded sofa bed, which is the fixture's only extra. */
+const SOFA_BED = palmVillaConfig.extras[0]!
+
+/** `n` sofa beds, as the engine takes them. */
+function sofaBeds(quantity: number): { extraId: string; quantity: number }[] {
+  return [{ extraId: SOFA_BED.id, quantity }]
+}
+
+/** The fixture's extras with the sofa bed changed in one respect. */
+function withSofaBed(overrides: Partial<typeof SOFA_BED>): Partial<PropertyConfig> {
+  return { extras: [{ ...SOFA_BED, ...overrides }] }
 }
 
 describe('priceStay — base accommodation', () => {
@@ -133,7 +146,7 @@ describe('priceStay — extras', () => {
     //                                 -------
     //                                   442.00
     const result = priceStay(
-      input({ party: { chargeableGuests: 9, exemptGuests: 0 }, sofaBeds: 1 }),
+      input({ party: { chargeableGuests: 9, exemptGuests: 0 }, extras: sofaBeds(1) }),
       palmVillaConfig,
       TODAY,
     )
@@ -144,22 +157,111 @@ describe('priceStay — extras', () => {
     expect(result.total).toBe(bnd(442))
   })
 
-  test('sofa beds are a flat fee per bed, not per night', () => {
+  test('an extra is a flat fee per item, not per night', () => {
     const oneNight = priceStay(
-      input({ checkOut: '2026-09-13', sofaBeds: 2 }),
+      input({ checkOut: '2026-09-13', extras: sofaBeds(2) }),
       palmVillaConfig,
       TODAY,
     )
-    const twoNights = priceStay(input({ sofaBeds: 2 }), palmVillaConfig, TODAY)
+    const twoNights = priceStay(input({ extras: sofaBeds(2) }), palmVillaConfig, TODAY)
 
     expect(oneNight.ok && twoNights.ok).toBe(true)
     if (!oneNight.ok || !twoNights.ok) return
 
     const feeOf = (lines: typeof oneNight.lines) =>
-      lines.find((entry) => entry.type === 'sofa_bed')?.amount
+      lines.find((entry) => entry.type === 'extra')?.amount
 
     expect(feeOf(oneNight.lines)).toBe(bnd(56))
     expect(feeOf(twoNights.lines)).toBe(bnd(56))
+  })
+
+  test('the line names which extra it bought, so stock can be counted', () => {
+    const result = priceStay(input({ extras: sofaBeds(1) }), palmVillaConfig, TODAY)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const line = result.lines.find((entry) => entry.type === 'extra')
+
+    expect(line?.extraId).toBe(SOFA_BED.id)
+    expect(line?.description).toBe('Sofa bed')
+  })
+
+  test('a quantity of zero buys nothing and leaves no line', () => {
+    const result = priceStay(input({ extras: sofaBeds(0) }), palmVillaConfig, TODAY)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    expect(result.lines.some((entry) => entry.type === 'extra')).toBe(false)
+  })
+
+  test('an extra that is not on the list is refused rather than priced at nothing', () => {
+    const result = priceStay(
+      input({ extras: [{ extraId: 'karaoke-set', quantity: 1 }] }),
+      palmVillaConfig,
+      TODAY,
+    )
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+
+    expect(result.error.code).toBe('unknown_extra')
+  })
+
+  test('an extra taken off sale cannot be added to a new booking', () => {
+    const result = priceStay(
+      input({ extras: sofaBeds(1) }),
+      withConfig(withSofaBed({ bookable: false })),
+      TODAY,
+    )
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+
+    expect(result.error.code).toBe('extra_not_bookable')
+  })
+
+  test('a removed extra cannot be added either', () => {
+    const result = priceStay(
+      input({ extras: sofaBeds(1) }),
+      withConfig(withSofaBed({ retiredAt: '2026-09-01T00:00:00.000Z' })),
+      TODAY,
+    )
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+
+    expect(result.error.code).toBe('extra_not_bookable')
+  })
+
+  test('two different extras each get their own line, in list order', () => {
+    const karaoke = {
+      ...SOFA_BED,
+      id: 'karaoke',
+      slug: 'karaoke',
+      name: 'Karaoke set',
+      sortOrder: 0,
+    }
+    const config = withConfig({ extras: [SOFA_BED, karaoke] })
+
+    const result = priceStay(
+      input({
+        extras: [
+          { extraId: SOFA_BED.id, quantity: 1 },
+          { extraId: 'karaoke', quantity: 1 },
+        ],
+      }),
+      config,
+      TODAY,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    expect(
+      result.lines.filter((entry) => entry.type === 'extra').map((entry) => entry.description),
+    ).toEqual(['Karaoke set', 'Sofa bed'])
   })
 
   test('late check-out is charged per hour at BND 15', () => {
@@ -172,17 +274,41 @@ describe('priceStay — extras', () => {
     expect(result.total).toBe(bnd(445))
   })
 
-  test('sofa beds beyond configured stock are refused once stock is known (N8)', () => {
-    const result = priceStay(input({ sofaBeds: 3 }), withConfig({ sofaBedStock: 2 }), TODAY)
+  test('one booking cannot ask for more of an extra than the property owns (N8)', () => {
+    const result = priceStay(
+      input({ extras: sofaBeds(3) }),
+      withConfig(withSofaBed({ stock: 2 })),
+      TODAY,
+    )
 
     expect(result.ok).toBe(false)
     if (result.ok) return
 
-    expect(result.error.code).toBe('sofa_bed_stock_exceeded')
+    expect(result.error.code).toBe('extra_stock_exceeded')
   })
 
   test('unknown stock does not constrain, so the fee still prices', () => {
-    const result = priceStay(input({ sofaBeds: 3 }), withConfig({ sofaBedStock: null }), TODAY)
+    const result = priceStay(
+      input({ extras: sofaBeds(3) }),
+      withConfig(withSofaBed({ stock: null })),
+      TODAY,
+    )
+
+    expect(result.ok).toBe(true)
+  })
+
+  /**
+   * The rule this function CANNOT enforce, stated as a test so nobody adds it
+   * here later. Two bookings each taking two of two beds on the same night is
+   * a question about the other booking, and a pure function has never heard of
+   * it — `booking_line_extra_within_stock` refuses that, in the database.
+   */
+  test('a booking within stock prices, whatever anybody else has booked', () => {
+    const result = priceStay(
+      input({ extras: sofaBeds(2) }),
+      withConfig(withSofaBed({ stock: 2 })),
+      TODAY,
+    )
 
     expect(result.ok).toBe(true)
   })
@@ -352,7 +478,7 @@ describe('priceStay — staff discount', () => {
   })
 
   test('the discount is applied after every extra, so an extra is discounted too', () => {
-    const withExtras = input({ sofaBeds: 1, lateCheckOutHours: 2 })
+    const withExtras = input({ extras: sofaBeds(1), lateCheckOutHours: 2 })
 
     const plain = priceStay(withExtras, palmVillaConfig, TODAY)
     const discounted = priceStay(

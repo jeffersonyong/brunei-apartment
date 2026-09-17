@@ -42,8 +42,6 @@ const settings: PropertySettings = {
     paxPolicy: 'surcharge_threshold',
     extraPersonPerNightCents: bnd(7),
     paxExemptAgeMax: 3,
-    sofaBedFeeCents: bnd(28),
-    sofaBedStock: null,
     earlyCheckInPerHourCents: bnd(15),
     lateCheckOutPerHourCents: bnd(15),
     checkInTime: '14:00',
@@ -51,6 +49,20 @@ const settings: PropertySettings = {
     securityDepositCents: bnd(100),
     maxAdvanceBookingDays: 62,
   },
+  extras: [
+    {
+      id: 'e1',
+      slug: 'sofa-bed',
+      name: 'Sofa bed',
+      description: 'Includes one pillow and one blanket.',
+      fee: bnd(28),
+      stock: null,
+      bookable: true,
+      sortOrder: 1,
+      retiredAt: null,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+  ],
   unitTypes: [
     {
       id: 'u1',
@@ -413,7 +425,7 @@ function moneyIn(value: FaqFacts): string[] {
   return [
     value.securityDeposit,
     value.extraPersonPerNight,
-    value.sofaBedFee,
+    value.sofaBedFee ?? '',
     value.lateCheckOutPerHour,
     ...value.dayPassBands.map((band) => band.price),
     ...value.dayPassBundles.map((bundle) => bundle.price),

@@ -9,6 +9,7 @@ import { getPropertyConfig } from '@/lib/db/property-config'
 import { isStayDate, todayInBrunei } from '@/lib/domain/dates'
 import { parseDepositWaiver, MAX_DEPOSIT_WAIVER_REASON_LENGTH } from '@/lib/domain/deposit-waiver'
 import { parseDiscount, MAX_DISCOUNT_REASON_LENGTH } from '@/lib/domain/discount'
+import { extraSelectionsFrom } from '@/lib/domain/extras'
 import { priceStay } from '@/lib/domain/pricing/stay'
 import { isLikelyEmailAddress, MAX_GUEST_EMAIL_LENGTH } from '@/lib/domain/public-booking'
 import {
@@ -63,7 +64,6 @@ const walkInBookingSchema = z.object({
   checkOut: stayDate,
   chargeableGuests: z.coerce.number().int().min(1, 'A booking needs at least one guest.').max(50),
   exemptGuests: z.coerce.number().int().min(0).max(50),
-  sofaBeds: z.coerce.number().int().min(0).max(20),
   earlyCheckInHours: z.coerce.number().int().min(0).max(12),
   lateCheckOutHours: z.coerce.number().int().min(0).max(12),
   guestName: z.string().trim().min(1, 'Enter the guest name.').max(120),
@@ -255,18 +255,25 @@ export async function createWalkInBookingAction(
   // one the server derives from the inputs. The discount is an INPUT to that,
   // never a subtraction applied afterwards: `priceStay` emits it as a negative
   // line and the total stays the sum of the lines.
+  const config = await getPropertyConfig()
+
+  // Not in the Zod schema: an extra's field name is not known until the
+  // configured list is read (capability F13). Read against that list, so a
+  // field naming an extra that does not exist is ignored rather than priced.
+  const extras = extraSelectionsFrom((field) => formData.get(field), config.extras)
+
   const priced = priceStay(
     {
       unitTypeId: input.unitTypeId,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
       party: { chargeableGuests: input.chargeableGuests, exemptGuests: input.exemptGuests },
-      sofaBeds: input.sofaBeds,
+      extras,
       earlyCheckInHours: input.earlyCheckInHours,
       lateCheckOutHours: input.lateCheckOutHours,
       discount: discount.discount,
     },
-    await getPropertyConfig(),
+    config,
   )
 
   if (!priced.ok) {

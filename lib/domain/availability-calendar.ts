@@ -209,3 +209,92 @@ export function firstBlockedNight(
 export function publicBookingWindow(today: StayDate, maxAdvanceDays: number): DateRange {
   return { start: today, end: addDays(today, Math.max(maxAdvanceDays, 1) + 1) }
 }
+
+/**
+ * An extra a booking is holding, as this module needs it (capability F13).
+ *
+ * One row per `booking_line` that names an extra, carrying the occupancy range
+ * it rides on — so a sofa bed is "held" on exactly the nights the unit is.
+ */
+export interface ExtraHolding {
+  extraId: string
+  quantity: number
+  start: StayDate
+  end: StayDate | null
+  status: string
+}
+
+/**
+ * How many of each extra are held, per night, across a half-open window.
+ *
+ * The browser-side half of the stock rule. The public booking form has a whole
+ * window of nights loaded before the customer has picked any of them, so the
+ * peak across whatever range they choose is a `max` over this map rather than
+ * a round trip per click — the arrangement `nightlyFreeCounts` already uses
+ * for units, and for the same reason.
+ *
+ * **It is a preview, never the guarantee.** The guarantee is the database
+ * trigger `booking_line_extra_within_stock`, which is the only thing that can
+ * be right at the instant two people submit. This is what lets the form say
+ * "2 free" before it finds out.
+ *
+ * `occupiesUnit` decides what counts, so the nights an extra is held are
+ * exactly the nights its unit is — one booking never holds a room but not the
+ * bed in it.
+ */
+export function nightlyExtraUse(input: {
+  window: DateRange
+  holdings: readonly ExtraHolding[]
+}): ReadonlyMap<StayDate, ReadonlyMap<string, number>> {
+  const { window, holdings } = input
+  const used = new Map<StayDate, Map<string, number>>()
+
+  for (const holding of holdings) {
+    if (!occupiesUnit(holding.status) || holding.quantity <= 0) {
+      continue
+    }
+
+    // Clipped to the window the same way a unit's range is, and for the same
+    // reason: an open-ended lease has no end to compare against.
+    const end = holding.end ?? window.end
+    const range: DateRange = { start: holding.start, end }
+
+    if (!overlaps(range, window)) {
+      continue
+    }
+
+    const from = holding.start > window.start ? holding.start : window.start
+    const to = end < window.end ? end : window.end
+
+    for (const night of nightsIn({ start: from, end: to })) {
+      const row = used.get(night) ?? new Map<string, number>()
+
+      row.set(holding.extraId, (row.get(holding.extraId) ?? 0) + holding.quantity)
+      used.set(night, row)
+    }
+  }
+
+  return used
+}
+
+/**
+ * The most of each extra held on any one night of a range.
+ *
+ * What a booking competes against: three sofa beds out on the Tuesday is what
+ * stops a fourth being sold for a Monday-to-Friday stay, even if the rest of
+ * the week is empty. Mirrors what `extras_in_use` computes in SQL.
+ */
+export function peakExtraUse(
+  nightly: ReadonlyMap<StayDate, ReadonlyMap<string, number>>,
+  range: DateRange,
+): Readonly<Record<string, number>> {
+  const peak: Record<string, number> = {}
+
+  for (const night of nightsIn(range)) {
+    for (const [extraId, quantity] of nightly.get(night) ?? []) {
+      peak[extraId] = Math.max(peak[extraId] ?? 0, quantity)
+    }
+  }
+
+  return peak
+}

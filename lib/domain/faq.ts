@@ -1,3 +1,4 @@
+import { extraBySlug } from './extras'
 import { formatCents } from './money'
 import type { PropertySettings } from './settings'
 
@@ -105,7 +106,16 @@ export interface FaqFacts {
   securityDeposit: string
   extraPersonPerNight: string
   exemptAgeMax: number
-  sofaBedFee: string
+  /**
+   * The sofa bed's price, or `null` if staff have deleted the row the figure
+   * names. Since capability F13 it is a configured extra rather than a column,
+   * addressed by the slug `sofa-bed` so a rename cannot empty it — but nothing
+   * stops somebody removing the concept entirely, and an answer that quotes a
+   * price for a thing the property no longer rents is worse than one that
+   * hedges. `renderFaqAnswer` drops the sentence's figure rather than printing
+   * "BND 0.00".
+   */
+  sofaBedFee: string | null
   lateCheckOutPerHour: string
   advanceDays: number
   includedFacilities: readonly string[]
@@ -129,6 +139,7 @@ export function faqFactsFrom(
   sellableUnitTypeSlugs: ReadonlySet<string>,
 ): FaqFacts {
   const { policy } = settings
+  const sofaBed = extraBySlug(settings.extras, 'sofa-bed')
 
   return {
     checkInTime: policy.checkInTime,
@@ -136,7 +147,7 @@ export function faqFactsFrom(
     securityDeposit: `BND ${formatCents(policy.securityDepositCents)}`,
     extraPersonPerNight: `BND ${formatCents(policy.extraPersonPerNightCents)}`,
     exemptAgeMax: policy.paxExemptAgeMax,
-    sofaBedFee: `BND ${formatCents(policy.sofaBedFeeCents)}`,
+    sofaBedFee: sofaBed ? `BND ${formatCents(sofaBed.fee)}` : null,
     lateCheckOutPerHour: `BND ${formatCents(policy.lateCheckOutPerHourCents)}`,
     advanceDays: policy.maxAdvanceBookingDays,
     includedFacilities: settings.facilities
@@ -211,7 +222,11 @@ export const FAQ_FIGURES: readonly FaqFigure[] = [
     label: 'Age up to which a child is not counted',
     render: (facts) => String(facts.exemptAgeMax),
   },
-  { key: 'sofa bed charge', label: 'Sofa bed charge', render: (facts) => facts.sofaBedFee },
+  {
+    key: 'sofa bed charge',
+    label: 'Sofa bed charge',
+    render: (facts) => facts.sofaBedFee ?? 'the price shown when you book',
+  },
   {
     key: 'late check-out charge',
     label: 'Late check-out charge, per hour',

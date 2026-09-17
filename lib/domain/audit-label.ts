@@ -134,6 +134,10 @@ export const KNOWN_AUDIT_ACTIONS = [
   'faq.unfeatured',
   'faq.moved',
   'faq.removed',
+  'booking_extra.added',
+  'booking_extra.updated',
+  'booking_extra.removed',
+  'booking_extra.restored',
   'privacy_policy.published',
 ] as const
 
@@ -160,6 +164,7 @@ export const AUDIT_FAMILIES = [
   'cash',
   'site_image',
   'faq',
+  'booking_extra',
   'privacy_policy',
 ] as const
 
@@ -198,6 +203,7 @@ export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
   cash: 'Cash banked',
   site_image: 'Website photos',
   faq: 'Website FAQs',
+  booking_extra: 'Settings — extras',
   privacy_policy: 'Privacy policy',
 }
 
@@ -283,6 +289,7 @@ export function describeAuditEvent(event: AuditEventLike): string {
     describeSettings(event) ??
     describeSiteImage(event) ??
     describeFaq(event) ??
+    describeBookingExtra(event) ??
     describePrivacyPolicy(event) ??
     ACTION_LABELS[event.action]
 
@@ -597,8 +604,9 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   pax_policy: 'What happens over the maximum',
   extra_person_per_night_cents: 'Extra guest charge',
   pax_exempt_age_max: 'Age not counted up to',
-  sofa_bed_fee_cents: 'Sofa bed fee',
-  sofa_bed_stock: 'Sofa beds available',
+  fee_cents: 'Price per stay',
+  stock: 'How many there are',
+  bookable: 'On the booking form',
   early_check_in_per_hour_cents: 'Early check-in rate',
   late_check_out_per_hour_cents: 'Late check-out rate',
   check_in_time: 'Check-in time',
@@ -784,6 +792,53 @@ function describeFaq(event: AuditEventLike): string | null {
   }
 }
 
+/**
+ * A booking extra added, repriced, recounted, taken off sale or removed
+ * (capability F13).
+ *
+ * The name rides on both sides of an update, the way a FAQ's question does, so
+ * a row still says which extra it was after the thing has been renamed twice —
+ * or removed, when nothing is left to join to.
+ */
+function describeBookingExtra(event: AuditEventLike): string | null {
+  const name = typeof event.after?.name === 'string' ? event.after.name : undefined
+  const removedName = typeof event.before?.name === 'string' ? event.before.name : undefined
+
+  switch (event.action) {
+    case 'booking_extra.added':
+      return name ? `${name} added as an extra` : 'Extra added'
+    case 'booking_extra.removed':
+      return removedName ? `${removedName} removed` : 'Extra removed'
+    case 'booking_extra.restored':
+      return name ? `${name} put back` : 'Extra put back'
+    case 'booking_extra.updated':
+      return bookingExtraUpdateLabel(event)
+    default:
+      return null
+  }
+}
+
+function bookingExtraUpdateLabel(event: AuditEventLike): string {
+  const changed = Object.keys(event.after ?? {}).filter((key) => key !== 'name')
+  const name = typeof event.after?.name === 'string' ? event.after.name : 'Extra'
+
+  // The two that are worth a sentence of their own, because neither reads as
+  // "a field changed": one is a rename, the other takes it off every form.
+  if (changed.length === 0 && event.before?.name !== event.after?.name) {
+    return `Renamed to ${name}`
+  }
+
+  if (changed.length === 1 && changed[0] === 'bookable') {
+    return event.after?.bookable === true
+      ? `${name} put on the booking form`
+      : `${name} taken off the booking form`
+  }
+
+  const labels = changed.map((key) => FIELD_LABELS[key] ?? key)
+
+  return labels.length === 1 ? `${name}: ${labels[0]} changed` : `${name} changed`
+}
+
 function faqUpdateLabel(event: AuditEventLike): string {
   const changed = Object.keys(event.after ?? {}).filter((key) => key !== 'name')
 
@@ -859,6 +914,7 @@ export const AUDIT_ENTITY_TYPES = [
   'cash_banking',
   'site_image',
   'faq',
+  'booking_extra',
   'privacy_policy_version',
 ] as const
 
@@ -888,6 +944,7 @@ export const AUDIT_ENTITY_LABELS: Readonly<Record<AuditEntityType, string>> = {
   cash_banking: 'Banking',
   site_image: 'Website photo',
   faq: 'Website FAQ',
+  booking_extra: 'Booking extra',
   privacy_policy_version: 'Privacy policy',
 }
 
@@ -941,6 +998,8 @@ export function auditSubjectHref(entityType: string, subjectLabel: string | null
       return '/settings/website?tab=photos'
     case 'faq':
       return '/settings/website?tab=faqs'
+    case 'booking_extra':
+      return '/settings/property?tab=extras'
     case 'privacy_policy_version':
       return '/settings/website?tab=privacy-policy'
     default:

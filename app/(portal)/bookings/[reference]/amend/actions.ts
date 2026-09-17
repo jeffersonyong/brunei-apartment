@@ -10,6 +10,7 @@ import { getPropertyConfig } from '@/lib/db/property-config'
 import { canAmend } from '@/lib/domain/booking-state'
 import { isStayDate } from '@/lib/domain/dates'
 import { parseDiscount, MAX_DISCOUNT_REASON_LENGTH } from '@/lib/domain/discount'
+import { extraSelectionsFrom } from '@/lib/domain/extras'
 import { priceStay } from '@/lib/domain/pricing/stay'
 import {
   hasVehicleAnswer,
@@ -44,7 +45,6 @@ const amendBookingSchema = z.object({
   checkOut: stayDate,
   chargeableGuests: z.coerce.number().int().min(1, 'A booking needs at least one guest.').max(50),
   exemptGuests: z.coerce.number().int().min(0).max(50),
-  sofaBeds: z.coerce.number().int().min(0).max(20),
   lateCheckOutHours: z.coerce.number().int().min(0).max(12),
   guestName: z.string().trim().min(1, 'Enter the guest name.').max(120),
   guestPhone: z.string().trim().min(1, 'Enter a contact number.').max(40),
@@ -164,13 +164,21 @@ export async function amendBookingAction(
     discount = submitted.discount
   }
 
+  const config = await getPropertyConfig()
+
+  // Read against the configured list rather than declared in the schema, for
+  // the reason the other two booking actions give (capability F13). The list
+  // includes retired extras, so a booking that already holds one can be saved
+  // again without losing it.
+  const extras = extraSelectionsFrom((field) => formData.get(field), config.extras)
+
   const priced = priceStay(
     {
       unitTypeId: input.unitTypeId,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
       party: { chargeableGuests: input.chargeableGuests, exemptGuests: input.exemptGuests },
-      sofaBeds: input.sofaBeds,
+      extras,
       // Not offered, for the same reason the walk-in form does not offer it:
       // prd.md §18 N6 leaves the standard check-in time undefined, so "early"
       // has no baseline and the charge cannot be applied to a real number of
@@ -182,7 +190,7 @@ export async function amendBookingAction(
       // ten percent of the longer stay, which is what was actually agreed.
       discount,
     },
-    await getPropertyConfig(),
+    config,
   )
 
   if (!priced.ok) {
