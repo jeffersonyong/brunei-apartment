@@ -1,4 +1,3 @@
-import { facilities } from '@/app/(public)/_content/landing'
 import type { SiteImage } from '@/lib/db/site-images'
 import {
   SITE_IMAGE_SLOTS,
@@ -13,10 +12,10 @@ import {
  * The photographs screen, laid out the way the front page is (capability F7).
  *
  * Four sections in the landing page's own order, and within each exactly the
- * cards the page renders. The facilities come from the landing page's own
- * list; the unit types are passed in from Property settings (17 September
- * 2026), because that is where the stays section gets its cards — so a type
- * staff add has a place to hang a photograph on the same day. Pure, so the
+ * cards the page renders. Both the facilities and the unit types are passed in
+ * from Property settings (17 September 2026), because that is where those
+ * sections get their cards — so a type staff add, or a facility they tick into
+ * the day pass, has a place to hang a photograph on the same day. Pure, so the
  * arrangement is tested without a page.
  */
 
@@ -52,6 +51,8 @@ export function photoSections(
   images: readonly SiteImage[],
   nameFor: (userId: string) => string,
   unitTypes: readonly { slug: string; name: string }[],
+  /** The facilities the day pass admits — exactly the cards that section shows. */
+  dayPassFacilities: readonly { slug: string; name: string }[],
 ): readonly PhotoSectionView[] {
   const byKey = new Map(images.map((image) => [placementKey(image.placement), image]))
 
@@ -87,7 +88,7 @@ export function photoSections(
       id: 'day-pass',
       title: 'Day pass',
       hint: 'One photograph for each facility card in the day-pass section.',
-      slots: facilities.map((facility) =>
+      slots: dayPassFacilities.map((facility) =>
         slotView({ kind: 'facility', slug: facility.slug }, facility.name),
       ),
     },

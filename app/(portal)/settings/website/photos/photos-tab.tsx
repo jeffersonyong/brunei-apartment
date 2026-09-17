@@ -40,6 +40,10 @@ export async function photosTab(actor: Actor): Promise<WebsiteTabView> {
     images,
     (userId) => names.get(userId) ?? 'a former colleague',
     settings.unitTypes,
+    // Only what the pass admits: the day-pass section shows a card per
+    // included facility, and a photo place for a facility the site never
+    // renders is a place staff would fill for nothing.
+    settings.facilities.filter((facility) => facility.includedInDayPass),
   )
 
   return {

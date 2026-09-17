@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
-import { facilities as landingFacilities, unitTypeCopy } from '@/app/(public)/_content/landing'
+import { facilityCopy, unitTypeCopy } from '@/app/(public)/_content/landing'
 import {
   SITE_IMAGE_BUCKET,
   type SiteImageFocus,
@@ -469,12 +469,11 @@ describe('the landing page against the database', () => {
     const facilitySlugs = new Set((facilityRows.data ?? []).map((row) => row.slug as string))
     const unitTypeSlugs = new Set((unitTypeRows.data ?? []).map((row) => row.slug as string))
 
-    expect(
-      landingFacilities.map((card) => card.slug).filter((slug) => !facilitySlugs.has(slug)),
-    ).toEqual([])
-    // The cards themselves come from Property settings now; what is checked
-    // here is that every line of copy written for a unit type is filed under a
-    // slug the database actually has, since a typo costs a card its wording.
+    // The cards themselves come from Property settings now — both sections of
+    // them (17 September 2026). What is checked here is that every line of copy
+    // written for a facility or a unit type is filed under a slug the database
+    // actually has, since a typo costs a card its wording and its photograph.
+    expect(Object.keys(facilityCopy).filter((slug) => !facilitySlugs.has(slug))).toEqual([])
     expect(Object.keys(unitTypeCopy).filter((slug) => !unitTypeSlugs.has(slug))).toEqual([])
   })
 })
