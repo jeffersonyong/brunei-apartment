@@ -7,7 +7,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { FieldError } from '@/components/ui/field-error'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MAX_VEHICLES_PER_BOOKING, MAX_VEHICLE_REGISTRATION_LENGTH } from '@/lib/domain/vehicle'
+import { Notice } from '@/components/ui/notice'
+import {
+  MAX_VEHICLES_PER_BOOKING,
+  MAX_VEHICLE_REGISTRATION_LENGTH,
+  vehiclesBeyondParking,
+} from '@/lib/domain/vehicle'
 import { cn } from '@/lib/utils'
 
 /**
@@ -58,6 +63,24 @@ import { cn } from '@/lib/utils'
  * The only thing that differs is the sentence under the exception, which the
  * caller passes: the desk needs to be told why the box matters, and a customer
  * needs to be told what it means.
+ *
+ * ── The parking allowance is stated, not enforced ──────────────────────────
+ *
+ * A stay's unit type includes a number of spaces (prd.md §7.1), and until this
+ * existed the form never mentioned it — a guest booking a 2-bed for three cars
+ * found out on arrival. `parking` makes the form say so: what the unit
+ * includes, standing quietly under the rows, and a warning once the plates
+ * entered are past it.
+ *
+ * It stops there deliberately (Jeff, 17 September 2026). The rows stay
+ * addable, because §12.5 makes plate lookup the guard's primary path and a
+ * third plate the form refused is a third car nobody can match at the gate —
+ * and because R3, which asks how many bays the property actually has, is still
+ * open, so the allowance is not yet known to be a physical limit. prd.md §13
+ * carries the decision.
+ *
+ * Day passes pass nothing: a pass has no unit and so no allowance, and visitor
+ * parking is the other half of R3.
  */
 
 interface VehicleFieldsProps {
@@ -74,6 +97,13 @@ interface VehicleFieldsProps {
    * for them it is a record-keeping rule rather than a fact about their car.
    */
   noVehicleDescription?: string | null
+  /**
+   * The unit type's included parking, where the booking has one. Omitted by
+   * the day-pass form and by any form whose unit type is not chosen yet — a
+   * sentence about "this unit" before there is one would be a statement about
+   * nothing.
+   */
+  parking?: { unitTypeName: string; spaces: number } | null
 }
 
 export function VehicleFields({
@@ -83,11 +113,20 @@ export function VehicleFields({
   onNoVehicleChange,
   error,
   noVehicleDescription = 'Only for the rare guest with no car. Security check arrivals by registration, so a booking with neither a plate nor this box ticked cannot be matched at the gate.',
+  parking = null,
 }: VehicleFieldsProps) {
   // Always at least one row to type into: a section whose only control is an
   // "Add" button asks the staff member to do a step the form could have done.
   const rows = vehicles.length > 0 ? vehicles : ['']
   const canAdd = !noVehicle && rows.length < MAX_VEHICLES_PER_BOOKING
+
+  // Ticking "arriving without a vehicle" makes the allowance moot, and a
+  // warning left standing over disabled rows would be the form arguing with a
+  // guest who has just said they have no car.
+  const overflow = parking && !noVehicle ? vehiclesBeyondParking(rows, parking.spaces) : 0
+  const spacesLabel = parking
+    ? `${parking.spaces} parking ${parking.spaces === 1 ? 'space' : 'spaces'}`
+    : null
 
   function setRow(index: number, value: string) {
     onChange(rows.map((row, current) => (current === index ? value : row)))
@@ -150,6 +189,29 @@ export function VehicleFields({
 
         <FieldError message={error} />
       </div>
+
+      {/* What the unit includes, and — once they are past it — what that means.
+
+          The standing line is a caption because it is a fact about the unit,
+          not a status; it only becomes a warning when it is about to cost
+          somebody a parking space. Both say the same first sentence, so the
+          warning reads as the line they have already seen, escalating. */}
+      {parking && !noVehicle ? (
+        overflow > 0 ? (
+          <Notice tone="warning">
+            <p>
+              The {parking.unitTypeName} includes {spacesLabel}.{' '}
+              {overflow === 1
+                ? 'The extra car is still recorded so Security can match it at the gate, but it may not have a bay.'
+                : `The extra ${overflow} cars are still recorded so Security can match them at the gate, but they may not have a bay.`}
+            </p>
+          </Notice>
+        ) : (
+          <p className="text-caption text-muted-foreground">
+            The {parking.unitTypeName} includes {spacesLabel}.
+          </p>
+        )
+      ) : null}
 
       {canAdd ? (
         <div>

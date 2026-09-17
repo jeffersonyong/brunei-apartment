@@ -5,6 +5,7 @@ import {
   hasVehicleAnswer,
   normaliseVehicleRegistration,
   normaliseVehicleRegistrations,
+  vehiclesBeyondParking,
 } from './vehicle'
 
 /**
@@ -70,5 +71,48 @@ describe('formatVehicles', () => {
 
   it('returns null for none, so the caller decides what absence looks like', () => {
     expect(formatVehicles([])).toBeNull()
+  })
+})
+
+/**
+ * The parking allowance as the forms show it (Jeff, 17 September 2026).
+ *
+ * Every case here is about *not* over-reporting: the empty row a form always
+ * shows, the empty rows it grows by, and the same plate typed twice. A warning
+ * that fires on a row nobody filled in teaches staff to ignore the warning,
+ * which is worse than not having one.
+ */
+describe('vehiclesBeyondParking', () => {
+  it('counts nothing while the plates fit the allowance', () => {
+    expect(vehiclesBeyondParking(['BAA 1234', 'BAB 5678'], 2)).toBe(0)
+  })
+
+  it('counts the cars past the allowance', () => {
+    expect(vehiclesBeyondParking(['BAA 1234', 'BAB 5678', 'BAC 9012'], 2)).toBe(1)
+  })
+
+  it('ignores the empty row every form starts with', () => {
+    expect(vehiclesBeyondParking([''], 0)).toBe(0)
+  })
+
+  it('ignores empty rows a form has grown by', () => {
+    expect(vehiclesBeyondParking(['BAA 1234', '', '  '], 1)).toBe(0)
+  })
+
+  it('counts a plate typed into two rows once, as it is stored', () => {
+    expect(vehiclesBeyondParking(['BAA 1234', 'baa  1234'], 1)).toBe(0)
+  })
+
+  it('treats a unit type with no spaces as allowing none', () => {
+    expect(vehiclesBeyondParking(['BAA 1234'], 0)).toBe(1)
+  })
+
+  it('never reports a negative overflow when the guest brings fewer cars', () => {
+    expect(vehiclesBeyondParking([], 4)).toBe(0)
+  })
+
+  /** A nonsensical allowance is a settings problem, not a reason to crash. */
+  it('reads a negative allowance as none', () => {
+    expect(vehiclesBeyondParking(['BAA 1234'], -2)).toBe(1)
   })
 })

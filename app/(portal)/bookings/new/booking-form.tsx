@@ -192,6 +192,19 @@ export function BookingForm({
    * submits in.
    */
   const selectedUnit = visibleUnits.find((unit) => unit.id === unitId) ?? visibleUnits[0]
+
+  /*
+   * What the chosen unit's type includes, for the vehicles section. Read from
+   * `config` rather than carried on the unit row: `car_parks` is a property of
+   * the type, and the unit list only names its type. Undefined while no unit
+   * is chosen, which is the one state where the section says nothing.
+   */
+  const selectedUnitType = selectedUnit
+    ? config.unitTypes.find((type) => type.id === selectedUnit.unitTypeId)
+    : undefined
+  const parking = selectedUnitType
+    ? { unitTypeName: selectedUnitType.name, spaces: selectedUnitType.carParks }
+    : null
   const totalGuests = chargeableGuests + exemptGuests
 
   /*
@@ -411,6 +424,7 @@ export function BookingForm({
             noVehicle={noVehicle}
             onNoVehicleChange={setNoVehicle}
             error={state.fieldErrors?.vehicles}
+            parking={parking}
           />
         </FormSection>
 
