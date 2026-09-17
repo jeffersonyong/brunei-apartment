@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { readFaqFacts } from '@/lib/db/faq-facts'
 import { listFaqs } from '@/lib/db/faqs'
 import { contact } from '@/lib/domain/contact'
-import { faqsByTopic } from '@/lib/domain/faq'
+import { faqsByTopic, type FaqFacts, type FaqTopicGroup } from '@/lib/domain/faq'
 
 import { ClosingBand, closingBandSecondaryClassName } from '../_components/closing-band'
 import { FaqDisclosures, faqItemFrom } from '../_components/faq-disclosures'
@@ -42,9 +42,40 @@ export const metadata: Metadata = {
  */
 export const revalidate = 3600
 
+/**
+ * The questions and the figures they quote, or neither.
+ *
+ * The safety net `/` has carried since it was cached, added here on 18
+ * September 2026 for the reason the night before made concrete. **This page is
+ * prerendered, so the _build_ performs this read** — and a build that runs
+ * while the code and the database disagree used to throw here and abort the
+ * whole deployment, because one page that cannot be built takes every page
+ * with it. That disagreement is not exotic: it is the few minutes between a
+ * migration reaching production and the deploy that needs it, which is every
+ * migration that touches what this page reads. It happened on the extras
+ * migration (capability F13) and cost a deploy.
+ *
+ * Both reads are caught together because an answer is a question plus the
+ * figures it names: with no figures there is nothing to render a question
+ * into, so half an answer is not a state worth having.
+ */
+async function readFaqPage(): Promise<{
+  groups: readonly FaqTopicGroup[]
+  facts: FaqFacts | null
+}> {
+  try {
+    const [faqs, facts] = await Promise.all([listFaqs(), readFaqFacts()])
+
+    return { groups: faqsByTopic(faqs), facts }
+  } catch (error) {
+    console.error('The FAQs page could not read its questions and figures; showing none.', error)
+
+    return { groups: [], facts: null }
+  }
+}
+
 export default async function FaqPage() {
-  const [faqs, facts] = await Promise.all([listFaqs(), readFaqFacts()])
-  const groups = faqsByTopic(faqs)
+  const { groups, facts } = await readFaqPage()
 
   return (
     <>
@@ -62,22 +93,31 @@ export default async function FaqPage() {
             at the foot of every page.
           </p>
 
-          {groups.map((group) => (
-            <section
-              key={group.topic.id}
-              aria-labelledby={`topic-${group.topic.id}`}
-              className="mt-2xl border-t border-divider pt-xl"
-            >
-              <h2 id={`topic-${group.topic.id}`} className="text-display-xs text-foreground">
-                {group.topic.title}
-              </h2>
+          {/* Only when the read failed. A property whose staff have simply not
+              written any questions yet gets the paragraph above, which already
+              says what to do about it, and the band below. */}
+          {facts === null ? (
+            <p className="mt-2xl border-t border-divider pt-xl text-body-lg text-copy">
+              We could not load the questions just now. Message us and a person will answer.
+            </p>
+          ) : (
+            groups.map((group) => (
+              <section
+                key={group.topic.id}
+                aria-labelledby={`topic-${group.topic.id}`}
+                className="mt-2xl border-t border-divider pt-xl"
+              >
+                <h2 id={`topic-${group.topic.id}`} className="text-display-xs text-foreground">
+                  {group.topic.title}
+                </h2>
 
-              <FaqDisclosures
-                className="mt-lg"
-                items={group.faqs.map((faq) => faqItemFrom(faq, facts))}
-              />
-            </section>
-          ))}
+                <FaqDisclosures
+                  className="mt-lg"
+                  items={group.faqs.map((faq) => faqItemFrom(faq, facts))}
+                />
+              </section>
+            ))
+          )}
         </div>
       </section>
 
