@@ -45,12 +45,13 @@ const dayPassSchema = z.object({
   passDate: z.string().refine(isStayDate, 'Pick the day you are coming.'),
   guestName: z.string().trim().min(1, 'Tell us your name.').max(120),
   guestPhone: z.string().trim().min(5, 'We need a number to confirm your booking.').max(40),
+  /** Required since 17 September 2026, for the reason `/stay`'s copy states. */
   guestEmail: z
     .string()
     .trim()
+    .min(1, 'We send your confirmation and entry QR code here.')
     .max(MAX_GUEST_EMAIL_LENGTH)
-    .refine((value) => value === '' || isLikelyEmailAddress(value), 'Check the email address.')
-    .default(''),
+    .refine(isLikelyEmailAddress, 'Check the email address.'),
   vehicles: z.array(z.string().max(MAX_VEHICLE_REGISTRATION_LENGTH)).max(MAX_VEHICLES_PER_BOOKING),
   noVehicle: z.enum(['true', 'false']).default('false'),
   website: z.string().default(''),

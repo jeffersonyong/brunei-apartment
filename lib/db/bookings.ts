@@ -698,6 +698,12 @@ export interface CreateWalkInBookingInput {
   guestName: string
   guestPhone: string
   /**
+   * Required, like the name and the number. The confirmation email and the
+   * entry QR code are sent to it, so a booking without one leaves the guard
+   * nothing to scan; `create_walk_in_booking()` refuses a blank.
+   */
+  guestEmail: string
+  /**
    * Normalised and de-duplicated by the caller
    * (`normaliseVehicleRegistrations`). Empty is only legal with `noVehicle`:
    * prd.md §13 [C] requires a registration, and `create_walk_in_booking()`
@@ -863,6 +869,7 @@ export async function createWalkInBooking(
     p_check_out: input.range.end,
     p_guest_name: input.guestName,
     p_guest_phone: input.guestPhone,
+    p_guest_email: input.guestEmail,
     p_vehicles: input.vehicles,
     p_no_vehicle: input.noVehicle,
     p_chargeable_guests: input.chargeableGuests,

@@ -144,6 +144,7 @@ export function BookingForm({
   // is exactly the friction this screen exists to remove.
   const [guestName, setGuestName] = useState('')
   const [guestPhone, setGuestPhone] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
   // One empty row to type into. prd.md §13 [C] requires a registration, so the
   // form opens asking for one rather than offering the exception first.
   const [vehicles, setVehicles] = useState<readonly string[]>([''])
@@ -351,7 +352,9 @@ export function BookingForm({
           {/* One row, sized to what each field holds rather than split evenly:
               a name needs room, a Brunei number does not. Two full-width rows for
               two short fields was a row of empty space in a form the desk fills in
-              with a guest waiting. */}
+              with a guest waiting. The address wraps to its own row below them,
+              because it is the longest of the three and the least often typed
+              from memory. */}
           <div className="flex flex-wrap items-start gap-lg">
             <TextField
               id="guestName"
@@ -372,7 +375,22 @@ export function BookingForm({
               className="w-[260px]"
               error={state.fieldErrors?.guestPhone}
             />
+            <TextField
+              id="guestEmail"
+              label="Email"
+              type="email"
+              placeholder="john@example.com"
+              value={guestEmail}
+              onChange={setGuestEmail}
+              autoComplete="email"
+              className="w-[320px]"
+              error={state.fieldErrors?.guestEmail}
+            />
           </div>
+          {/* Said once, where a clerk asking the guest for it can see why. */}
+          <p className="text-caption text-muted-foreground">
+            The booking confirmation and the entry QR code are sent here.
+          </p>
         </FormSection>
 
         <FormSection title="Vehicles">
