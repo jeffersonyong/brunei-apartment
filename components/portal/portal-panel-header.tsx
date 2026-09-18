@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 
+import { HelpDeskLink } from '@/components/portal/help-desk-link'
 import { PortalMobileNav } from '@/components/portal/portal-mobile-nav'
 import type { PortalAccountUser } from '@/components/portal/portal-account'
 import { breadcrumbTrail } from '@/components/portal/portal-routes'
@@ -98,6 +99,12 @@ export function PortalPanelHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-sm">
+        <HelpDeskLink />
+        {/* A hairline between the help desk and search — two ways of finding
+            something, kept side by side but read as separate tools. The extra
+            right margin matches the air the link's own padding gives it on the
+            left, so the line sits centred between the two. */}
+        <span aria-hidden className="mr-sm h-5 w-px bg-divider" />
         <PortalSearch />
         <PortalTools />
       </div>
