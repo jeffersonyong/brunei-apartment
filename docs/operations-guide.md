@@ -66,9 +66,9 @@ The portal's left-hand menu (on a phone, the menu button at the top) is grouped 
 - **Admin**: **Property settings**, **Unit registry**, **Website settings**, **Roles & staff**, **Audit log**.
 - **Others**: **Settings** (your own account), **Public site**, **Field screens**.
 
-Everyone sees the whole menu. Opening a screen you are not allowed to use shows a "You don't have access to this screen" card naming the permission it needs; nothing on it can be seen or changed. At the top of every portal screen are **search** (find a booking by its reference, the guest's name or phone, or the unit, or jump to a screen), the **help desk** button (a speech bubble with a question mark, just left of the bell), and the **notifications** bell.
+Everyone sees the whole menu. Opening a screen you are not allowed to use shows a "You don't have access to this screen" card naming the permission it needs; nothing on it can be seen or changed. At the top of every portal screen are **search** (find a booking by its reference, the guest's name or phone, or the unit, or jump to a screen), and the **notifications** bell. Just left of the search box is **Ask anything** (a four-pointed star; on a phone only the star shows).
 
-**The help desk** is the ChatGPT project that answers questions from this guide. The button opens it in a new tab, so the screen you are asking about stays open. It is only on the portal, not on the Gate or Departures phone screens, and it needs a ChatGPT account. It can't see or change anything in the system: describe what you see, or paste the message on screen.
+**Ask anything** opens the help desk: the ChatGPT project that answers questions from this guide. The button opens it in a new tab, so the screen you are asking about stays open. It is only on the portal, not on the Gate or Departures phone screens, and it needs a ChatGPT account. It can't see or change anything in the system: describe what you see, or paste the message on screen.
 
 ## The big rules
 
@@ -1377,7 +1377,7 @@ This area covers the screens staff use to **find** a booking, to **see what is h
 - **Calendar** (sidebar: Bookings → Calendar) — the booking calendar: one row per unit, one column per night, a coloured bar for everything that holds a unit. It answers "what is free, and when".
 - **Search** (the **Search** box at the top right of every portal screen, or Ctrl K / ⌘K) — find a booking, a payment waiting to be checked, a deposit, a unit or a screen from anywhere.
 - **Notifications** (the bell at the top right of every portal screen) — new online bookings, payments waiting to be verified, and booking emails that could not be sent.
-- **Help desk** (the speech-bubble button just left of the bell) — opens the ChatGPT help desk in a new tab, to ask how to do anything in the system.
+- **Ask anything** (just left of the search box, with a four-pointed star) — opens the ChatGPT help desk in a new tab, to ask how to do anything in the system.
 - **Edit a booking** (the **Edit** button on a booking's own page) — change the dates, unit, guests, extras, late check-out, the guest's name and phone, the vehicles and (for staff allowed to) the discount. The screen is titled **Edit PV-XXXX**. Staff may call this "amending" a booking; on screen it is always **Edit**.
 
 All of these are in the staff portal at **portal.bruneiapartment.com**. "Today" everywhere in this area means **today in Brunei time**, whatever the clock on the device says.
@@ -1593,7 +1593,7 @@ Rules:
 
 **Who sees it:** everyone signed in to the portal. What appears in it depends on your permissions.
 
-**Where:** the bell icon at the top right of every portal screen, between the help desk button and the light/dark theme switch.
+**Where:** the bell icon at the top right of every portal screen, next to the light/dark theme switch.
 
 **What raises a notification** — only three things:
 

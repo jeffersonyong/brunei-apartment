@@ -1,6 +1,4 @@
-import { MessageCircleQuestion } from 'lucide-react'
-
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Sparkle } from 'lucide-react'
 
 /**
  * The staff help desk: a ChatGPT project whose only source is
@@ -15,25 +13,24 @@ export const HELP_DESK_URL =
   'https://chatgpt.com/g/g-p-6aadaffd9e8481918ff3cac98c5d55e0-brunei-apartment-palm-villa/project'
 
 /**
- * An icon link beside the notifications bell, built like it: muted glyph, the
- * `muted` chip on hover, the control size. It opens a new tab so the screen
- * being asked about stays where it was.
+ * "Ask anything", left of the search field: the two ways of finding something
+ * sit side by side. Ghost rather than bordered, so the search field stays the
+ * one object in the header and this reads as its quieter neighbour. Below
+ * `md` it folds to the glyph, as the search field folds to its icon.
+ *
+ * A new tab, so the screen being asked about stays where it was.
  */
 export function HelpDeskLink() {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <a
-          href={HELP_DESK_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Ask the help desk (opens in a new tab)"
-          className="inline-flex size-control items-center justify-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-panel"
-        >
-          <MessageCircleQuestion aria-hidden className="size-4" />
-        </a>
-      </TooltipTrigger>
-      <TooltipContent>Ask the help desk how to do anything here</TooltipContent>
-    </Tooltip>
+    <a
+      href={HELP_DESK_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex h-control min-w-control items-center justify-center gap-xs rounded-md px-sm text-body-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-panel"
+    >
+      <Sparkle aria-hidden className="size-4 shrink-0" />
+      <span className="sr-only md:not-sr-only">Ask anything</span>
+      <span className="sr-only">(opens the help desk in a new tab)</span>
+    </a>
   )
 }

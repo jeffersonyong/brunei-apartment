@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 
+import { HelpDeskLink } from '@/components/portal/help-desk-link'
 import { PortalMobileNav } from '@/components/portal/portal-mobile-nav'
 import type { PortalAccountUser } from '@/components/portal/portal-account'
 import { breadcrumbTrail } from '@/components/portal/portal-routes'
@@ -98,6 +99,7 @@ export function PortalPanelHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-sm">
+        <HelpDeskLink />
         <PortalSearch />
         <PortalTools />
       </div>
