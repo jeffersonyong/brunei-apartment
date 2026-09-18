@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useActionState } from 'react'
+import { startTransition, useEffect, useActionState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
@@ -30,6 +30,17 @@ import type { SettingsActionState } from './actions'
  * action revalidates this screen, so its response re-renders the page and the
  * token reaches each tab as a fresh `expectedUpdatedAt` prop — no client
  * refresh is needed, and one would only render the page a second time.
+ *
+ * **Submitted by hand, never through `<form action>`.** React resets a form
+ * once its action settles, and the Radix checkbox and select answer a form's
+ * `reset` by calling their change handler with the value they mounted with.
+ * Every tab's draft is controlled state, so that reset wrote the page-load
+ * values back over the draft that had just been saved: tick three facilities,
+ * save, and one of them came back unticked with "Unsaved changes" beside the
+ * button — one rather than three, because each handler rebuilt the list from
+ * the same render and the last one won. A second save would have made it true.
+ * Dispatching the action from `onSubmit` keeps the pending state and the
+ * result, and never fires the reset.
  */
 
 interface SettingsFormProps<T> {
@@ -78,7 +89,14 @@ export function SettingsForm<T>({
   const problems = state.status === 'error' ? (state.problems ?? []) : []
 
   return (
-    <form action={formAction} className="grid gap-xl">
+    <form
+      className="grid gap-xl"
+      onSubmit={(event) => {
+        event.preventDefault()
+        const formData = new FormData(event.currentTarget)
+        startTransition(() => formAction(formData))
+      }}
+    >
       <input type="hidden" name="draft" value={JSON.stringify(draft)} />
       <input type="hidden" name="expectedUpdatedAt" value={expectedUpdatedAt} />
 
