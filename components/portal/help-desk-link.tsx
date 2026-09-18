@@ -21,17 +21,15 @@ export const HELP_DESK_URL =
 const GLYPH_GRADIENT_ID = 'ask-anything-gradient'
 
 /**
- * "Ask anything", left of the search field: the two ways of finding something
- * sit side by side. Ghost at rest, so the search field stays the one object in
- * the header; below `md` it folds to the glyph, as the search field folds to
- * its icon.
+ * "Ask anything", left of the search field and split from it by a hairline:
+ * the two ways of finding something sit side by side. Borderless, so the
+ * search field stays the one object in the header; below `md` it folds to the
+ * glyph, as the search field folds to its icon.
  *
- * On hover or focus it is the one coloured thing on the operations surfaces
- * (design.md §Components — Ask anything): label and glyph take the static
- * violet-blue `ask-gradient`. The gradient is applied only then, never
- * carried invisibly at rest: text clipped to a background is drawn with
- * different smoothing and reads heavier than its neighbours, so the resting
- * label must be plain text.
+ * Label and glyph always carry the static violet-blue `ask-gradient` — the one
+ * coloured thing on the operations surfaces (design.md §Components — Ask
+ * anything). Hover and focus add only the `muted` chip, as on every other
+ * ghost control.
  *
  * A new tab, so the screen being asked about stays where it was.
  */
@@ -41,7 +39,7 @@ export function HelpDeskLink() {
       href={HELP_DESK_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="group inline-flex h-control min-w-control items-center justify-center gap-xs rounded-md px-sm text-body-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-panel"
+      className="inline-flex h-control min-w-control items-center justify-center gap-xs rounded-md px-sm text-body-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-panel"
     >
       <svg aria-hidden focusable="false" className="absolute size-0">
         <defs>
@@ -53,9 +51,9 @@ export function HelpDeskLink() {
       </svg>
       <Sparkle
         aria-hidden
-        className="size-4 shrink-0 group-hover:[stroke:url(#ask-anything-gradient)_var(--ask-from)] group-focus-visible:[stroke:url(#ask-anything-gradient)_var(--ask-from)]"
+        className="size-4 shrink-0 [stroke:url(#ask-anything-gradient)_var(--ask-from)]"
       />
-      <span className="sr-only group-hover:bg-[image:var(--ask-gradient)] group-hover:bg-clip-text group-hover:text-transparent group-focus-visible:bg-[image:var(--ask-gradient)] group-focus-visible:bg-clip-text group-focus-visible:text-transparent md:not-sr-only">
+      <span className="sr-only bg-[image:var(--ask-gradient)] bg-clip-text text-transparent md:not-sr-only">
         Ask anything
       </span>
       <span className="sr-only">(opens the help desk in a new tab)</span>
