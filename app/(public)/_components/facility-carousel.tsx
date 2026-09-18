@@ -78,8 +78,19 @@ export function FacilityCarousel({ lead, count, children }: FacilityCarouselProp
       return
     }
 
+    // A page is the whole cards a view holds, measured from the cards rather
+    // than taken as the list's width: that width includes the gutter below,
+    // and a stride that is not a whole number of cards leaves the snap to
+    // correct it mid-scroll.
+    const cards = list.children
+    const stride =
+      cards.length > 1
+        ? (cards[1] as HTMLElement).offsetLeft - (cards[0] as HTMLElement).offsetLeft
+        : list.clientWidth
+    const perView = Math.max(1, Math.round(list.clientWidth / stride))
     const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    list.scrollBy({ left: direction * list.clientWidth, behavior: isReduced ? 'auto' : 'smooth' })
+
+    list.scrollBy({ left: direction * stride * perView, behavior: isReduced ? 'auto' : 'smooth' })
   }
 
   const arrows = count > 2 && (
@@ -127,11 +138,18 @@ export function FacilityCarousel({ lead, count, children }: FacilityCarouselProp
         aria-label="What the day pass admits"
         className={cn(
           'mt-2xl grid gap-lg rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          // The top pixel is room for a card's hover lift, which the scroll
-          // container would otherwise clip.
-          'md:flex md:snap-x md:snap-mandatory md:overflow-x-auto md:pt-px',
+          // A scroll container clips at its own edge, and a card's width is a
+          // fraction of a pixel (a third of the row, less the gaps) — so a card
+          // snapped against that edge could lose its hairline to rounding,
+          // most visibly on a scaled Windows display. A 4px gutter inside the
+          // row, taken back out of the margin so the cards still line up with
+          // the section, keeps every border clear of the clip; scroll-padding
+          // makes the snap land inside the gutter rather than on the edge. The
+          // top gets the same room for a card's hover lift.
+          'md:-mx-xs md:mt-[calc(var(--spacing-2xl)-var(--spacing-xs))] md:flex md:snap-x md:snap-mandatory md:scroll-px-xs md:overflow-x-auto md:px-xs md:pt-xs',
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           // Each card is a view's share of the row, less its share of the gaps.
+          // `100%` is the row inside its gutter, which is the section's width.
           'md:[&>li]:w-[calc((100%-var(--spacing-lg))/2)] md:[&>li]:shrink-0 md:[&>li]:snap-start',
           'lg:[&>li]:w-[calc((100%-2*var(--spacing-lg))/3)]',
         )}
