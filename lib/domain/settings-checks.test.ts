@@ -94,6 +94,7 @@ function settings(): PropertySettings {
         name: 'Swimming pool',
         includedInDayPass: true,
         dayPassCapacity: null,
+        shownOnSite: true,
         sortOrder: 1,
       },
     ],

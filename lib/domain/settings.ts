@@ -70,6 +70,12 @@ export interface FacilitySettings {
   includedInDayPass: boolean
   /** Headroom for day-pass visitors. Null until the client agrees one (C2). */
   dayPassCapacity: number | null
+  /**
+   * Whether the landing page shows its card — the Photos tab's switch
+   * (capability F7). Presentation only: what the pass admits is
+   * `includedInDayPass`.
+   */
+  shownOnSite: boolean
   sortOrder: number
 }
 

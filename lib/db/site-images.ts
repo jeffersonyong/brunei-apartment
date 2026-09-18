@@ -348,6 +348,46 @@ export async function removeSiteImage(input: {
   return { ok: true }
 }
 
+/**
+ * Whether the landing page shows a facility's card (capability F7).
+ *
+ * A column on the facility rather than on its photograph, because the reason
+ * to hide a card is as often that there is no photograph yet. What the pass
+ * admits is untouched — that is the Day pass tab's tick.
+ */
+export async function setFacilityShownOnSite(input: {
+  slug: string
+  shown: boolean
+  actorId: string
+}): Promise<SiteImageWriteResult<{ changed: boolean }>> {
+  const propertyId = await currentPropertyId()
+
+  const { data, error } = await dataClient().rpc('set_facility_shown_on_site', {
+    p_property_id: propertyId,
+    p_slug: input.slug,
+    p_shown: input.shown,
+    p_actor_id: input.actorId,
+  })
+
+  if (error) {
+    throw new Error(`Could not change what the front page shows: ${error.message}`)
+  }
+
+  const result = data as { ok: true; changed: boolean } | RpcRefusal
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      error:
+        result.error === 'not_found'
+          ? { code: result.error, message: 'That facility is no longer listed.' }
+          : { code: result.error, message: 'That change could not be saved.' },
+    }
+  }
+
+  return { ok: true, changed: result.changed }
+}
+
 /** The database's refusals, as sentences a person at the screen can act on. */
 function describeSiteImageFailure(code: string): SiteImageWriteError {
   switch (code) {

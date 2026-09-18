@@ -92,9 +92,11 @@ export function landingFiguresFrom(
 
   // `settings.facilities` arrives in `sort_order`, which is the order staff
   // put them in on Property settings — so the cards follow the portal rather
-  // than a second ordering nobody can see.
+  // than a second ordering nobody can see. A facility switched off on the
+  // Photos tab loses its card and nothing else: /day-pass still lists it,
+  // because the pass still admits it.
   const dayPassIncluded = settings.facilities
-    .filter((facility) => facility.includedInDayPass)
+    .filter((facility) => facility.includedInDayPass && facility.shownOnSite)
     .map((facility) => ({ slug: facility.slug, name: facility.name }))
 
   return {

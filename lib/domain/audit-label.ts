@@ -108,6 +108,8 @@ export const KNOWN_AUDIT_ACTIONS = [
   'facility.added',
   'facility.updated',
   'facility.removed',
+  'facility.shown',
+  'facility.hidden',
   'document_retention.updated',
   'bank_account.added',
   'bank_account.updated',
@@ -267,6 +269,8 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   'day_pass_bundle.removed': 'Family bundle removed',
   'facility.added': 'Facility added',
   'facility.removed': 'Facility removed',
+  'facility.shown': 'Card shown on the front page',
+  'facility.hidden': 'Card hidden from the front page',
   'bank_account.added': 'Bank account added',
   'bank_account.removed': 'Bank account removed',
 }

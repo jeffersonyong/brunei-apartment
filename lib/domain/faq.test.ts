@@ -104,6 +104,7 @@ const settings: PropertySettings = {
       name: 'the pool',
       includedInDayPass: true,
       dayPassCapacity: null,
+      shownOnSite: true,
       sortOrder: 1,
     },
     {
@@ -112,6 +113,7 @@ const settings: PropertySettings = {
       name: 'the BBQ area',
       includedInDayPass: false,
       dayPassCapacity: null,
+      shownOnSite: true,
       sortOrder: 2,
     },
   ],

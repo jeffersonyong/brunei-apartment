@@ -118,6 +118,7 @@ function seededSettings(): PropertySettings {
         name: 'Swimming pool',
         includedInDayPass: true,
         dayPassCapacity: null,
+        shownOnSite: true,
         sortOrder: 1,
       },
       {
@@ -126,6 +127,7 @@ function seededSettings(): PropertySettings {
         name: 'Gym',
         includedInDayPass: false,
         dayPassCapacity: null,
+        shownOnSite: true,
         sortOrder: 2,
       },
     ],

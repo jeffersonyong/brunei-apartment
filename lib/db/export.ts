@@ -864,7 +864,12 @@ const settings: ExportTable = {
       rows.push([
         'Facilities',
         facility.name,
-        facility.includedInDayPass ? 'in the day pass' : 'not in the day pass',
+        [
+          facility.includedInDayPass ? 'in the day pass' : 'not in the day pass',
+          facility.shownOnSite ? null : 'hidden from the front page',
+        ]
+          .filter(Boolean)
+          .join(', '),
       ])
     }
 

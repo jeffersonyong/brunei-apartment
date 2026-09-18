@@ -16,8 +16,8 @@ const UNIT_TYPES = [
 ]
 /** The facilities ticked into the day pass — the same source, since 17 September 2026. */
 const FACILITIES = [
-  { slug: 'swimming-pool', name: 'Swimming pool' },
-  { slug: 'water-park', name: 'Water park' },
+  { slug: 'swimming-pool', name: 'Swimming pool', shownOnSite: true },
+  { slug: 'water-park', name: 'Water park', shownOnSite: true },
 ]
 const nameFor = (userId: string) => STAFF.get(userId) ?? 'a former colleague'
 
@@ -88,13 +88,34 @@ describe('photoSections', () => {
    */
   test('gives a place to every facility the day pass admits, and only those', () => {
     const dayPass = photoSections([], nameFor, UNIT_TYPES, [
-      { slug: 'swimming-pool', name: 'Swimming pool' },
-      { slug: 'gym', name: 'Gym' },
+      { slug: 'swimming-pool', name: 'Swimming pool', shownOnSite: true },
+      { slug: 'gym', name: 'Gym', shownOnSite: true },
     ])[1]!
 
     expect(dayPass.slots.map((slot) => slot.key)).toEqual([
       'facility:swimming-pool',
       'facility:gym',
     ])
+  })
+
+  /**
+   * A card switched off still has its place, so it can be switched back on —
+   * and only facility places carry the switch at all.
+   */
+  test('keeps a switched-off facility on the screen, marked hidden, with its switch', () => {
+    const sections = photoSections([], nameFor, UNIT_TYPES, [
+      { slug: 'swimming-pool', name: 'Swimming pool', shownOnSite: true },
+      { slug: 'gym', name: 'Gym', shownOnSite: false },
+    ])
+
+    expect(sections[1]!.slots.map((slot) => slot.visibility)).toEqual([
+      { slug: 'swimming-pool', shown: true },
+      { slug: 'gym', shown: false },
+    ])
+    expect(
+      [sections[0]!, sections[2]!, sections[3]!]
+        .flatMap((section) => section.slots)
+        .every((slot) => slot.visibility === undefined),
+    ).toBe(true)
   })
 })
