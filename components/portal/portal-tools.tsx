@@ -1,5 +1,6 @@
 'use client'
 
+import { HelpDeskLink } from '@/components/portal/help-desk-link'
 import { PortalNotifications } from '@/components/portal/portal-notifications'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -15,6 +16,7 @@ export function PortalTools() {
   return (
     <TooltipProvider>
       <div className="flex shrink-0 items-center gap-xxs">
+        <HelpDeskLink />
         <PortalNotifications />
         <ThemeToggle />
       </div>
