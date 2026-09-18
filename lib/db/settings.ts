@@ -86,6 +86,7 @@ export interface PropertySettingsRow {
     name: string
     included_in_day_pass: boolean
     day_pass_capacity: number | null
+    shown_on_site: boolean
     sort_order: number
   }[]
   retention: { kind: DocumentKind; months: number }[]
@@ -158,6 +159,7 @@ function toSettings(row: PropertySettingsRow): PropertySettings {
       name: facility.name,
       includedInDayPass: facility.included_in_day_pass,
       dayPassCapacity: facility.day_pass_capacity,
+      shownOnSite: facility.shown_on_site,
       sortOrder: facility.sort_order,
     })),
     retention: row.retention.map((period) => ({ kind: period.kind, months: period.months })),

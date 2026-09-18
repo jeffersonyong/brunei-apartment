@@ -15,6 +15,7 @@ import {
   listCurrentSiteImages,
   placeSiteImage,
   removeSiteImage,
+  setFacilityShownOnSite,
   sweepSiteImages,
   updateSiteImage,
 } from './site-images'
@@ -475,5 +476,65 @@ describe('the landing page against the database', () => {
     // actually has, since a typo costs a card its wording and its photograph.
     expect(Object.keys(facilityCopy).filter((slug) => !facilitySlugs.has(slug))).toEqual([])
     expect(Object.keys(unitTypeCopy).filter((slug) => !unitTypeSlugs.has(slug))).toEqual([])
+  })
+})
+
+/* ── A card off the front page ────────────────────────────────────────────── */
+
+describe("switching a facility's card off the front page", () => {
+  async function shownOnSite(): Promise<boolean> {
+    const { data, error } = await dataClient()
+      .from('facility')
+      .select('shown_on_site')
+      .eq('id', facility.id)
+      .single()
+
+    if (error) {
+      throw new Error(`Could not read the facility: ${error.message}`)
+    }
+
+    return (data as { shown_on_site: boolean }).shown_on_site
+  }
+
+  test('a facility starts shown', async () => {
+    expect(await shownOnSite()).toBe(true)
+  })
+
+  test('hides it, records who did, and shows it again', async () => {
+    const hidden = await setFacilityShownOnSite({ slug: facility.slug, shown: false, actorId })
+
+    expect(hidden).toEqual({ ok: true, changed: true })
+    expect(await shownOnSite()).toBe(false)
+
+    await setFacilityShownOnSite({ slug: facility.slug, shown: true, actorId })
+
+    expect(await shownOnSite()).toBe(true)
+    expect(await auditEventsFor(facility.id)).toEqual([
+      {
+        action: 'facility.hidden',
+        actorId,
+        before: { name: facility.name, shown_on_site: true },
+        after: { name: facility.name, shown_on_site: false },
+      },
+      {
+        action: 'facility.shown',
+        actorId,
+        before: { name: facility.name, shown_on_site: false },
+        after: { name: facility.name, shown_on_site: true },
+      },
+    ])
+  })
+
+  test('the same choice twice writes and records nothing', async () => {
+    const result = await setFacilityShownOnSite({ slug: facility.slug, shown: true, actorId })
+
+    expect(result).toEqual({ ok: true, changed: false })
+    expect(await auditEventsFor(facility.id)).toEqual([])
+  })
+
+  test('refuses a facility that is not there', async () => {
+    const result = await setFacilityShownOnSite({ slug: 'no-such-facility', shown: false, actorId })
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'not_found' } })
   })
 })

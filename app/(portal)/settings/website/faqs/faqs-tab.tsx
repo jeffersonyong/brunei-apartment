@@ -9,9 +9,6 @@ import type { Actor } from '@/lib/auth/require-permission'
 import { exportGroup } from '@/lib/db/export'
 import { readFaqFacts } from '@/lib/db/faq-facts'
 import { listFaqs } from '@/lib/db/faqs'
-import { listStaff } from '@/lib/db/staff'
-import { formatInstantAsDate } from '@/lib/domain/dates'
-import { env } from '@/lib/env'
 import {
   FAQ_TOPICS,
   MAX_FEATURED_FAQS,
@@ -38,8 +35,7 @@ import { NewFaqButton } from './new-faq-button'
  * list's previews fill the figures in, so staff read what a guest will read.
  */
 export async function faqsTab(actor: Actor): Promise<WebsiteTabView> {
-  const [faqs, facts, staff] = await Promise.all([listFaqs(), readFaqFacts(), listStaff()])
-  const names = new Map(staff.map((account) => [account.id, account.displayName]))
+  const [faqs, facts] = await Promise.all([listFaqs(), readFaqFacts()])
   const featuredCount = faqs.filter((faq) => faq.featured).length
   const frontPage = frontPageFaqs(faqs)
   const grouped = new Map(faqsByTopic(faqs).map((group) => [group.topic.id, group.faqs]))
@@ -49,23 +45,12 @@ export async function faqsTab(actor: Actor): Promise<WebsiteTabView> {
     title: topic.title,
     rows: (grouped.get(topic.id) ?? []).map((faq): FaqRowView => ({
       id: faq.id,
-      slug: faq.slug,
-      // The whole link, not the fragment the row prints. Staff send one answer
-      // over WhatsApp (lib/domain/faq.ts), and a fragment is not something
-      // anybody can send — it needs the site's host in front of it, which is
-      // `SITE_ORIGIN` and is not this screen's host once the staff side moves
-      // to its own subdomain (architecture.md §3).
-      url: `${env.siteOrigin}/faq#${faq.slug}`,
       topic: faq.topic,
       question: faq.question,
       answer: faq.answer,
       featured: faq.featured,
       updatedAt: faq.updatedAt,
       preview: renderFaqAnswer(faq.answer, facts).join(' '),
-      changed:
-        faq.updatedBy === null
-          ? 'Written when the site was set up'
-          : `Changed ${formatInstantAsDate(faq.updatedAt)} by ${names.get(faq.updatedBy) ?? 'a former colleague'}`,
     })),
   }))
 

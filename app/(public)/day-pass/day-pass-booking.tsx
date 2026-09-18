@@ -130,10 +130,12 @@ export function DayPassBooking({
 
                 {included.length > 0 ? (
                   <Notice placement="nested" className="mt-lg">
-                    <p className="text-body-sm">
-                      A pass admits you to the {formatList(included)}. It runs all day — there are
-                      no time slots.
-                    </p>
+                    <p className="text-body-sm">A day pass gives you access to:</p>
+                    <ul className="mt-xs list-disc pl-lg text-body-sm">
+                      {included.map((facility) => (
+                        <li key={facility}>{facility}</li>
+                      ))}
+                    </ul>
                   </Notice>
                 ) : null}
               </fieldset>
@@ -321,12 +323,4 @@ function bandHint(band: DayPassAgeBand): string {
 
 function adultBandOf(bands: PropertyConfig['dayPassAgeBands']): DayPassAgeBand | null {
   return bands.find((band) => band.maxAgeExclusive === null) ?? bands.at(-1) ?? null
-}
-
-function formatList(items: readonly string[]): string {
-  if (items.length <= 1) {
-    return items[0] ?? ''
-  }
-
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
 }

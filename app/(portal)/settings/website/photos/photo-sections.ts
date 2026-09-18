@@ -36,6 +36,11 @@ export interface PhotoSlotView {
   name: string
   aspect: SiteImageAspect
   current: CurrentPhotoView | null
+  /**
+   * A facility's card only: whether the landing page shows it, and the slug
+   * the switch is sent. Absent for every other place, which has no switch.
+   */
+  visibility?: { slug: string; shown: boolean }
 }
 
 export interface PhotoSectionView {
@@ -51,8 +56,11 @@ export function photoSections(
   images: readonly SiteImage[],
   nameFor: (userId: string) => string,
   unitTypes: readonly { slug: string; name: string }[],
-  /** The facilities the day pass admits — exactly the cards that section shows. */
-  dayPassFacilities: readonly { slug: string; name: string }[],
+  /**
+   * The facilities the day pass admits — every card that section can show,
+   * including the ones switched off, so they can be switched back on.
+   */
+  dayPassFacilities: readonly { slug: string; name: string; shownOnSite: boolean }[],
 ): readonly PhotoSectionView[] {
   const byKey = new Map(images.map((image) => [placementKey(image.placement), image]))
 
@@ -87,10 +95,11 @@ export function photoSections(
     {
       id: 'day-pass',
       title: 'Day pass',
-      hint: 'One photograph for each facility card in the day-pass section.',
-      slots: dayPassFacilities.map((facility) =>
-        slotView({ kind: 'facility', slug: facility.slug }, facility.name),
-      ),
+      hint: 'One photograph for each facility card in the day-pass section. Switch a card off to leave it off the front page — the day-pass booking page still lists it.',
+      slots: dayPassFacilities.map((facility) => ({
+        ...slotView({ kind: 'facility', slug: facility.slug }, facility.name),
+        visibility: { slug: facility.slug, shown: facility.shownOnSite },
+      })),
     },
     {
       id: 'short-stays',

@@ -7,6 +7,7 @@ import { requirePermission } from '@/lib/auth/require-permission'
 import {
   placeSiteImage,
   removeSiteImage,
+  setFacilityShownOnSite,
   updateSiteImage,
   type SiteImageWriteError,
 } from '@/lib/db/site-images'
@@ -53,6 +54,11 @@ const updateSchema = z.object({
 
 const removeSchema = z.object({
   imageId: z.uuid(),
+})
+
+const shownSchema = z.object({
+  slug: z.string().min(1),
+  shown: z.enum(['true', 'false']),
 })
 
 export async function placeSiteImageAction(
@@ -166,6 +172,47 @@ export async function removeSiteImageAction(
   }
 
   revalidateWebsite()
+
+  return { status: 'done' }
+}
+
+/**
+ * A facility's card on or off the landing page. It hides the card, not the
+ * facility: /day-pass still lists everything the pass admits.
+ */
+export async function setFacilityShownAction(
+  _previous: PhotoActionState,
+  formData: FormData,
+): Promise<PhotoActionState> {
+  const actor = await requirePermission('site_image.manage')
+
+  const parsed = shownSchema.safeParse({
+    slug: formData.get('slug'),
+    shown: formData.get('shown'),
+  })
+
+  if (!parsed.success) {
+    return { status: 'error', message: 'That change could not be saved.' }
+  }
+
+  const result = await setFacilityShownOnSite({
+    slug: parsed.data.slug,
+    shown: parsed.data.shown === 'true',
+    actorId: actor.userId,
+  })
+
+  if (!result.ok) {
+    return refused(result.error)
+  }
+
+  if (result.changed) {
+    revalidateWebsite()
+  } else {
+    // Nothing was written, so nothing else is stale, but this screen may be:
+    // "unchanged" also means someone else made the same change while it was
+    // open. `refresh()` re-renders this screen alone in the response.
+    refresh()
+  }
 
   return { status: 'done' }
 }

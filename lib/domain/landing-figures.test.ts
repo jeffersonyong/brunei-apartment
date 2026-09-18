@@ -76,6 +76,7 @@ const SETTINGS: PropertySettings = {
       name: 'Swimming pool',
       includedInDayPass: true,
       dayPassCapacity: null,
+      shownOnSite: true,
       sortOrder: 0,
     },
     {
@@ -84,6 +85,7 @@ const SETTINGS: PropertySettings = {
       name: 'BBQ area',
       includedInDayPass: false,
       dayPassCapacity: null,
+      shownOnSite: true,
       sortOrder: 1,
     },
   ],
@@ -197,6 +199,28 @@ describe('the front page figures', () => {
       'Swimming pool',
       'BBQ area',
     ])
+  })
+
+  /**
+   * The Photos tab's switch hides a card and nothing else: the facility is
+   * still admitted, so it stays off this list only, not off /day-pass.
+   */
+  test('a facility switched off on the Photos tab loses its card', () => {
+    // Arrange
+    const poolHidden = {
+      ...SETTINGS,
+      facilities: SETTINGS.facilities.map((facility) => ({
+        ...facility,
+        includedInDayPass: true,
+        shownOnSite: facility.slug !== 'swimming-pool',
+      })),
+    }
+
+    // Act
+    const figures = landingFiguresFrom(poolHidden, BOTH_SELLABLE)
+
+    // Assert
+    expect(figures.dayPassIncluded.map((facility) => facility.name)).toEqual(['BBQ area'])
   })
 
   test('a day pass admitting nothing lists nothing, rather than every facility', () => {
