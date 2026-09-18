@@ -167,6 +167,16 @@
   --color-identity-lime-tint: #e3fbb4;
   --color-identity-lime-deep: #3f6212;
 
+  /* The help desk's two stops (design.md §Components — Ask anything): the
+     identity set's violet and blue hues at full chroma. The identity pair
+     itself was tried and read as flat indigo on the light panel and as
+     near-white on the dark one — a gradient needs saturation to show. Each
+     stop clears 4.5:1 against the panel it sits on. */
+  --color-ask-violet: #7c3aed;
+  --color-ask-blue: #2563eb;
+  --color-ask-violet-bright: #a78bfa;
+  --color-ask-blue-bright: #60a5fa;
+
   /* Stream — says *which product was sold*, never who and never how it turned
      out. The third register, and the smallest: the three revenue streams of
      prd.md §1, labelled "Type" on screen.
@@ -526,6 +536,13 @@
     color-mix(in oklab, var(--color-ink) 12%, transparent),
     color-mix(in oklab, var(--color-canvas) 9%, transparent)
   );
+
+  /* The help desk's gradient — the one colour on the operations surfaces
+     (design.md §Components — Ask anything). Deep stops on the light panel,
+     bright ones on the dark. */
+  --ask-from: light-dark(var(--color-ask-violet), var(--color-ask-violet-bright));
+  --ask-to: light-dark(var(--color-ask-blue), var(--color-ask-blue-bright));
+  --ask-gradient: linear-gradient(90deg, var(--ask-from), var(--ask-to));
 
   /* Text — two steps, and deliberately nothing between them (recut
      2026-08-31).
