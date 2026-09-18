@@ -7,10 +7,13 @@ import type { LandingImage } from '@/lib/domain/landing-images'
 import type { LandingFigures } from '@/lib/domain/landing-figures'
 
 import { facilityCopy } from '../_content/landing'
+import { FacilityCarousel } from './facility-carousel'
 import { SiteMedia } from './site-media'
 
 /** A third of the container from `lg`, half from `md`, the full width below. */
 const FACILITY_SIZES = '(min-width: 1024px) 363px, (min-width: 768px) 50vw, 100vw'
+
+const LEAD = 'One pass covers everything below — pay per person, or take a family bundle.'
 
 /**
  * What the day pass admits, card per facility.
@@ -33,8 +36,9 @@ const FACILITY_SIZES = '(min-width: 1024px) 363px, (min-width: 768px) 50vw, 100v
  * a card with its name and its photograph — the same rule the unit-type cards
  * follow, so a tick in the portal never produces a broken page.
  *
- * The grid is identical hairline cards — colour is not a card treatment
- * (design.md §Cards). The aqua moment here is the price line's text. Each
+ * The cards are identical hairline cards — colour is not a card treatment
+ * (design.md §Cards) — stacked on a phone and one sideways-scrolling row from
+ * a tablet up (./facility-carousel.tsx). The aqua moment here is the price line's text. Each
  * card's photograph is found by the facility's slug (capability F7), so a
  * rename in Property settings keeps it.
  */
@@ -64,12 +68,13 @@ export function DayPassSection({
             ? 'A full pool day'
             : `A full pool day, from ${figures.dayPassFrom}`}
         </h2>
-        <p className="mt-md max-w-[52ch] text-body-lg text-copy">
-          One pass covers everything below — pay per person, or take a family bundle.
-        </p>
-
-        {included.length === 0 ? null : (
-          <ul className="mt-2xl grid gap-lg md:grid-cols-2 lg:grid-cols-3">
+        {included.length === 0 ? (
+          <p className="mt-md max-w-[52ch] text-body-lg text-copy">{LEAD}</p>
+        ) : (
+          <FacilityCarousel
+            lead={<p className="max-w-[52ch] text-body-lg text-copy">{LEAD}</p>}
+            count={included.length}
+          >
             {included.map((facility) => {
               const copy = facilityCopy[facility.slug]
 
@@ -90,7 +95,7 @@ export function DayPassSection({
                 </li>
               )
             })}
-          </ul>
+          </FacilityCarousel>
         )}
 
         <Card className="mt-lg flex flex-col gap-lg sm:flex-row sm:items-center sm:justify-between">
