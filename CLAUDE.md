@@ -15,6 +15,7 @@ The `docs/` folder is the source of truth. Each doc is **normative for its domai
 | [docs/architecture.md](docs/architecture.md) | Stack, app structure, data model, security, infra | **Supersedes the PRD's technical sketches where they differ.** |
 | [docs/design.md](docs/design.md) | Design tokens, typography, components, do's/don'ts | Frontmatter is the machine-readable token set. |
 | [docs/scope-of-capabilities.md](docs/scope-of-capabilities.md) | Client-facing scope baseline (A1–G7 capability refs) | Defines what is in and out of v1. If it's not listed there, it's not in the quoted delivery. |
+| [docs/operations-guide.md](docs/operations-guide.md) | How the app behaves, for staff — every screen, task, message and edge case | **Descriptive, not normative**: written from the code, and the source file of the staff's ChatGPT help project (instructions in [docs/operations-project-instructions.md](docs/operations-project-instructions.md)). Any change to a staff-visible flow, message, permission or email updates it in the same PR and bumps its "Current as of" date — a stale guide gives staff confident wrong answers. |
 
 **Rules of authority:**
 
