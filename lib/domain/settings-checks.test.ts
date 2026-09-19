@@ -128,11 +128,13 @@ describe('checkPricingDraft', () => {
     expect(result.value.policy.security_deposit_cents).toBe(bnd(100))
   })
 
-  test('refuses an amount with a comma rather than repairing it', () => {
+  test('refuses a comma that does not group thousands, rather than repairing it', () => {
+    // `1,200.00` is read — it is how formatCents writes the figure the field
+    // opened on. A comma anywhere else is still a figure nobody can be sure of.
     const draft = pricingDraftFrom(settings())
     const withComma: PricingDraft = {
       ...draft,
-      unitTypes: [{ ...draft.unitTypes[0]!, baseRate: '1,200.00' }],
+      unitTypes: [{ ...draft.unitTypes[0]!, baseRate: '12,00.00' }],
     }
 
     const result = checkPricingDraft(withComma)
