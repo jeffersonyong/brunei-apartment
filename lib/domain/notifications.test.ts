@@ -52,8 +52,39 @@ describe('which events are notifications', () => {
     expect(notificationActionsFor(new Set<Permission>())).toEqual([])
   })
 
+  test('tell whoever changes a party that the gate counted more people', () => {
+    expect(notificationActionsFor(new Set<Permission>(['booking.amend']))).toEqual([
+      'booking.extra_guests_reported',
+    ])
+  })
+
   test('are listed a screenful at a time', () => {
     expect(MAX_NOTIFICATIONS).toBeGreaterThan(0)
+  })
+})
+
+describe('extra guests at the gate', () => {
+  const amends = new Set<Permission>(['booking.amend'])
+  const reported = (after: Record<string, unknown>) =>
+    event({ action: 'booking.extra_guests_reported', after: { reference: 'PV-1001', ...after } })
+
+  test('says how many more, whose booking, and opens it', () => {
+    expect(toNotification(reported({ extra: 2 }), 'Siti Rahman', amends)).toMatchObject({
+      kind: 'guests',
+      title: 'Extra guests at the gate',
+      detail: 'PV-1001 · Siti Rahman · 2 more',
+      href: '/bookings/PV-1001',
+    })
+  })
+
+  test('visitors the guard added to a pass and paid for himself read as done', () => {
+    expect(toNotification(reported({ extra: 1, added_cents: 1000 }), null, amends)?.title).toBe(
+      'Visitors added at the gate',
+    )
+  })
+
+  test('are not for somebody who cannot change the party', () => {
+    expect(toNotification(reported({ extra: 2 }), null, every)).toBeNull()
   })
 })
 

@@ -159,7 +159,7 @@ describe('parseDiscount', () => {
 
   test.each([
     ['a currency symbol', '$40'],
-    ['a grouping comma', '1,000'],
+    ['a comma that groups nothing', '1,00'],
     ['three decimal places', '40.000'],
   ])('refuses %s as an amount', (_label, value) => {
     const result = parseDiscount({ kind: 'amount', value, reason })

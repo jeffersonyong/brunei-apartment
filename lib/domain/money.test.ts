@@ -42,6 +42,12 @@ describe('centsFromInput', () => {
     ['442.05', 44205],
     ['  10  ', 1000],
     ['1000', 100000],
+    // The thousands comma formatCents() writes, so a dialog that opens on a
+    // figure it formatted can be submitted untouched — at the gate it could
+    // not, and the guard was told to type "200.00" over "1,368.00".
+    ['1,000', 100000],
+    ['1,368.00', 136800],
+    ['12,345,678.90', 1234567890],
   ])('parses %j as %i cents', (value, expected) => {
     expect(centsFromInput(value)).toBe(expected)
   })
@@ -50,7 +56,13 @@ describe('centsFromInput', () => {
     ['', 'empty'],
     ['   ', 'whitespace only'],
     ['abc', 'not a number'],
-    ['1,000', 'a grouping comma'],
+    ['1,36.00', 'a comma that does not group three digits'],
+    ['1,0000', 'a group of four'],
+    ['10,00', 'a decimal comma'],
+    [',100', 'a leading comma'],
+    ['1,,000', 'two commas together'],
+    ['1000,000', 'a comma after an ungrouped run'],
+    ['1 000', 'a space as the grouping'],
     ['$442', 'a currency symbol'],
     ['-5', 'negative'],
     ['4.155', 'a third decimal place'],

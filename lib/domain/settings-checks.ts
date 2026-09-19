@@ -215,10 +215,7 @@ function readCents(problems: Problems, field: string, value: string, label: stri
   const amount = centsFromInput(value.trim())
 
   if (amount === null) {
-    problems.add(
-      field,
-      `${label} must be an amount in BND, like 250 or 250.50 — no commas or symbols.`,
-    )
+    problems.add(field, `${label} must be an amount in BND, like 250 or 1,250.50 — no symbols.`)
 
     return null
   }

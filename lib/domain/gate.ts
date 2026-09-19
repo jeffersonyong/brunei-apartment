@@ -1,4 +1,5 @@
 import { balanceOf, canSettle } from './balance'
+import type { PropertyConfig } from './config'
 import { isTerminal, type BookingStatus } from './booking-state'
 import { formatStayDate, type StayDate } from './dates'
 import { depositSecuresBooking, depositShortfallOf } from './deposit'
@@ -292,6 +293,47 @@ export function gateCashDueOf(facts: GateFacts): GateCashDue | null {
 }
 
 /**
+ * Whether anything about a booking's money is not settled yet — the card the
+ * guard should be careful with (Jason's team, 19 September 2026).
+ *
+ * A deposit not held in full (not taken, promised by a transfer nobody has
+ * checked, or short), anything still owed on the stay or the pass, or a
+ * transfer waiting to be checked. Jason's example is the ordinary one: BND 100
+ * down online and the rest to pay at the gate.
+ *
+ * **Decided from the booking alone**, like the verdict. The colour is the one
+ * thing about money every reader at the gate is shown, including a phone
+ * signed in without `payment.record_cash`, which never receives a figure.
+ *
+ * A closed booking is never unsettled here: it takes no more money, at the
+ * gate or anywhere, so there is nothing for the guard to be careful about. An
+ * overpaid booking is not either — that is a refund, and the office's.
+ */
+export function gateMoneyUnsettledOf(facts: GateFacts): boolean {
+  if (isTerminal(facts.status)) {
+    return false
+  }
+
+  if (facts.stream !== 'day_pass' && !depositSecuresBooking(facts.deposit)) {
+    return true
+  }
+
+  return facts.transferPending || balanceOf(facts.total, facts.paid).state === 'outstanding'
+}
+
+/**
+ * Whether the guard may add visitors he counted to a day pass himself, and
+ * take the difference in cash (Jeff, 19 September 2026): a pass on its own day
+ * that is paid and ready to admit, or still to pay at the gate — the passes he
+ * could already take cash for. An admitted pass is closed and takes no more
+ * money, and one waiting on a transfer is the office's; for those the guard
+ * tells the office instead.
+ */
+export function mayAddVisitorsAtGate(verdict: GateVerdict): boolean {
+  return verdict.kind === 'admit' || (verdict.kind === 'office' && verdict.reason === 'pass_unpaid')
+}
+
+/**
  * Whether the cash a guard confirmed is still the cash owed, asked again just
  * before it is recorded.
  *
@@ -323,6 +365,25 @@ export function gateCashStalenessOf(
     (opened.kind === 'deposit' || opened.kind === 'deposit_shortfall') && now.kind === 'stay'
 
   return tookTheDeposit ? 'already_recorded' : 'changed'
+}
+
+/** What the gate knows about the property, for the party line and the pass prices. */
+export interface GateContext {
+  /** Guests at or under this age are not counted towards a stay (prd.md §8.2). */
+  exemptAgeMax: number
+  /**
+   * The rates, for a reader who may add visitors to a pass and take the cash
+   * for them (`day_pass.admit` and `payment.record_cash`). Null for anybody
+   * else, so their phone carries no prices.
+   */
+  passPricing: PropertyConfig | null
+}
+
+export function gateContextOf(config: PropertyConfig, mayAddToPasses: boolean): GateContext {
+  return {
+    exemptAgeMax: config.paxExemptAgeMax,
+    passPricing: mayAddToPasses ? config : null,
+  }
 }
 
 /** The two days a sentence may name. A `GateBooking` is one. */

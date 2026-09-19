@@ -1,6 +1,6 @@
 # Palm Villa operations guide
 
-**Current as of 18 September 2026.** This guide describes the Palm Villa booking and operations system exactly as it works on that date. If a screen looks different from what is described here, the system has changed since, and the person who looks after the system (Jefferson) should be asked.
+**Current as of 19 September 2026.** This guide describes the Palm Villa booking and operations system exactly as it works on that date. If a screen looks different from what is described here, the system has changed since, and the person who looks after the system (Jefferson) should be asked.
 
 ## How this guide is organised
 
@@ -297,7 +297,7 @@ After a successful save the whole screen is replaced by a confirmation (it is no
 **Where:** Bookings → New booking → **Discount**.
 **Steps:**
 1. Under **Type**, choose **Amount off, in BND** or **Percentage off**.
-2. Enter the figure: an amount like **40** or **40.00** (no "BND", no commas, at most two decimals), or a whole percentage from **1** to **100** (no "%" sign, no decimals).
+2. Enter the figure: an amount like **40** or **40.00** (no "BND", at most two decimals; a thousands comma such as **1,000.00** is fine), or a whole percentage from **1** to **100** (no "%" sign, no decimals).
 3. Enter a **Reason** (required, up to 280 characters). The guest never sees it.
 4. Check the new total in the Booking summary. A discount shows as its own line, "Discount — 10%" or "Discount", with a minus amount.
 
@@ -530,7 +530,7 @@ A: Someone else took that unit a moment before you. Nothing was saved and no mon
 A: The system doesn't sell early check-in. Standard check-in is 14:00; whether a guest can come earlier depends on the unit being ready — agree it with them on the day. There is no way to charge an early check-in fee through the system at the moment.
 
 **Q: The family has three cars but the unit only includes two spaces.**
-A: Enter all three plates. The form warns that the extra car may not have a bay, but it still saves the booking and records the car so Security can match it.
+A: Enter all three plates. The form warns that the extra car may not have a bay, but it still saves the booking and records the car so Security can match it. (A customer booking online cannot do this: the website stops at the spaces the unit includes and asks them to message the office on WhatsApp at +673 8959798 first. If you agree to the extra car, add its plate to their booking with **Edit → Vehicles**.)
 
 **Q: A guest doesn't have a car.**
 A: Tick **Arriving without a vehicle**. Only use it when there really is no car — the guard matches arrivals by plate.
@@ -628,7 +628,7 @@ The page is laid out top to bottom like this:
 
 Shown only when the booking can no longer be edited:
 
-- On a **Checked in** booking: *"This guest has checked in, so the booking can no longer be edited. Checking them out ends the stay."*
+- On a **Checked in** booking: *"This guest has checked in, so the booking can no longer be edited. Checking them out ends the stay."* (The dates, unit and extras can no longer be edited, but the party still can, with **Change** on the Party line.)
 - On any **closed** booking (Completed, Cancelled, No show, Expired): *"This booking is closed. Its details are kept as a record and cannot be changed."*
 
 #### 3a. Guest & stay card
@@ -640,7 +640,7 @@ Six or seven labelled readouts in two columns, then the **Identity** panel:
 - **Email** — the address (tap to open an email). If there is none it says **None on file**; on a booking made online without an address it adds *"Booked online without one — confirm by phone or WhatsApp"*. (An address has been required on every new booking since 17 September 2026, so this only appears on older bookings.)
 - **Unit** — the unit reference (for example 3B-04). A day pass shows **No unit**.
 - **Dates** — first night → check-out day, with the number of nights underneath ("2 nights"). A day pass shows **No stay dates**. The day pass's own date is shown in the **Admit** dialog, not in this card.
-- **Party** — the number of guests counted towards occupancy. If some guests are not counted (for example young children), a line underneath says *"plus 2 not counted towards occupancy"*.
+- **Party** — for a stay, the number of guests counted towards occupancy; if some guests are not counted (for example young children), a line underneath says *"plus 2 not counted towards occupancy"*. For a day pass, the number of people, with the age bands underneath (e.g. *"Adult × 2, Child × 1"*). Beside the number, a **Change** button for holders of **Edit bookings** on any booking that is not closed — including a guest already checked in, and a day pass. See *Finding and changing bookings → How to change the party (more or fewer people)*.
 - **Vehicle** / **Vehicles** — the registration plates. If there are none, it says either **None** with *"The guest is arriving without one."* (the guest said they have no car), or **Not recorded** with *"Taken before a registration was required — add it when editing the booking."* (an old booking where nobody asked).
 - **Identity** panel — see *Identity documents* below.
 
@@ -825,7 +825,7 @@ Cancelling or marking a day pass a no-show gives its places back to that day's d
 - **Only on the pass's own date**, counted in Brunei time. On any other day the dialog says *"This pass is for [date], and can only be admitted on that day."*
 - **Only when paid in full** — verified payments must cover the whole price. A pass accepted with a short transfer is still owed money and is refused. The dialog says *"This pass is not paid in full. Take the rest from the Money card below, then admit it."* Take the rest (see *Payments*) and admit.
 - A transfer still awaiting verification does not count as paid.
-- The number of people is shown in the dialog so you can count heads; the app does not check headcount.
+- The number of people is shown in the dialog so you can count heads; the app does not check headcount. If more people came than the pass is for, press **Change** beside **Party** first (see *Finding and changing bookings → How to change the party (more or fewer people)*), take what is then owed, and admit. Once admitted, the party can no longer be changed.
 
 **Can it be undone?** No. An admitted pass is closed for good.
 
@@ -1001,6 +1001,8 @@ The **History** section is the system's own record of everything that happened t
 - **Booked online — short stay** / **Booked online — day pass** — the customer made it on the website (shows "System").
 - **Booking link issued — found by reference and phone** — the customer used *Find my booking* on the website to get their booking link back.
 - **Edited** — the booking was amended; the reason is shown if one was given.
+- **Party changed — 5 → 7** — somebody changed how many people the booking is for with **Change** on the Party line (from 5 people to 7, everybody counted). The **Why** is shown if one was given. When the guard added visitors to a day pass at the gate, it reads the same, with the reason "Visitors added at the gate".
+- **Extra guests reported at the gate — 2 more** — the guard pressed **Extra** and told the office; his words are in **Notes**. **Extra guests added at the gate — 2 more** — the guard added the visitors to a day pass himself and took the difference.
 - **Discount applied** / **Discount changed** / **Discount removed**
 - **Held** — a wording that exists but is not recorded by anything today; a new held booking shows one of the Created / Booked online lines instead.
 
@@ -1244,7 +1246,7 @@ The accounting pack is a single PDF per booking for the accountant: the itemised
 - **Cancelling and marking a no-show settle the deposit at the same moment** — kept (the default, and always for a no-show) or given back (a cancellation the desk chooses). A kept deposit can never be changed afterwards, and no money can be taken on a booking that closed without a stay.
 - **A cancellation needs a reason**; a no-show does not. A no-show is only allowed from the arrival day.
 - **Cancelling and no-shows free the unit**; checking out does not shorten the booked dates.
-- **Checked-in and closed bookings cannot be edited.**
+- **Checked-in and closed bookings cannot be edited.** The one exception is the party: **Change** on the Party line still works on a checked-in guest (never on a closed booking).
 - **Notes are permanent**; corrections are new notes. Anyone who can see the booking can add one.
 - **The History is permanent** and records who did what, including every time someone opened a document.
 - **Identity documents:** visible as "on file" to all who can see the booking, opened only by holders of *View identity documents*, every opening logged, links valid 60 seconds, deleted automatically when their retention date passes.
@@ -1263,6 +1265,9 @@ A: Yes. Only the deposit blocks check-in. Take the room money from the Money car
 
 **Q: The guest arrived a day early. Can I check them in?**
 A: The portal allows it and warns you the booking is dated another day. But checking in does not change the dates — if they are staying an extra night, edit the booking (and its price) *first*, because a checked-in booking cannot be edited. Whether the unit is ready is your call; the app does not check.
+
+**Q: The guest is already checked in and more people have turned up. Can I charge for them?**
+A: Yes. Press **Change** beside **Party** on the booking's Guest & stay card and enter the new numbers. A stay costs more only above the unit type's maximum guests; the extra-guest charge is then added for every night of the booking, and what is owed shows on the Money card and on the guard's Gate card as cash to take. See *Finding and changing bookings → How to change the party (more or fewer people)*.
 
 **Q: I checked in the wrong guest / the wrong booking. How do I undo it?**
 A: You cannot — there is no undo for check-in. The booking can only be checked out now. Add a note explaining the mistake and tell Jefferson/Jason.
@@ -1376,9 +1381,10 @@ This area covers the screens staff use to **find** a booking, to **see what is h
 - **All bookings** (sidebar: Bookings → All bookings) — the register of every booking, with search, filters and pages. It replaces the booking spreadsheet.
 - **Calendar** (sidebar: Bookings → Calendar) — the booking calendar: one row per unit, one column per night, a coloured bar for everything that holds a unit. It answers "what is free, and when".
 - **Search** (the **Search** box at the top right of every portal screen, or Ctrl K / ⌘K) — find a booking, a payment waiting to be checked, a deposit, a unit or a screen from anywhere.
-- **Notifications** (the bell at the top right of every portal screen) — new online bookings, payments waiting to be verified, and booking emails that could not be sent.
+- **Notifications** (the bell at the top right of every portal screen) — new online bookings, payments waiting to be verified, booking emails that could not be sent, and extra guests reported at the gate.
 - **Ask anything** (violet-blue, with a four-pointed star, just left of the search box) — opens the ChatGPT help desk in a new tab, to ask how to do anything in the system.
 - **Edit a booking** (the **Edit** button on a booking's own page) — change the dates, unit, guests, extras, late check-out, the guest's name and phone, the vehicles and (for staff allowed to) the discount. The screen is titled **Edit PV-XXXX**. Staff may call this "amending" a booking; on screen it is always **Edit**.
+- **Change the party** (the **Change** button beside **Party** on a booking's own page) — change how many people a stay or day pass is for, including a guest already checked in.
 
 All of these are in the staff portal at **portal.bruneiapartment.com**. "Today" everywhere in this area means **today in Brunei time**, whatever the clock on the device says.
 
@@ -1595,15 +1601,16 @@ Rules:
 
 **Where:** the bell icon at the top right of every portal screen, next to the light/dark theme switch.
 
-**What raises a notification** — only three things:
+**What raises a notification** — only four things:
 
 | Notification title | When it appears | Who is told | Clicking it opens |
 |---|---|---|---|
 | **New online booking — short stay** / **New online booking — day pass** | A customer made a booking themselves on the public website. | Holders of **View bookings** (all roles by default) | The booking's page |
 | **Payment to verify** | A booking was sent for payment verification — a customer pressed "I have made the transfer" on the website, or a staff member used **Record the deposit → Bank transfer — verify later** on a booking that was still **Held**. A booking created on New booking with bank transfer, and a stay transfer raised with **Record a payment**, do **not** raise this notification — tell a colleague who verifies payments, or check the queue yourself. The line shows the amount when there is one. | Holders of **Verify payments** (Front Office, Finance, Admin by default) | The **Verification queue** (not the booking) |
 | **Booking email could not be sent** / **Confirmation email could not be sent** / **Email could not be sent** | The system tried to email a guest about their booking and the email failed. The reason is in the booking's history. | Holders of **View bookings** | The booking's page |
+| **Extra guests at the gate** / **Visitors added at the gate** | The guard pressed **Extra** on the Gate: more people arrived than the booking is for. **Extra guests at the gate** means he told the office — change the booking's party (**Change** on the Party line) if an extra charge is due. **Visitors added at the gate** means he added them to a day pass and took the difference in cash himself, so it is only for your information. The line shows how many, e.g. "PV-1001 · Guest name · 2 more". The guard's note is in the booking's **Notes**. | Holders of **Edit bookings** (Front Office and Admin by default) | The booking's page |
 
-Each line shows the title, then the booking reference · guest name (· amount), and how long ago it happened ("5m", "2h 10m", "3 days").
+Each line shows the title, then the booking reference · guest name (· amount, or · "2 more" for extra guests), and how long ago it happened ("5m", "2h 10m", "3 days").
 
 Rules:
 
@@ -1793,7 +1800,7 @@ The sections in detail:
 2. Click the bell. The list opens; new items have a dot and the header says "N new". Opening it marks them all as seen.
 3. Click a line to go to the booking (or to the Verification queue for "Payment to verify").
 
-**What happens next:** nothing happens to the booking or payment — you still have to act (verify the payment, contact the guest about the failed email, and so on).
+**What happens next:** nothing happens to the booking or payment — you still have to act (verify the payment, contact the guest about the failed email, change the party for extra guests reported at the gate, and so on).
 
 **Edge cases and limits:**
 - There is no "mark as unread" and no way to dismiss one item.
@@ -1813,7 +1820,7 @@ The sections in detail:
 **What can be changed:**
 - the **dates** (check-in and check-out);
 - the **unit** — any unit free for the whole stay, including a unit of a different type;
-- the number of **guests** (over the exempt age, and aged 3 and under);
+- the number of **guests** (over the exempt age, and aged 3 and under) — though to change only the number of people, **Change** on the Party line is simpler and does not reprice the rest of the stay (see *How to change the party (more or fewer people)*);
 - the **extras** (for example sofa beds) and their quantities;
 - **late check-out hours** (0–12);
 - the guest's **name** and **phone**;
@@ -1860,8 +1867,8 @@ The sections in detail:
 
 **Edge cases and limits:**
 
-- **Check-in date in the past.** The system will not price a stay whose check-in date is before today. So a **Confirmed booking whose check-in date has already passed** (the guest has not been checked in) **cannot be edited at all** — not even the phone number: the price panel shows "Check-in cannot be in the past." and **Review change** stays greyed out. Either check the guest in (see *The booking's own page*), or, if they did not come, mark the booking No show or cancel it and make a new one.
-- **A guest already checked in cannot be edited.** To extend an in-house guest, the stated procedure is a **second booking** for the extra nights on the same unit, with the security deposit **waived** and the reason naming the first booking (see *Creating bookings → How to waive the security deposit at booking*). Late check-out hours asked for on the morning of departure likewise cannot be charged through the system. Whether a checked-in stay should ever be editable is not settled yet — ask Jefferson/Jason.
+- **Check-in date in the past.** The system will not price a stay whose check-in date is before today. So a **Confirmed booking whose check-in date has already passed** (the guest has not been checked in) **cannot be edited at all** — not even the phone number: the price panel shows "Check-in cannot be in the past." and **Review change** stays greyed out. Either check the guest in (see *The booking's own page*), or, if they did not come, mark the booking No show or cancel it and make a new one. (The number of people can still be changed with **Change** on the Party line.)
+- **A guest already checked in cannot be edited.** The one exception is the number of people: **Change** on the booking's Party line works on a checked-in guest (see *How to change the party (more or fewer people)*). To extend an in-house guest, the stated procedure is a **second booking** for the extra nights on the same unit, with the security deposit **waived** and the reason naming the first booking (see *Creating bookings → How to waive the security deposit at booking*). Late check-out hours asked for on the morning of departure likewise cannot be charged through the system. Whether a checked-in stay should ever be editable is not settled yet — ask Jefferson/Jason.
 - **Advance limit:** the new check-in cannot be more than the advance-booking limit ahead (62 days by default): "Bookings open up to 62 days ahead."
 - **Check-out must be after check-in.** If you enter a check-out on or before the check-in and click **Check these dates**, the screen silently goes back to the booking's own dates — there is no error message. Check the dates shown in the **After this change** panel.
 - **Extras taken off sale.** If the booking holds an extra that has since been taken off sale or removed in Property settings, the form still shows it ("no longer offered"), but **the booking cannot be saved while its quantity is above 0**: the price panel shows "[Extra] is not available to book." and Review change stays greyed out. You must set that extra to 0 (the guest loses it) or ask an Admin to put the extra back on sale first.
@@ -1910,6 +1917,61 @@ On opening the Edit screen:
 - "**This booking is checked in**" — "The guest has already checked in, so the stay can no longer be changed here." with **Back to the booking**.
 - "**This booking is completed**" / "**…cancelled**" / "**…expired**" / "**…no show**" — "Closed bookings are kept as a record and cannot be changed."
 - "**This booking has no stay to edit**" — "It occupies no unit, so there are no dates or unit to change here." — it is a day pass. Day passes cannot be edited; the **Edit** button still appears on a day pass's page but leads here. To change a day pass, cancel it (see *The booking's own page*) and have the customer book a new one on the website — the portal cannot create a day pass (see *Creating bookings*).
+
+### How to change the party (more or fewer people)
+
+**Who can do this:** holders of **Edit bookings** — Front Office and Admin by default (an Admin can change this in **Roles & staff**). The guard cannot; he reports extra people from the Gate with **Extra**, and the office is told in the bell (see *Notifications*).
+
+**Where:** the booking's page → **Guest & stay** card → **Change**, beside the **Party** number.
+
+**Which bookings:** any booking that is not closed — **Draft**, **Held**, **Awaiting payment**, **Confirmed**, and also **Checked in**. It works on a **day pass** too. It is not offered on a Completed, Cancelled, No show or Expired booking (an admitted day pass is Completed). Unlike **Edit**, it works on a guest already checked in and on a booking whose check-in date has passed.
+
+**Steps:**
+1. Press **Change**. The box **Change the party** opens: "PV-XXXX. The price is worked out again for the new numbers. What has been paid stays as it is."
+2. Enter the new numbers:
+   - **A stay:** **Over 3** (at least 1) and **Aged 3 and under**. (The age follows the exempt age in Property settings, 3 by default.)
+   - **A day pass:** one box per age band (for example **Adult**, **Child**), filled in with the pass as it was sold.
+3. As soon as a number changes, the box shows what the change does:
+   - "Total BND 486.00 → BND 500.00" and "**The guest will owe BND 14.00.**" — the guest now owes more;
+   - or "**The booking will owe the guest BND 20.00. Settle it with them outside the system.**" — more has been paid than the new price;
+   - or "What has been paid covers it exactly.";
+   - or, when the price does not move, "No change to the price — the stay is still within what the unit takes before extra guests are charged." (for a day pass: "No change to the price.").
+4. Optionally fill in **Why (optional)**, up to 280 characters — for example "Two more arrived at the gate".
+5. Press **Save** (**Saving…**). It stays greyed out until a number has changed and the new price can be worked out. **Cancel** closes without saving.
+6. A message "**Party changed**" with the reference appears.
+
+**How the new price is worked out:**
+- **A stay** costs more only for guests **over the exempt age above the unit type's maximum guests** (for example above 8 in a 3-bedroom). Each of those is charged the extra-guest rate in Property settings (BND 7 by default) **for every night of the booking**, including nights already spent. Children aged 3 and under are never charged. Going back down to the maximum or below removes the extra-guest line.
+- **Everything else on the stay keeps the price it was sold at** — the nights, the extras and the late check-out are not repriced at today's rates (unlike **Edit**, which reprices the whole stay).
+- **A percentage discount** is worked out again on the new price. **A fixed-amount discount** stays the same amount; if it is now bigger than the new price, the change is refused ("A discount cannot be more than the booking is worth.").
+- **A day pass** is priced again in full for the new party, exactly as when it was sold — per person by age band, with family bundles used wherever they make it cheaper.
+
+**What happens next:**
+- The booking's **Party** line and the Gate card's **Guests** line show the new numbers. The **Money** card shows the new **Total**, and **Outstanding** or **Overpaid by** if the booking is no longer exactly settled.
+- **If the guest now owes money**, take it from the booking page (**Record a payment**), or the guard takes it at the gate: the Gate card turns red ("Payment not settled") and shows it under **To take** as **The stay** or **Day pass**. The status does not change.
+- **If the guest has now overpaid** (fewer people), the Money card shows **Overpaid by BND X**. Refund it outside the system.
+- Any "… more people than booked — the office has been told." line on the Gate card disappears: the guard's report is answered.
+- The booking's history shows **Party changed — 5 → 7** (everybody counted, before → after) with your name, the time and your **Why** in quotation marks.
+- Nothing else changes: not the dates, the unit, the extras, the security deposit or any payment. No email is sent to the guest, and no notification is raised.
+
+**Undoing:** press **Change** again and put the old numbers back (while the booking is still open). On a stay the price returns to what it was, apart from the extra-guest rate, which is always today's.
+
+**Edge cases and limits:**
+- **Fewer people never refunds anything by itself.** The difference shows as **Overpaid by** and is settled by a person.
+- If Property settings are set to **Refuse the booking** for a party over the maximum, a stay can't be changed to more than the maximum: "3-bedroom takes up to 8 guests; this party is 9."
+- A day pass is still bound by the day's visitor limit: "Only 2 more places are left that day." / "The facilities are full for that day, so nobody more can be added."
+- The dates, unit and extras of a **checked-in** guest still cannot be changed. An extension after check-in is still a second booking, and late check-out asked for after check-in still cannot be charged through the system (see *How to edit (amend) a booking*).
+- **Extra people found out only after the guest has checked out:** the booking is closed, so **Change** is not offered and no payment can be recorded against it. Charge them against the security deposit instead — the deposit's page → **Charges** → **Add charge**, with the amount and a reason such as "2 extra guests × 3 nights" (see *Deposits, reports and finance → How to raise a charge against a deposit*). It comes off what is returned to the guest when the release is approved; if it is more than the deposit, the rest is recorded as owed by the guest.
+- **Change the party before the guest checks out** whenever you can: until then, what they owe shows on the Gate card and the guard can take it when the keys come back.
+
+**If you see an error:**
+- "A booking needs at least one guest above the exempt age." / "A booking needs at least one guest." — **Over 3** is 0.
+- "Add at least one guest." — every band of a day pass is 0.
+- "Nothing has changed. Change a number, or close this."
+- "A discount cannot be more than the booking is worth." — the fixed-amount discount is bigger than the new price. Change or remove the discount first (see *How to add, change or remove a discount after booking*; that is done through **Edit**, before check-in).
+- "Someone else changed this booking a moment ago. Reload and try again." / "Someone else changed this booking while you were working on it. Reload and retry." — reload the page and try again.
+- "This booking is closed, so its party can no longer be changed." — it was checked out, admitted, cancelled or marked a no-show. Settle anything owed from the deposit, or outside the system.
+- "That booking no longer exists." / "This booking could not be changed. Reload the screen."
 
 ### How to move a guest to another unit
 
@@ -1973,10 +2035,10 @@ On opening the Edit screen:
 
 ## Rules the system enforces
 
-- **Only bookings not yet checked in and not closed can be edited** — Draft, Held, Awaiting payment, Confirmed. Checked-in and closed bookings are a record. The system checks this again at the moment you save, so a guest checked in while you had the form open is refused.
+- **Only bookings not yet checked in and not closed can be edited** — Draft, Held, Awaiting payment, Confirmed. Checked-in and closed bookings are a record. The exception is the number of people: **Change** on the Party line also works on a checked-in guest and on a day pass, never on a closed booking. The system checks this again at the moment you save, so a guest checked in while you had the form open is refused.
 - **Only short stays can be edited.** A day pass has no unit or dates to change.
 - **A booking whose check-in date has passed cannot be edited**, because the pricing refuses a check-in date in the past.
-- **Every edit reprices the whole stay at today's settings.** The price is always worked out by the system, never typed in. A rate change in Property settings does not touch existing bookings until they are edited.
+- **Every edit reprices the whole stay at today's settings.** A party change (**Change** on the Party line) does not: it keeps the nights, extras and late check-out at the prices they were sold at and works out only the extra-guest charge (at today's rate, for every night) and a percentage discount again. The price is always worked out by the system, never typed in. A rate change in Property settings does not touch existing bookings until they are edited.
 - **Editing moves no money.** A higher total becomes an outstanding balance settled from the booking; a lower total is refunded outside the system. The status never changes because of money owed.
 - **The deposit decision is carried through.** A waived deposit stays waived; an unwaived one is re-quoted at the configured amount.
 - **A discount is carried through** when the editor may not give discounts, and re-applied to the new price when a percentage.
@@ -2019,7 +2081,7 @@ A: Long leases are set up on the unit, not as bookings, so they are not in the b
 A: Booking page → **Edit** → change **Check-out** → **Check these dates** → keep the unit if it is still "(current)" → check the new total → **Review change** → **Save changes**. The extra amount shows as **Outstanding** on the booking; take it from the booking page.
 
 **Q: The guest is already checked in and wants one more night.**
-A: A checked-in booking cannot be edited. Make a **second booking** for the extra night on the same unit, starting on the current check-out date, with the security deposit **waived** and the reason naming the first booking (see *Creating bookings*).
+A: A checked-in booking's dates cannot be edited (only its party can, with **Change**). Make a **second booking** for the extra night on the same unit, starting on the current check-out date, with the security deposit **waived** and the reason naming the first booking (see *Creating bookings*).
 
 **Q: The Edit button is missing.**
 A: Either you do not hold **Edit bookings** (Front Office and Admin have it by default), or the booking is Checked in, Completed, Cancelled, Expired or No show — those cannot be edited.
@@ -2061,10 +2123,13 @@ A: There is no undo. Edit it again and put the old values back (the history keep
 A: No. Editing sends nothing. Tell the guest yourself. (See *The customer side → Emails*.)
 
 **Q: Can the guard change a booking at the gate?**
-A: No. Security has no Edit bookings permission. He calls the office, and the office edits it.
+A: No. Security has no Edit bookings permission. He calls the office, and the office edits it. For more people than booked he presses **Extra** on the Gate card, which leaves a note on the booking and a bell notification ("Extra guests at the gate") for everyone with Edit bookings. The one change he can make himself is adding visitors to a day pass for today and taking the difference in cash.
+
+**Q: The bell says "Extra guests at the gate". What do I do?**
+A: Open it (it goes to the booking), read the guard's note in **Notes**, and press **Change** beside **Party** to enter the real numbers. If that makes a stay go over the unit type's maximum, the extra-guest charge is added and shows as **Outstanding**; the guard can then take it at the gate, or you can take it with **Record a payment**. It works even if the guest is already checked in.
 
 **Q: Can I edit a day pass — say the number of people?**
-A: No. The Edit screen says "This booking has no stay to edit". Cancel the pass and have the customer book a new one on the website — day passes cannot be made from the portal. Any money already paid for the old pass is refunded outside the system.
+A: Not with **Edit** — it says "This booking has no stay to edit". But the number of people can be changed: press **Change** beside **Party** on the pass's page and set each age band. The pass is priced again (bundles included), and any difference shows as **Outstanding** or **Overpaid by**. This works until the pass is admitted. The pass's date cannot be changed; for another day, cancel the pass and have the customer book a new one on the website — day passes cannot be made from the portal. Any money already paid for the old pass is refunded outside the system.
 
 **Q: I can't click a day on the calendar to start a booking.**
 A: Past days, days beyond the advance-booking limit, days covered by a bar, and anything if you lack **Create bookings** cannot be clicked. To pick a stay that ends exactly when another booking begins, or that runs into next month, use **New booking** directly.
@@ -2093,9 +2158,10 @@ A: Only an Admin sees **Download CSV** on All bookings. It downloads every booki
 - **Stay date filter** — shows bookings with at least one night on the chosen days; never shows day passes.
 - **Show empty units** — calendar option to include units with nothing on them that month.
 - **Portal search** — the Search box (Ctrl K / ⌘K) at the top of every portal screen; finds screens, bookings, payments to verify, deposits and units.
-- **Notifications bell** — the top-right bell listing new online bookings, payments to verify and failed booking emails from the last 14 days.
+- **Notifications bell** — the top-right bell listing new online bookings, payments to verify, failed booking emails and extra guests reported at the gate, from the last 14 days.
 - **Edit (amend)** — changing a booking's dates, unit, guests, extras, late check-out, name, phone, vehicles or discount before check-in.
 - **Reprice** — working out the booking's price again from Property settings as they are today; every edit does this.
+- **Change the party** — the **Change** button beside **Party** on a booking's page: changes how many people a stay or day pass is for, even after check-in, and prices only that change.
 - **Outstanding** — what a booking still owes (total minus verified payments), shown on the booking's Money card.
 - **Overpaid by** — more has been paid than the booking's total; the difference is refunded outside the system.
 - **(current)** — on the Edit screen, marks the unit the guest is booked into now.
@@ -2301,7 +2367,7 @@ The confirm dialog records both. The amount you type is compared with what is du
 **Steps:**
 1. Open your bank app and find the transfer.
 2. Press **Confirm** on the row. The dialog **Confirm payment for PV-4821** opens: "The money for the stay. Check the amount against your bank app before confirming — the slip a guest sends is evidence, not verification."
-3. **Amount received** is pre-filled with what is expected (shown underneath as "Expected BND X"). Change it to what actually arrived. Type digits only, like 442.00 — no commas.
+3. **Amount received** is pre-filled with what is expected (shown underneath as "Expected BND X"). Change it to what actually arrived, like 442.00. A comma that separates thousands ("1,200.00") is fine, so a pre-filled figure can be confirmed untouched.
 4. **Reference as it appeared** is pre-filled with the booking reference. Leave it if the bank shows that reference. Change it if the bank shows something different. **Clear it completely** if the bank showed no reference (see *How to confirm a transfer that came without the reference*).
 5. **Notes (optional)** — anything worth keeping (who sent it, what time). Up to 280 characters.
 6. If the amount differs, a panel appears (see *How to confirm an amount that is different*).
@@ -2324,11 +2390,10 @@ The confirm dialog records both. The amount you type is compared with what is du
 - The dialog checks the amount against what is due now. If the booking was amended (repriced) while the dialog was open, you are told and must give a reason.
 - Confirming a transfer does not require a slip.
 - A transfer already waiting in the queue can still be confirmed after the guest has checked out or after the booking was cancelled — the queue does not stop you. Check the booking's status before confirming a transfer for a booking that is **Cancelled**, **Expired** or **No show**; the money may need to go back (refunds happen outside the system).
-- **Amounts of BND 1,000 or more:** the amount box is pre-filled with a comma (e.g. "1,200.00"), and the system refuses commas. Delete the comma (type 1200.00) before pressing Confirm, or you will see "Enter an amount like 442.00."
 
 **If you see an error:**
 - "Enter the amount received." — the amount box is empty. Type the amount that arrived.
-- "Enter an amount like 442.00." — the amount has a comma, a currency sign, letters or more than two decimals. Type digits and a point only.
+- "Enter an amount like 442.00." — the amount has a currency sign, letters, more than two decimals, or a comma in the wrong place (a comma is only accepted between groups of three digits, as in 1,200.00 — "1,20.00" or "12,00" is refused). Type digits and a point, like 1200.00 or 1,200.00.
 - "This is less than the amount due. Say why it is being confirmed." / "This is more than the amount due. Say why it is being confirmed." — fill in **Why is this being confirmed?**.
 - "No reference was quoted, so the note is the only thing identifying this transfer. Say what the bank showed." — you cleared the reference; write a note.
 - "This payment has already been verified. Reload to see who confirmed it." — someone else got there first. Reload the page.
@@ -2452,7 +2517,7 @@ This is not settled yet — whether there should be a proper "transfer never arr
 **Steps:**
 1. Press **Record cash**. The dialog **Record cash** says: "Money for a stay, recorded as collected now, by you. The security deposit is not recorded here — it is taken from the booking itself, and it is what confirms one."
 2. **Booking reference** — type the full reference, e.g. PV-4821 (upper or lower case is fine; the "PV-" part is needed).
-3. **Amount collected** — count the notes and type the amount, digits only (e.g. 200.00). "Count the notes. If this is not what the booking still owes you will be asked why."
+3. **Amount collected** — count the notes and type the amount (e.g. 200.00, or 1,200.00 — a comma between thousands is fine). "Count the notes. If this is not what the booking still owes you will be asked why."
 4. Press **Record cash**.
 5. If the amount is not exactly what the booking still owes, the form comes back with a panel **This is not the amount due — why is that?** and the message "This is not the amount due. Say why that is, and it will be recorded with it." Type a reason (up to 280 characters, e.g. "Late check-out collected at the desk") and press **Record cash** again.
 
@@ -2475,7 +2540,7 @@ This is not settled yet — whether there should be a proper "transfer never arr
 
 **If you see an error:**
 - "Enter the booking reference." / "Enter the amount collected." — a box is empty.
-- "Enter an amount like 442.00." — remove commas, currency signs or extra decimals.
+- "Enter an amount like 442.00." — remove currency signs or extra decimals, and any comma that is not between thousands (1,200.00 is fine; 1,20.00 is not).
 - "No booking found with reference PV-4821." (with "Check the reference and try again." under the box) — check the reference, including the "PV-" part.
 - "This booking is completed, so cash cannot be recorded against it." (or "cancelled", "no show", "expired") — the booking is closed. See *Money after check-out or cancellation*.
 - "This is not the amount due. Say why that is, and it will be recorded with it." — give a reason.
@@ -2489,7 +2554,7 @@ This is not settled yet — whether there should be a proper "transfer never arr
 
 **Where:** booking page → **Money** card → **Record a payment**. The button only appears when something is **Outstanding** and no stay transfer is already waiting.
 
-**Use it for:** settling what the booking still owes for the stay — typically the stay itself on arrival for a booking secured by its deposit, or the extra an amendment added. Not for the deposit (that is the **Security deposit** panel just below).
+**Use it for:** settling what the booking still owes for the stay — typically the stay itself on arrival for a booking secured by its deposit, or the extra an amendment or a change to the party added. Not for the deposit (that is the **Security deposit** panel just below).
 
 **Steps:**
 1. Press **Record a payment**. The dialog says "PV-4821 still owes BND X for the stay. The security deposit is taken separately, from the panel below."
@@ -2508,11 +2573,11 @@ This is not settled yet — whether there should be a proper "transfer never arr
 **Edge cases and limits:**
 - Only one stay transfer can wait at a time per booking.
 - The button is hidden when the booking is fully paid or overpaid.
-- For amounts of BND 1,000 or more the cash amount is pre-filled with a comma ("1,200.00"); delete the comma before recording or you get "Enter an amount like 200.00."
+- For amounts of BND 1,000 or more the cash amount is pre-filled with a comma ("1,200.00"). That is fine — record it as it is.
 - See *Money after check-out or cancellation* for closed bookings.
 
 **If you see an error:**
-- "Enter an amount like 200.00." — the amount is empty, zero, has a comma or is not a number.
+- "Enter an amount like 200.00." — the amount is empty, zero, has a comma in the wrong place (only a comma between thousands, as in 1,200.00, is accepted) or is not a number.
 - "This is not what is outstanding. Say why." / "This is not the amount due. Say why that is, and it will be recorded with it." — give a reason.
 - "This booking is fully paid. There is nothing left to collect."
 - "This booking has been overpaid. Settle the difference outside the system."
@@ -2602,7 +2667,7 @@ This is not settled yet — whether there should be a proper "transfer never arr
 - Not possible on a deposit that is still only a promised transfer — confirm it (or take it in cash) first.
 
 **If you see an error:**
-- "Enter the amount that arrived." / "Enter an amount like 50.00." — fix the amount (no commas; must be more than zero).
+- "Enter the amount that arrived." / "Enter an amount like 50.00." — fix the amount (must be more than zero; a comma is only accepted between thousands, as in 1,050.00).
 - "This deposit is only BND 50.00 short. Enter that or less." — you typed more than the gap.
 - "Nothing has been taken against this booking yet. Record the deposit instead."
 - "This deposit is still an unverified transfer. Confirm it in the payments queue first."
@@ -2702,7 +2767,7 @@ No email is sent when: a transfer or deposit transfer is raised, a stay payment 
 - **Nothing is refunded, forfeited or netted by the payment screens.** Differences are stated; money movement happens outside the system.
 - **Nothing expires.** A waiting transfer holds the unit until someone acts.
 - **Recorded money cannot be edited or deleted.** Every payment, confirmation and deposit carries who did it and when, in an append-only history.
-- **Amounts** are typed as digits with up to two decimals (e.g. 442.00) — no commas, no "BND", no minus sign.
+- **Amounts** are typed as digits with up to two decimals (e.g. 442.00) — no "BND", no minus sign. A comma between thousands (1,200.00) is accepted; a comma anywhere else (1,20.00 or 12,00) is refused.
 
 ## Likely questions
 
@@ -2751,8 +2816,8 @@ A: That screen always records stay money, so it now counts towards **Paid** and 
 **Q: The guest wants to pay after they've checked out.**
 A: Cash can't be recorded against a checked-out (Completed) booking. The owner's decision is that the office deals with it outside the system. Collect the stay before check-out — check the Money card before pressing Check out.
 
-**Q: It says "Enter an amount like 442.00" but I left the amount as it was.**
-A: Amounts of BND 1,000 or more are pre-filled with a comma (e.g. 1,200.00), which the system rejects. Delete the comma and type 1200.00.
+**Q: The amount box is pre-filled with a comma, like 1,200.00. Do I need to remove it?**
+A: No. A comma between thousands is accepted, so a pre-filled figure can be confirmed or recorded as it is. Typing 1200.00 without the comma works too. "Enter an amount like 442.00" only appears if the comma is in the wrong place (1,20.00 or 12,00), or there is a currency sign, a letter or a third decimal.
 
 **Q: The guest paid too much. How do I refund them?**
 A: The app shows **Overpaid by BND X** but does not do or record refunds. Refund outside the system as the business normally does.
@@ -3129,7 +3194,7 @@ Packs are kept for 7 years by default. Older versions are kept in the booking's 
 **Where:** the deposit's page → **Charges** → **Add charge**.
 **Steps:**
 1. Click **Add charge**.
-2. **Amount**: dollars and cents, like 30.00. Do not type commas or "BND".
+2. **Amount**: dollars and cents, like 30.00 or 1,200.00. Do not type "BND".
 3. **What is it for?**: required, 3 to 280 characters. It is printed on the guest's statement.
 4. Click **Add charge**.
 **What happens next:** the toast says "Charge added — Against <reference>." The charge appears in the table with your name, and the total standing against the deposit updates. **To return** goes down, or **Would be owed** appears. History: "Charge added — BND x".
@@ -3236,7 +3301,7 @@ The guard **does not** give the BND 100 back when the keys are returned. The gua
 **Steps:**
 1. Click **Record banking**.
 2. **Date banked**: it defaults to the last day of the period on screen (or the day you are viewing). It cannot be later than today.
-3. **Amount banked**: what actually went in, like 442.00, with no commas. It does not have to match any day.
+3. **Amount banked**: what actually went in, like 442.00 (a comma between thousands, as in 1,442.00, is fine). It does not have to match any day.
 4. **Note (optional)**: up to 280 characters, for example "Morning run to BIBD."
 5. Click **Record banking**.
 **What happens next:** the toast says "BND x banked". **Cash on hand** drops by that amount **from the chosen date onwards**, and that day's **Banked** figure rises. The state badges update. Nothing is matched to particular days: one entry can cover several days' takings. It is recorded under your name and the time, and the Audit log shows "Cash banked — BND x, taken on <date>" (that date is the **Date banked** you entered, despite the word "taken"; the Cash banked export's "Cash taken on" column is the same date).
@@ -3248,7 +3313,7 @@ The guard **does not** give the BND 100 back when the keys are returned. The gua
 **If you see an error:**
 - "Pick the day the cash was taken." The date was empty. "Pick a day from the calendar." The date was not a valid date.
 - "Cash cannot be banked against a day that has not happened. Today is <date>."
-- "Enter how much went to the bank." (empty or zero) / "Enter an amount like 442.00." (commas, "BND" or more than two decimals).
+- "Enter how much went to the bank." (empty or zero) / "Enter an amount like 442.00." ("BND", more than two decimals, or a comma that is not between thousands).
 - "Keep the note under 280 characters."
 - "That property no longer exists." Reload and tell Jefferson.
 
@@ -3443,7 +3508,7 @@ A: No, never. The pack records that the IC was collected, when and by whom; the 
 
 The field screens are the phone screens for the people who work on their feet rather than at a desk:
 
-- **The Gate**: for the security guard, who is also the front desk. He hands over keys, takes them back, lets day-pass visitors in, and takes the cash a guest still owes. It replaces the paper list and the WhatsApp messages to the office asking "is this car booked?".
+- **The Gate**: for the security guard, who is also the front desk. He hands over keys, takes them back, lets day-pass visitors in, takes the cash a guest still owes, and tells the office when a car holds more people than booked. It replaces the paper list and the WhatsApp messages to the office asking "is this car booked?".
 - **Departures**: for housekeeping. It lists every unit where a guest is leaving, a unit is waiting to be inspected, or a unit is being cleaned, with the next thing to do for each one. It replaces telling the office by message that a room is done.
 - **The entry code page**: the page that opens when anyone scans a guest's entry QR code with a phone camera.
 
@@ -3531,15 +3596,18 @@ If something is typed and nobody on today's list matches: "Nobody on today's lis
 **"Not on today's list?"** Whenever something is typed, a box appears: "Not on today's list?" / "Search every open booking, whatever day it starts." and a button **Search all bookings for "…"** (pressing search on the phone keyboard does the same). This asks the server, so it needs signal. The results appear as a section **All bookings matching "…"**, nearest arrival first, up to 20 bookings. It searches open bookings only (not cancelled, expired, no-show or completed ones). If nothing is found: "No open booking matches. Call the office." If you then change what is typed, the old results disappear, because they were for a different search.
 
 **Each booking card** shows, top to bottom:
+- **Red cards.** A card whose money is not settled is **red**, with the words "**Payment not settled**" at the very top. That means any of: the security deposit is not held in full (none taken, only promised by a bank transfer nobody has checked yet, or short); something is still owed on the stay or the day pass; or a bank transfer for the booking is waiting to be checked. A closed booking (checked out, admitted pass, cancelled, expired, no-show) is never red, and nor is a booking that has been overpaid. **Every** phone sees the red, including one signed in without "Record cash payments" (which still sees no figures). Red is a warning to be careful with the booking; it does not stop anything by itself — the sentence and the buttons say what can be done.
 - The **guest's name**.
-- The **booking reference** · the **place**: the unit (e.g. "3B-04"), or "Day pass · 3 people" for a day pass ("Day pass" alone if no headcount is recorded).
+- The **booking reference** · the unit (e.g. "3B-04"), or just "Day pass" for a day pass (how many it is for is on the **Guests** line).
 - A **badge** (see the table below).
-- A grey panel with:
+- A grey panel (white on a red card) with:
   - **Vehicle**: the plate(s), separated by " · ". "No car" if the booking says the guest has no vehicle. "Not recorded" if there is no plate and no "no car" answer.
   - **Staying** (for a stay: arrival – check-out day) or **Date** (for a day pass).
+  - **Guests**: how many people the booking is for, to count the car against. For a stay, the number of people, followed by "· 2 aged 3 or under" when some of them are young children not counted towards the unit's maximum. For a day pass, the headcount followed by the age bands, e.g. "3 · Adult × 2, Child × 1". Beside it, a small **Extra** button for more people than booked (see *How to deal with more people than booked (the Extra button)*). It is shown to whoever may check stays in (on a stay) or admit passes (on a day pass). It is not shown on a stay that has checked out, or on a cancelled, expired or no-show booking; a pass admitted today still has it, to tell the office.
   - **To take**: only on the phone of somebody who may take cash, and only when there is money the gate may take now. It shows the amount and what it is for: **Security deposit**, **Rest of the deposit**, **The stay** or **Day pass**.
 - **A sentence** saying what to do and why (the full list is in *Rules the system enforces → What each Gate sentence means*).
-- Sometimes a second line: "**3B-04 is not marked ready yet.**" (see *Unit readiness at the gate*).
+- Sometimes: "**2 more people than booked — the office has been told.**" A guard has already reported extra people with **Extra**, and the office has not changed the booking's party yet. It disappears once the office changes the party.
+- Sometimes: "**3B-04 is not marked ready yet.**" (see *Unit readiness at the gate*).
 - **Buttons**, full width at the bottom, only for things the reader is allowed to do:
   - a cash button **Take BND 100.00** (when money is to be taken), and/or
   - one move: **Check in**, **Check out** or **Admit**.
@@ -3561,7 +3629,7 @@ When a card has both a cash button and a move, the move (e.g. **Check in**) is t
 | **Checked in** | A guest already in residence, not leaving today. |
 | **Closed** | The booking is finished, cancelled, expired or a no-show (seen from a scanned code). |
 
-**What the Gate never shows:** guests' phone numbers or email addresses, identity documents, prices or deposit figures (except the "To take" amount, and only to someone who may take cash).
+**What the Gate never shows:** guests' phone numbers or email addresses, identity documents, prices or deposit figures (except the "To take" amount, and the day-pass prices used when adding visitors to a pass, and only to someone who may take cash). The red "Payment not settled" is shown to everyone, but it carries no figure.
 
 **While loading**, the screen shows grey placeholder blocks in the shape of the list. **If it fails to load**: "This page didn't load" / "Something went wrong on our side. Trying again usually works. If the signal is weak, move and try again. If it keeps happening, tell the office and give them the reference below." with **Try again**, **Back to field screens**, and a "Reference" number to give the office.
 
@@ -3689,7 +3757,7 @@ When the office uses **Replace code** on the booking, the old code stops working
 **Where:** Gate → **Arriving** → the guest's card → **Check in**. The same button appears on the card from a scanned entry code.
 **Steps:**
 1. Find the card. It shows the badge **Expected** only when the booking is ready to check in.
-2. Check the plate against the car.
+2. Check the plate against the car, and count the people against the **Guests** line. If there are more people than booked, tap **Extra** and tell the office (see *How to deal with more people than booked (the Extra button)*). It does not stop the check-in.
 3. If the card has a **To take** amount for **The stay** and the guest is paying now, take the money first (see *How to take cash at the gate*). Paying the stay is **not** required to check in.
 4. Tap **Check in**. A box asks "Check in {guest name}?", "{reference} · {unit}. The booking is marked as arrived now, under your name."
 5. Tap **Check in** (it says **Checking in…**), or **Not yet** to back out.
@@ -3704,7 +3772,8 @@ When the office uses **Replace code** on the booking, the old code stops working
 **Edge cases and limits:**
 - Only a booking that is **confirmed** with its **security deposit held in full** (or no deposit quoted, or waived) can be checked in. The database refuses anything else, whoever presses the button.
 - A guest arriving **before** the booking's first day is sent to the office: "Booked from {date}. Call the office." A guest arriving a day or more **late** (while the stay hasn't ended) is still shown as **Expected** and can be checked in.
-- Money owed on the **stay** does not stop check-in. The deposit does.
+- Money owed on the **stay** does not stop check-in. The deposit does. A card with anything unsettled is red ("Payment not settled"), but the red itself never stops check-in.
+- More people than booked does not stop check-in either. Report it with **Extra**; the office changes the party and any extra charge then shows on the card as cash to take.
 - A day pass is never checked in; it is **admitted**.
 - The unit not being marked ready does **not** stop check-in (see *Unit readiness at the gate*).
 - If the phone's list is old, the button still checks the booking again before doing anything, so a booking the office cancelled or changed a minute ago is refused, not checked in.
@@ -3759,7 +3828,7 @@ When the office uses **Replace code** on the booking, the old code stops working
 **Where:** Gate → **Day passes** → the pass's card → **Admit** (also on a scanned code's card).
 **Steps:**
 1. Find the pass. The badge **Paid** means it is paid in full for today.
-2. Count the people against the pass ("Day pass · 3 people").
+2. Count the people against the **Guests** line (e.g. "3 · Adult × 2, Child × 1"). If more people came than the pass is for, tap **Extra** first (see *How to deal with more people than booked (the Extra button)*).
 3. If the badge is **To pay**, take the cash first (see *How to take cash at the gate*). The card then changes to **Paid**.
 4. Tap **Admit**. The box asks "Admit {guest name}?", "{reference} · Day pass · 3 people. Check the number of people against the pass. Admitting uses it for today, under your name."
 5. Tap **Admit** (**Admitting…**) or **Not yet**.
@@ -3774,7 +3843,7 @@ When the office uses **Replace code** on the booking, the old code stops working
 - Only on the pass's **own date** (Brunei time). A pass for another day, earlier or later, goes to the office: "Day pass is for {date}. Call the office."
 - Only when **paid in full** with verified money. Unlike a stay, an unpaid pass stops the car, because nobody meets a day visitor again to collect what is owed.
 - If a bank transfer for the pass is waiting to be checked, the gate takes no cash for it: "A transfer for this booking is waiting to be checked. Call the office."
-- The headcount cannot be changed at the gate. If more people arrive than the pass covers, call the office.
+- More people than the pass covers: tap **Extra**. A guard who takes cash can add them to the pass and take the difference himself, on a pass for today that is paid or still to pay at the gate (not one waiting on a bank transfer). Otherwise **Extra** tells the office. See *How to deal with more people than booked (the Extra button)*.
 **If you see an error:**
 - "Already admitted. Nothing more to do." Another phone or the office admitted it a moment ago.
 - "Day pass is not paid yet. Call the office." It isn't paid in full. If you can take cash, refresh and the card will offer **Take BND …**.
@@ -3828,9 +3897,66 @@ The card decides what the money is for, so the guard never has to decide between
 - "What is owed changed a moment ago. Refresh the list and look again." The amount or kind of money owed changed since you opened the box. Refresh.
 - "This booking is closed, so no money can be taken against it. Call the office." It is cancelled, marked a no-show, expired or checked out.
 - "That booking no longer exists. Refresh the list."
-- "Enter the amount taken, like 200.00." (and under the box "Enter an amount like 200.00.") The stay amount isn't a plain number. **Use digits and a full stop only, with no commas**: type **1200.00**, not **1,200.00**. Note that for amounts of BND 1,000 or more the box is filled in *with* a comma, so you must delete the comma before pressing the button.
+- "Enter the amount taken, like 200.00." (and under the box "Enter an amount like 200.00.") The stay amount isn't a plain number. Use digits and a full stop, like **1368.00**. A comma between thousands is fine, so the box can be left exactly as it was filled in (e.g. **1,368.00**); a comma anywhere else ("1,36.00", "10,00") is refused.
 - "This is not what is owed. Say why, and it is recorded with it." (and "This is not what is owed. Say why.") Fill in the reason box and press again.
 - "That may not have gone through. Refresh the list: if the money still shows as owed, nothing was recorded." The phone lost signal and **the money may or may not have been recorded**. Do **not** press again straight away. Tap **Refresh** (or go back to the Gate list). If the card still shows the same **To take** amount, nothing was recorded and you can try again. If it doesn't, it was recorded.
+
+### How to deal with more people than booked (the Extra button)
+
+**Who can do this:** on a stay, "Check guests in" (Security, Front Office, Admin by default); on a day pass, "Admit day passes" (Security, Front Office, Admin by default). Adding visitors to a day pass yourself also needs "Record cash payments". An Admin can change all of these.
+**Where:** Gate → the card → **Extra**, beside the **Guests** line (also on a scanned code's card). Not shown on a checked-out, cancelled, expired or no-show booking (a pass admitted today still has it).
+
+**Why it exists:** a guest sometimes brings more people than the booking is for, for example to avoid the extra-guest charge. The guard is the one who sees the car, so he counts and says so, and the office changes the booking.
+
+**Telling the office (every stay, and any day pass you can't settle yourself):**
+1. Count the people in the car against **Guests**.
+2. Tap **Extra**. The box **More people than booked?** says "{reference} · {unit}. Booked for 4. The office is told, and sorts out any extra charge." (For a day pass it names "Day pass · 3 people" instead of a unit.)
+3. **How many more?** — the number of extra people (1 is filled in; up to 50).
+4. **Anything to add (optional)** — e.g. "Came in a second car". Up to 280 characters.
+5. Tap **Tell the office** (it says **Sending…**), or **Not now**.
+6. A message confirms "The office is told: 2 more with {guest name}".
+
+**What happens next (telling the office):**
+- A note is added to the booking under your name, which the office reads on the booking page: "Reported at the gate: 2 more people arrived than the booking is for (booked for 4)." followed by anything you typed, in quotation marks.
+- The office is told through the notifications bell ("Extra guests at the gate"), for everyone who can edit bookings.
+- The card now says "**2 more people than booked — the office has been told.**", so a second guard at the barrier can see it has already been reported. If another guard reports more, the numbers add up. The line disappears once the office changes the booking's party.
+- The booking's history shows "Extra guests reported at the gate — 2 more".
+- **It never stops check-in, check-out or admitting.** Carry on as normal. If the office adds the people and that leaves money owed, the card turns red and, after a **Refresh**, shows it as cash to take (**To take … The stay** or **Day pass**).
+
+**Adding visitors to a day pass yourself:** when a guard who can take cash taps **Extra** on a day pass for **today** that is either paid and ready to admit (**Paid**) or still to be paid at the gate (**To pay**), the box **Add visitors to the pass?** opens instead: "{reference} · Day pass · 3 people. Booked for 3. They are added to the pass, and you take the difference in cash, under your name."
+1. Under **Extra visitors**, type how many more there are in each age band (e.g. **Adult**, **Child**).
+2. The box works out the price again for the whole party, the same way the pass was priced (family bundles included), and shows "**Take BND 15.00** · the pass becomes BND 45.00". If the extra visitors cost nothing more, it says "Nothing more to pay". On a pass not yet paid at all, the amount to take is the whole new price.
+3. **Anything to add (optional)**, as above.
+4. Count the notes, then tap **Take BND 15.00** (or **Add them** when there is nothing to pay). It says **Recording…**.
+5. A message confirms "BND 15.00 taken — 2 added to the pass" (or "2 added to the pass").
+6. If the visitors won't pay, tap **They won't pay — tell the office** instead. The box switches to **More people than booked?** (above) and nothing is added to the pass.
+
+**What happens next (adding to a pass):**
+- The pass is now for the bigger party at the new price, and the cash is recorded as a payment **under your name**, like any cash taken at the gate. It shows on the office's cash screens and in the **Daily cash-up**.
+- A note is added to the booking: "Added at the gate: Adult × 2 (the pass is now for 5). BND 15.00 taken in cash." (or "Nothing more to pay."), followed by anything you typed.
+- The office's bell shows it as already dealt with: "Visitors added at the gate". The booking's history shows "Party changed — 3 → 5" and "Extra guests added at the gate — 2 more". The card does not show the "office has been told" line, because there is nothing left for the office to do.
+- If the pass was still to be paid at the gate, this cash pays it in full: the card changes to **Paid** and the booking is confirmed, as with any day-pass cash.
+- **Admit** stays on the card the whole time. Whether to admit before or after adding visitors is up to you and the office.
+
+**Undoing:** neither can be undone from the gate. A wrong report, or visitors added by mistake, is for the office, which can change the party from the booking page while the booking is still open. Recorded cash cannot be removed anywhere in the app.
+
+**Edge cases and limits:**
+- **An admitted pass is closed**, so it takes no more money. **Extra** on it only tells the office, and the office cannot change a closed pass's party either, so the report stays a note: add visitors **before** tapping **Admit**.
+- A pass for another day, or a pass with a bank transfer waiting to be checked, cannot take visitors at the gate. **Extra** only tells the office.
+- A guard without "Record cash payments" always gets **More people than booked?**, on passes as well as stays.
+- The day's visitor limit still applies. If the facilities are nearly full, the visitors can't be added (see errors).
+- On a **stay**, extra people are only reported; the guard never changes a stay's party or its price.
+
+**If you see an error:**
+- "Only 2 more places are left that day. Call the office." / "The facilities are full for that day, so nobody more can be added. Call the office." — the day's visitor limit is reached. Nothing was added and nothing was taken.
+- "What is owed changed a moment ago. Refresh the list and look again." — the pass's price or payments changed since the box opened. Nothing was added. Refresh.
+- "Already recorded. Refresh the list before taking any more money." — the pass's headcount had already changed (maybe your own earlier press went through). Refresh and look before trying again. Do **not** take the money twice.
+- "The visitors were added, but the BND 15.00 was not recorded. Take it with the Take button on the card." — the pass now includes the visitors and owes the difference, but the cash was not recorded. The card is red with **Take BND 15.00**: take it with that button.
+- "This pass cannot take more visitors at the gate. Call the office." — the pass changed (admitted, a transfer is waiting, or it is not today's) since the list was read.
+- "Taking cash is not part of your job here. Tell the office instead." — your account can't take cash; use **They won't pay — tell the office**.
+- "Say who the extra visitors are." — every band is 0. / "Say how many more people arrived." — the number is 0 or empty.
+- "This booking is closed. Call the office." / "That booking no longer exists. Refresh the list."
+- "That did not reach the office. Refresh the list before trying again." — the phone lost signal. Refresh and look at the card before pressing again.
 
 ### How to handle a guest the office booked "at the gate" (walk-in paying at the barrier)
 
@@ -3991,6 +4117,7 @@ The line never appears on search results or for guests already checked in.
 | Check out a guest before their last day | "They are not due to leave today. Call the office." (no Check out button) | The office, from the booking page |
 | Admit a pass on another day | "Day pass is for {date}. Call the office." | The office |
 | Take part of a deposit, or part of a day pass | The amount is fixed | The office |
+| Change a stay's party (more or fewer people) | **Extra** only tells the office: a note and a bell notification | The office (**Change** on the booking's Party line) |
 | Give back the security deposit when the keys come back | Nothing at the gate refunds a deposit | The office, after inspection (see *Deposits*) |
 | See guests' phone numbers, emails or identity documents | Not shown on any field screen | The office |
 | Record a payment after check-out | "This booking is closed, so no money can be taken against it. Call the office." | The office deals with it outside the system |
@@ -4037,6 +4164,8 @@ The guard's sign-in has no **Portal** button. However, the Security role holds "
 - **Everything is recorded under the signed-in person's name** and time, in the booking's history and the audit log.
 - **Figures only reach phones that may take the money.** Without "Record cash payments", no amounts are sent to the phone at all.
 - **The same cash can't be recorded twice** from the gate: the figure shown must still be what is owed when the button is pressed.
+- **A red card means the money is not settled** (deposit not held in full, stay or pass still owed, or a transfer waiting to be checked). Every reader sees it; it stops nothing by itself.
+- **More people than booked never stops a car.** The guard reports it with **Extra**; the office changes a stay's party. Only a day pass can be enlarged at the gate, by a guard who takes cash, on its own day, before it is admitted and with no transfer waiting.
 - **Readiness is shown, never enforced.**
 - **Inspection before ready; ready once.** A unit is marked ready only after an inspection, only once, and not after the next guest has checked in.
 - **Issues found need a description.** An inspection saying "Issues found" must say what, because deposit charges are judged against it.
@@ -4062,8 +4191,8 @@ A: The card says "They say the deposit was sent by bank transfer, and nobody has
 **Q: I pressed Take BND 500 and it said "That may not have gone through". Did it record?**
 A: Maybe. Tap **Refresh**. If the card still shows the same amount to take, nothing was recorded and you can try again. If the amount is gone or changed, it was recorded. Don't press again without refreshing. If you do, the system refuses with "Already recorded".
 
-**Q: It says "Enter the amount taken, like 200.00." but the amount is filled in.**
-A: For amounts of BND 1,000 or more the box is filled in with a comma (e.g. 1,200.00), and the system doesn't accept commas. Delete the comma (1200.00) and press again.
+**Q: The stay amount is filled in as 1,368.00. Do I need to delete the comma?**
+A: No. A comma between thousands is accepted, so you can take the payment with the box exactly as it was filled in. "Enter the amount taken, like 200.00." only appears if the amount was changed into something that isn't a plain figure, such as a comma in the wrong place (1,36.00), letters or "BND".
 
 **Q: The guest wants to pay only part of the stay now.**
 A: Type what they handed over in **Amount taken**, and give a reason in the box that appears (e.g. "Guest is paying the rest at the office tomorrow"). The rest stays owed and shows on the card.
@@ -4090,7 +4219,13 @@ A: The system allows it. The line is a warning only. Use your judgement: check w
 A: No. Their card stays on today's list as **Admitted**, "They may come and go." There's nothing to press.
 
 **Q: More people turned up than the day pass covers.**
-A: The gate can't change the headcount. Call the office.
+A: Tap **Extra** on the card. If you take cash and the pass is for today, paid or still to pay at the gate, you can add the visitors by age band and take the difference yourself (**Take BND …**). If they won't pay, tap **They won't pay — tell the office**. On an admitted pass, a pass waiting on a bank transfer, or if you don't take cash, **Extra** tells the office instead.
+
+**Q: More people arrived for a stay than the booking is for.**
+A: Tap **Extra** beside **Guests**, say how many more, and tap **Tell the office**. The office gets a note and a bell notification and changes the booking; any extra charge then shows on the card as cash to take. Check-in goes ahead as normal.
+
+**Q: Why is this card red?**
+A: Its money is not settled: the deposit is not fully in, something is still owed on the stay or pass, or a transfer is waiting to be checked. The sentence under the badge says what to do. Red on its own stops nothing — a guest in residence who still owes for the stay can still come and go.
 
 **Q: Scanning the QR code shows "Palm Villa entry code" with only a first name, not the check-in button.**
 A: Your phone isn't signed in (or the session ended). Tap **Sign in** on that page. After signing in you return straight to that booking's gate card.
@@ -4140,6 +4275,9 @@ A: The phone couldn't reach the server. Nothing happened. Move to better signal 
 - **Call office**: Gate badge when the office must sort something out.
 - **To take**: the amount and kind of cash the gate may take now (only shown to those who may take cash).
 - **Take BND …**: the gate's cash button.
+- **Payment not settled**: the words at the top of a red Gate card: the deposit is not held in full, the stay or pass is still owed, or a transfer is waiting to be checked.
+- **Guests (gate card)**: how many people the booking is for, with young children or the day-pass age bands; the guard counts the car against it.
+- **Extra**: the small button beside Guests for more people than booked; it tells the office, or on a day pass lets a guard who takes cash add the visitors and take the difference.
 - **Security deposit / Rest of the deposit / The stay / Day pass**: what cash taken at the gate is for.
 - **Admit**: letting a paid day pass in on its date; it closes the pass.
 - **Admitted**: a day pass used today; visitors may come and go.
@@ -4528,7 +4666,7 @@ Housekeeping normally does this on the phone (see *Field screens → Housekeepin
 **Where:** Admin → **Property settings** → **Rates** → **Nightly rates** table.
 **Steps:**
 1. For each unit type (listed cheapest first), edit:
-   - **Rate per night (BND)**: typed like `200` or `200.50`, with no commas or symbols.
+   - **Rate per night (BND)**: typed like `200` or `200.50`, with no symbols. Typing without commas always works; a comma between thousands (`1,200.00`) is also accepted.
    - **Maximum guests**: 1 to 99. How this number is used depends on "When a party is over the maximum" (below).
    - **Car parks**: 0 to 99.
 2. Press **Save changes**.
@@ -4536,7 +4674,7 @@ Housekeeping normally does this on the phone (see *Field screens → Housekeepin
 **What happens next:**
 - **Rates apply to bookings made from now on.** A booking already made keeps the price it was quoted, "unless somebody amends it, which reprices the whole stay at today's rates" (see *Finding and changing bookings → How to edit (amend) a booking*).
 - The new rate shows at once on New booking, on the public booking pages, and in the public FAQ answers and front-page "from" prices. Those two pages refresh when you save.
-- **Car parks is a statement, not a limit.** The booking forms say "The [type] includes N parking spaces." If more vehicles are entered than that, the form warns that "The extra car is still recorded so Security can match it at the gate, but it may not have a bay." Nothing is refused. The number also fills the FAQ figure "Parking spaces per apartment type".
+- **Car parks is a limit for customers and a statement for staff.** The booking forms say "The [type] includes N parking spaces." On the **public website**, a customer can enter no more cars than that, and is asked to message the office on WhatsApp at +673 8959798 first to bring another. On **staff forms** (New booking, Edit) more vehicles can be entered; the form warns that "The extra car is still recorded so Security can match it at the gate, but it may not have a bay." and nothing is refused. The number also fills the FAQ figure "Parking spaces per apartment type".
 - A message "Rates updated" with "N changes saved and recorded" (or "Nothing had changed, so nothing was recorded."). The Audit log records, for example, "Nightly rate changed — BND 200.00 → BND 220.00".
 
 **Edge cases and limits:** the front page and FAQ only quote rates for types the building has at least one in-service unit of. The 2-bedroom has no units until someone adds them in the Unit registry, so its rate is not advertised.
@@ -4549,7 +4687,7 @@ Housekeeping normally does this on the phone (see *Field screens → Housekeepin
 
 | Field (as on screen) | What it controls | Where it shows up |
 |---|---|---|
-| **When a party is over the maximum**: **Charge for each extra guest** / **Refuse the booking** | "Charge" means a party above a unit type's **Maximum guests** can book and pays the extra guest charge for each guest over. "Refuse" means such a party cannot book that type at all ("[Type] takes up to N guests; this party is M."). The screen notes: "Charging is what the system does today." | Every stay quote: New booking, amend, public booking. **This is not settled yet.** The client's price list says both "max 8 pax" and "7 per extra person". Ask Jefferson/Jason before changing it. |
+| **When a party is over the maximum**: **Charge for each extra guest** / **Refuse the booking** | "Charge" means a party above a unit type's **Maximum guests** can book and pays the extra guest charge for each guest over. "Refuse" means such a party cannot book that type at all ("[Type] takes up to N guests; this party is M."). The screen notes: "Charging is what the system does today." | Every stay quote: New booking, amend, public booking, and **Change** on a booking's Party line. **This is not settled yet.** The client's price list says both "max 8 pax" and "7 per extra person". Ask Jefferson/Jason before changing it. |
 | **Extra guest, per night** | Charged per extra guest per night when "Charge for each extra guest" is chosen. | Quotes; FAQ figure "Extra guest charge". |
 | **Children up to this age are not counted** | Guests this age and under do not count towards the maximum or the extra-guest charge. For example, 3 means aged 3 and under are free. Allowed range is 0 to 129. | Booking forms label the counts "Over N" / "Aged N and under"; FAQ figure "Age up to which a child is not counted". |
 | **Check-in time** / **Check-out time** | 24-hour times such as 14:00 and 12:00. | Booking emails ("Check in from 14:00, and check out by 12:00."), booking forms, FAQ figures. |
@@ -4563,7 +4701,7 @@ Housekeeping normally does this on the phone (see *Field screens → Housekeepin
 **Can it be undone?** Type the old values back and save.
 
 **If you see an error on the Rates tab** (shown under the field after you press Save, with "Some of these figures were refused." above the button):
-- "The nightly rate must be an amount in BND, like 250 or 250.50 — no commas or symbols." The same wording is used for "The extra person charge", "The early check-in rate", "The late check-out rate" and "The security deposit".
+- "The nightly rate must be an amount in BND, like 250 or 1,250.50 — no symbols." The same wording is used for "The extra person charge", "The early check-in rate", "The late check-out rate" and "The security deposit". A comma between thousands (1,200.00) is accepted; the message appears for a comma anywhere else (12,00.00), a currency symbol, letters or more than two decimals. Typing the figure without commas always works.
 - "Maximum guests must be a whole number." / "Maximum guests must be between 1 and 99."
 - "Car parks must be a whole number." / "Car parks must be between 0 and 99."
 - "The exempt age must be a whole number." / "The exempt age must be between 0 and 129."
@@ -4662,7 +4800,7 @@ Press **Save changes**. This tab saves bands, bundles **and** facilities togethe
 - "A band has to end after it starts."
 - "The band name cannot be empty." / "The band name must be 40 characters or fewer." / "That band name is used twice."
 - "The age it starts at must be a whole number." / "… must be between 0 and 130." (the same for "The age it ends at")
-- "The price must be an amount in BND, like 250 or 250.50 — no commas or symbols."
+- "The price must be an amount in BND, like 250 or 1,250.50 — no symbols." A comma between thousands (1,200.00) is accepted; the message appears for a comma anywhere else, a currency symbol, letters or more than two decimals.
 - "The bundle name cannot be empty." / "The bundle name must be 60 characters or fewer." / "That bundle name is used twice."
 - "A bundle headcount must be a whole number." / "A bundle headcount must be between 0 and 99."
 - **A bundle with every headcount left blank or 0** is refused ("A bundle has to include at least one guest."), but that message is **not shown on screen**. You only see "Some of these figures were refused." with nothing marked. Check that every bundle has at least one guest in it.
@@ -5422,6 +5560,8 @@ The **What** column is a short sentence. Common ones, by kind:
 - "Held" and "Hold expired" exist as wordings but nothing records them today: a new booking shows one of the Created / Booked online lines, and holds never expire.
 - Note: "Created — walk-in, paid on the spot" also appears for a desk booking left for the guard to collect ("At the gate"), even though nothing was taken.
 - Discount applied / Discount changed / Discount removed
+- Party changed — 5 → 7 (how many people the booking is for, before → after)
+- Extra guests reported at the gate — 2 more / Extra guests added at the gate — 2 more (the guard's **Extra** button on the Gate)
 - Booking link issued — found by reference and phone
 - Entry QR code replaced — the old code no longer opens this booking
 
@@ -5802,10 +5942,10 @@ These are the 24 permissions exactly as they are labelled on the **Roles** tab a
 
   It also lets you add notes to a booking, and on an entry code's page it shows staff the booking's details. It does not let you open identity documents; that needs **View identity documents**.
 - **Create bookings** (Admin, Front Office). The **New booking** screen, including starting a booking from the Calendar.
-- **Edit bookings** (Admin, Front Office). **Amend** a booking, **Replace code** for its entry QR code, and attach or remove identity documents on a booking.
-- **Check guests in** (Admin, Front Office, Security). Check a short-stay guest in, from the booking's page or the Gate. It opens the Gate field screen.
+- **Edit bookings** (Admin, Front Office). **Amend** a booking, **Change** the party (how many people) on a booking's page — including a guest already checked in and a day pass — **Replace code** for its entry QR code, and attach or remove identity documents on a booking. Holders get the bell notification when the guard reports extra guests at the gate.
+- **Check guests in** (Admin, Front Office, Security). Check a short-stay guest in, from the booking's page or the Gate, and report more people than booked on a stay's Gate card (**Extra**). It opens the Gate field screen.
 - **Check guests out** (Admin, Front Office, Security, Housekeeping). Check a guest out, from the booking's page, the Gate, or the Departures screen when the unit is found empty. On its own it does not open the Gate.
-- **Admit day passes** (Admin, Front Office, Security). Let a paid day pass in at the gate or from its booking page. It opens the Gate field screen.
+- **Admit day passes** (Admin, Front Office, Security). Let a paid day pass in at the gate or from its booking page, and use **Extra** on a day pass's Gate card (with **Record cash payments** as well, add visitors to the pass and take the difference). It opens the Gate field screen.
 - **Cancel bookings** (Admin, Front Office). Cancel a booking, and mark a guest a no-show from the arrival day onwards.
 - **Discount bookings** (Admin, Front Office). Give, change or remove a discount when creating or amending a booking.
 - **Override booking holds** (Admin, Front Office). Listed on the matrix, but **nothing in the app currently checks it**, so ticking or unticking it changes nothing today.
@@ -6061,7 +6201,7 @@ The form, top to bottom:
 - **Which unit** — one button per sellable unit type, showing "BND ___ / night · sleeps __". The first type is pre-selected.
 - **Your dates** — an availability calendar (two months side by side on a computer, one on a phone). Each night shows the nightly rate for the chosen unit type, or **FULL** (faded, crossed through) when no unit of that type is free that night. Days before today or beyond the booking window are faded and have no price. The customer clicks the arrival day, then the departure day. The departure day is the morning they leave: it is not charged and does not need to be free. The line under the calendar reads "Pick the day you arrive, then the day you leave. Prices are per night.", then "Now pick the day you leave.", then "_ nights · dates".
 - **No. of guests** — **Over age __** (starts at 2, at least 1) and **Age __ and under** ("Not charged for."). The age comes from Property settings.
-- **Your details** — **Your name**, **Mobile number** (country code picker, Brunei +673 by default), **Email** (required; hint "Your confirmation and entry QR code are sent here. We will not email you anything else."). Then vehicle **Registration** rows (**Add another vehicle**, up to 10 cars) or the tick box **Arriving without a vehicle**. Under the plates: "The ___ includes _ parking spaces." If more plates are entered than the unit's spaces, a warning says the extra car(s) "are still recorded so Security can match them at the gate, but they may not have a bay." The customer is not stopped.
+- **Your details** — **Your name**, **Mobile number** (country code picker, Brunei +673 by default), **Email** (required; hint "Your confirmation and entry QR code are sent here. We will not email you anything else."). Then vehicle **Registration** rows or the tick box **Arriving without a vehicle**. Under the plates: "The ___ includes _ parking spaces." **The rows stop at the parking spaces the chosen unit type includes**: **Add another vehicle** is offered only until that many rows are showing, and in its place a notice says "The ___ includes _ parking spaces. Bringing another car? Message us on WhatsApp at +673 8959798 first to confirm it." (the number opens a WhatsApp chat with the office). If the customer typed more plates and then chose a smaller unit type, a warning asks them to remove the extra: "The ___ includes _ parking spaces. Remove the extra car to continue. To bring it, message us on WhatsApp at +673 8959798 first to confirm." (or "the extra 2 cars … them"), and the booking is refused until they do. Staff's own booking forms are not capped (see *Creating bookings*).
 - **Extras** — one number box per extra staff have made bookable (for example sofa beds), with "BND __ each", the extra's description, and once dates are chosen "_ free for those nights" or "None free for those nights". Then **Late check-out (hours)** (0 to 12), hint "Check-out is __:__. BND __ an hour after that." Then the line "Arriving before __:__? Ask us when you get here — it depends on whether the unit is ready." Early check-in cannot be booked online.
 - **Your booking** panel (right-hand side on a computer, below on a phone): the unit type, the dates and nights, the price lines and total. If a deposit applies: "The total amount above excludes a **BND ___** security deposit, which is refundable subject to the condition of the property upon check-out." Button **Proceed to bank transfer** (greyed until there is a valid price). Under it: "Nothing is charged now. We hold the unit while you transfer the deposit."
 
@@ -6179,7 +6319,7 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 1. Choose a unit type under **Which unit**.
 2. Click the arrival night, then the departure day, on the calendar.
 3. Set **Over age __** and **Age __ and under**.
-4. Fill in name, mobile number, email, and car registration(s) — or tick **Arriving without a vehicle**.
+4. Fill in name, mobile number, email, and car registration(s), up to the parking spaces the unit type includes — or tick **Arriving without a vehicle**. For another car they message the office on WhatsApp first.
 5. Optionally choose extras and **Late check-out (hours)**.
 6. Check the price in **Your booking** and press **Proceed to bank transfer**.
 7. They land on their booking page at **Almost done**, with the bank details.
@@ -6206,10 +6346,10 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 - The customer never chooses the exact unit; they choose the type. Staff can move them to another unit by amending (see *Finding and changing bookings → How to edit (amend) a booking*).
 - One phone number may have at most **3** unpaid online bookings (Held or Awaiting payment) at once. Bookings staff make at the desk do not count towards this.
 - Limits on attempts: 10 booking attempts an hour from one device/connection, 5 a day against one phone number, 5 a day against one email address. Attempts count even if the booking is then refused. The daily counters reset at 8:00 am Brunei time; the hourly ones on the hour.
-- Up to 10 vehicles, each up to 20 characters.
+- Vehicles: no more than the parking spaces the chosen unit type includes (Property settings → Rates → **Car parks**), each up to 20 characters. A customer who wants to bring another car is told to message the office on WhatsApp at +673 8959798 first. If the office agrees, staff add the plate with **Edit → Vehicles**, where there is no cap.
 
 **If you see an error** (the customer sees these and may read them to you):
-- "Check the highlighted fields." — something on the form is missing or wrong; the field says what: "Choose a unit.", "Choose your dates.", "A booking needs at least one guest.", "Tell us your name.", "We need a number to confirm your booking.", "We send your confirmation and entry QR code here." (email left blank), "Check the email address.", "Enter your car registration, or tick that you are not bringing one."
+- "Check the highlighted fields." — something on the form is missing or wrong; the field says what: "Choose a unit.", "Choose your dates.", "A booking needs at least one guest.", "Tell us your name.", "We need a number to confirm your booking.", "We send your confirmation and entry QR code here." (email left blank), "Check the email address.", "Enter your car registration, or tick that you are not bringing one.", "The ___ includes _ parking spaces. To bring another car, message us on WhatsApp at +673 8959798 first." (more plates than the unit's parking spaces).
 - "Those dates have just been taken. Please pick other dates, or another type of unit." — no single unit of that type is free for every night chosen. Either someone booked it a moment ago, the chosen range crosses a night marked **FULL**, or free nights are spread across different units. Offer other dates or another type, or book it at the desk.
 - "There are already several unpaid bookings against this number. Please complete or cancel one first, or call us." — the phone number already has 3 unpaid online bookings. The customer cannot cancel online; staff need to look up their bookings, take payment or cancel the ones they no longer want.
 - "That is a lot of bookings in a short time. Please wait a little, or call us and we will book you in." — the hourly device limit. Book them at the desk, or they wait for the next hour.
@@ -6479,6 +6619,7 @@ All emails come from a no-reply address on bruneiapartment.com. They carry **no 
 - Book more than 3 unpaid online bookings on one phone number, or book past the daily attempt limits.
 - Book a unit type that is not on sale (no units entered) or a date beyond the booking window.
 - Book a day pass for more than 50 people in one age group.
+- Book more cars on a stay than the parking spaces the unit type includes (they message the office on WhatsApp first; staff add the plate).
 
 ---
 
@@ -6609,13 +6750,14 @@ Each journey below follows one real situation from start to finish, naming who d
 
 ## Journey 1: A guest books a stay online and pays by bank transfer
 
-1. **The customer books** on bruneiapartment.com → **Book → Stay**: they choose the unit type, dates, guests, contact details and car registration, and press **Proceed to bank transfer**. The system picks a free unit of that type and the booking is created as **Held**. The unit is blocked from that moment. *(The customer side)*
+1. **The customer books** on bruneiapartment.com → **Book → Stay**: they choose the unit type, dates, guests, contact details and car registration (no more cars than the unit type's parking spaces; for another car they message the office on WhatsApp first), and press **Proceed to bank transfer**. The system picks a free unit of that type and the booking is created as **Held**. The unit is blocked from that moment. *(The customer side)*
 2. **The customer gets the Booking email** ("Almost done") with the price, the bank details and the booking reference (PV-…), plus a link to their private booking page. Staff see a **New online booking** notification on the bell. *(The customer side)*
 3. **The customer transfers the money** in their banking app, using the reference, then on their booking page chooses **Just the deposit** or **Everything now** and presses **I have made the transfer**. The booking becomes **Awaiting payment**, and the deposit (and, with Everything now, the stay payment) appears in the **Verification queue**. The customer is asked for their IC and can upload the transfer slip. *(The customer side, Payments)*
 4. **The office checks the bank.** Someone with Verify payments (Front Office, Finance or Admin) opens **Payments → Verification queue**, finds the transfer in the bank app, and confirms it. Once the security deposit is confirmed in full, the booking becomes **Confirmed**, the entry QR code is issued, and the customer gets the **Confirmation email** ("You are booked") with the QR code. *(Payments)*
    - If the transfer never arrives, nothing happens on its own: the booking stays blocked until the office cancels it. *(The booking's own page)*
    - If less than the deposit arrives, it is recorded as a short deposit: the booking stays unconfirmed and cannot be checked in until topped up. *(Payments)*
-5. **Arrival day.** The guest appears on the **Gate** screen under **Arriving** and on the office **Dashboard**. At the gate the guard finds the card (or scans the QR code), checks the car plate, takes any stay payment still owed in cash if the guest is paying now, taps **Check in** and hands over the keys. The booking becomes **Checked in**, and the unit shows **Occupied**. *(Field screens)*
+5. **Arrival day.** The guest appears on the **Gate** screen under **Arriving** and on the office **Dashboard**. At the gate the guard finds the card (or scans the QR code), checks the car plate and counts the people against **Guests**, takes any stay payment still owed in cash if the guest is paying now (a red card means money is not settled), taps **Check in** and hands over the keys. The booking becomes **Checked in**, and the unit shows **Occupied**. *(Field screens)*
+   - **More people than booked:** the guard taps **Extra** and tells the office (a note on the booking and an "Extra guests at the gate" bell notification). Check-in goes ahead. The office presses **Change** beside **Party** on the booking; any extra-guest charge becomes **Outstanding**, and the guard can take it at the gate. *(Field screens, Finding and changing bookings)*
 6. **Departure day.** The guest appears under **Leaving today**. The guard takes any stay money still owed **before** checking out, because no cash can be recorded against a checked-out booking. They take the keys back and tap **Check out**. The booking becomes **Completed**, and the unit becomes **Awaiting inspection**. The deposit is **not** handed back at the gate. *(Field screens)*
 7. **Inspection and deposit.** See Journey 7.
 
@@ -6642,14 +6784,15 @@ Each journey below follows one real situation from start to finish, naming who d
 1. **Only online.** The visitor books on bruneiapartment.com → **Book → Day pass**: the day, how many people in each age group, contact details and car. Family bundles are applied automatically. The booking is **Held**, and the Booking email is sent. Staff cannot create a day pass in the portal. *(The customer side)*
 2. The visitor transfers the **full price** and presses **I have made the transfer**. The office confirms it in the Verification queue, and the pass becomes **Confirmed** with the Confirmation email and QR code. *(Payments)*
    - A visitor who arrives without having paid can pay the full price in cash at the gate (**Take BND …**), which confirms the pass. *(Field screens)*
-3. **On the day**, the pass appears under **Day passes** on the Gate. The guard checks it is paid in full and taps **Admit**. Admitting closes the pass (**Completed**), and visitors may come and go that day. A pass can only be admitted on its own date. *(Field screens)*
+3. **On the day**, the pass appears under **Day passes** on the Gate. The guard checks it is paid in full, counts the people against **Guests** (e.g. "3 · Adult × 2, Child × 1") and taps **Admit**. If more visitors came than the pass is for, he taps **Extra** first: a guard who takes cash adds them by age band and takes the difference (**Take BND …**); otherwise, or if they won't pay, the office is told. The office can also change a pass's party from its page (**Change** beside **Party**) until it is admitted. Admitting closes the pass (**Completed**), and visitors may come and go that day. A pass can only be admitted on its own date. *(Field screens)*
 4. A day pass has no security deposit, no unit, no check-in or check-out, and no inspection.
 
 ## Journey 5: A guest wants to stay longer, leave early, or change the booking
 
 - **Before check-in:** the office edits the booking (booking page → **Edit**): dates, unit, guests, extras, late check-out, vehicles, name, phone, discount. Every edit reprices the booking at today's rates. If the price goes up, the extra is owed; if it goes down and more was already paid, the difference is refunded outside the system. The guest's email address cannot be changed. *(Finding and changing bookings)*
 - **A confirmed booking whose check-in date has passed** (for example a guest a day late) cannot be edited at all. *(Finding and changing bookings)*
-- **Already checked in and wants to stay longer:** a checked-in booking can't be edited. The office makes a **second booking** on New booking for the extra nights, in the same unit, starting on the original check-out day. They tick **Waive the security deposit** with a reason naming the first booking ("Extends PV-1234 — the deposit is already held on that booking"). The new nights are paid at once. *(Creating bookings)*
+- **Already checked in, more or fewer people:** the office presses **Change** beside **Party** on the booking page. It works after check-in. Only the extra-guest charge (for every night) and a percentage discount are worked out again; the rest keeps its price. More owed shows as **Outstanding** (the guard sees it as cash to take); less shows as **Overpaid by**, refunded outside the system. *(Finding and changing bookings)*
+- **Already checked in and wants to stay longer:** a checked-in booking's dates can't be edited. The office makes a **second booking** on New booking for the extra nights, in the same unit, starting on the original check-out day. They tick **Waive the security deposit** with a reason naming the first booking ("Extends PV-1234 — the deposit is already held on that booking"). The new nights are paid at once. *(Creating bookings)*
 - **Leaving early:** the office checks the guest out from the booking page (the gate only checks out guests due out today or overdue). The nights not used stay blocked and can't be resold, because a checked-out booking can't be shortened. *(The booking's own page)*
 - **Late check-out:** it can only be added (and charged) when the booking is made or edited before check-in. *(Creating bookings)*
 
@@ -6692,7 +6835,7 @@ Each journey below follows one real situation from start to finish, naming who d
 
 This is where the system puts each job's information, not a rule about how anyone must work.
 
-- **Guard (Security):** the **Gate** screen all day: **Arriving** (check in, take deposit or stay cash), **Leaving today** (take any money owed, then check out), **Day passes** (admit), **Already in**. Anything the Gate says to call the office about goes to the office.
+- **Guard (Security):** the **Gate** screen all day: **Arriving** (check in, take deposit or stay cash), **Leaving today** (take any money owed, then check out), **Day passes** (admit), **Already in**. Red cards are the ones whose money is not settled; **Extra** reports more people than booked. Anything the Gate says to call the office about goes to the office.
 - **Housekeeping:** the **Departures** screen: guests leaving today, units **To inspect**, and units being cleaned (**Mark ready**).
 - **Front Office:** the **Dashboard** (today's arrivals and departures, what is waiting), the **Verification queue**, the bell, **New booking**, and unpaid bookings to chase or cancel.
 - **Finance:** the **Verification queue**, **Deposits** (**Ready to release**), the **Daily cash-up** and **Reports**.
@@ -6758,10 +6901,10 @@ The reference in brackets after each item (for example *N48*) is its number in J
 **What the system does today:** early check-in is not offered or charged anywhere, even though Property settings has an hourly rate for it. Whether to allow it, and whether to charge BND 10 an hour, is Jason's decision. *(N31)*
 
 ### Changing a booking after the guest has checked in
-**What the system does today:** a checked-in booking can't be edited. A guest who wants to stay longer gets a **second booking** for the extra nights, with the deposit waived because it is already held. A guest who leaves early is checked out, but the nights they didn't use stay blocked. *(N12, N53)*
+**What the system does today:** a checked-in booking's dates, unit and extras can't be edited. The number of people can: **Change** beside **Party** on the booking page works after check-in, and charges any extra guests above the unit type's maximum for every night of the booking. A guest who wants to stay longer gets a **second booking** for the extra nights, with the deposit waived because it is already held. A guest who leaves early is checked out, but the nights they didn't use stay blocked. *(N12, N53)*
 
 ### If we raise a rate, do existing bookings change?
-**What the system does today:** no. A booking keeps the price it was quoted, unless it is edited later: an edit reprices it at the current rates. *(N33)*
+**What the system does today:** no. A booking keeps the price it was quoted, unless it is edited later: an edit reprices it at the current rates. Changing only the party (**Change** beside **Party**) keeps the nights and extras at their quoted prices, but charges any extra guests at the current extra-guest rate. *(N33)*
 
 ### Which unit does an online booking get?
 **What the system does today:** the system picks the free unit of the chosen type with the lowest reference. The customer is told the type, not the door, in their emails. (Their booking page does show the unit.) The office can move the booking to another unit by editing it. Guests can't choose a bed setup. *(N36, N9)*
@@ -6796,7 +6939,7 @@ The reference in brackets after each item (for example *N48*) is its number in J
 **Not settled.** There are no house rules in the system or on the website yet. *(N46)*
 
 ### Parking
-**What the system does today:** the booking forms show how many car spaces the unit type comes with and warn when more cars are entered, but they don't refuse them. The total number of bays is not known. *(R3)*
+**What the system does today:** the booking forms show how many car spaces the unit type comes with. On the public website a customer cannot enter more cars than that; they are asked to message the office on WhatsApp first. Staff's booking forms only warn and still save extra cars. The total number of bays is not known. *(R3)*
 
 ## Staff and access
 
@@ -6841,6 +6984,7 @@ Words the system and this guide use, grouped by topic. Where a word means differ
 - **Booking**: one stay in a unit, or one day pass. Every booking has a reference.
 - **Booking reference**: "PV-" and a number, for example PV-4823. It never changes and is never reused. The guest quotes it at the gate and in the transfer description, and it is how a transfer is matched to the booking.
 - **Cancelled** (booking status, red): called off before arrival. The unit is released straight away. Final.
+- **Change the party**: the **Change** button beside **Party** on a booking's page, for staff with Edit bookings. It changes how many people a stay or day pass is for — even after check-in, never on a closed booking — and prices only that change. The history reads "Party changed — 5 → 7".
 - **Checked in** (booking status, teal): the guest has the keys and is in the unit.
 - **Check in / check out**: the moves that start and end a stay. Neither takes any money. Check-in needs the security deposit held in full.
 - **Closed booking**: a booking that is Completed, Cancelled or No show. It can't be edited, reopened or moved.
@@ -6848,8 +6992,9 @@ Words the system and this guide use, grouped by topic. Where a word means differ
 - **Confirmed** (booking status, green): the booking is secured, by the security deposit held in full (for a stay) or by being paid (for a day pass, or a stay with no deposit). The entry QR code is issued at this moment. A confirmed stay can still owe money for the stay itself.
 - **Day pass**: a booking to use the facilities on one day, with no unit, no deposit and no check-in. Sold only on the website. It is **admitted** at the gate, which closes it.
 - **Draft** (booking status): a booking not yet held. Nothing leaves a booking in Draft today, so you shouldn't see it.
-- **Edit (amend)**: changing a booking's dates, unit, guests, extras, late check-out, name, phone, vehicles or discount before check-in. Every edit reprices the booking at today's rates. On screen the button is always **Edit**.
+- **Edit (amend)**: changing a booking's dates, unit, guests, extras, late check-out, name, phone, vehicles or discount before check-in. Every edit reprices the booking at today's rates. On screen the button is always **Edit**. (Only the number of people can be changed after check-in, with **Change the party**.)
 - **Expired** (booking status): meant for a hold that ran out. Holds never run out today, so you shouldn't see it.
+- **Extra guests (at the gate)**: more people in the car than the booking is for. The guard reports them with **Extra** on the Gate card; the office changes the party.
 - **Held** (booking status, grey): the unit or day-pass place is reserved for a guest who has not paid and has not said they transferred. A website booking starts here, and so does a desk booking left for the guard to collect ("At the gate"). It never runs out; the office has to confirm it or cancel it. Held bookings don't appear in the Verification queue: find them on All bookings with the Held filter.
 - **Hold**: a unit blocked by a booking that hasn't been paid for (Held or Awaiting payment). Holds never expire.
 - **No show** (booking status, red): the guest never arrived. The deposit is kept, and the unused nights go back on sale. Final.
@@ -6915,7 +7060,7 @@ A deposit's stage is worked out by the system and only moves forward.
 - **Turnover**: the work between one guest leaving and the unit being ready: check-out, inspection, cleaning, mark ready.
 - **Unit**: one apartment or semi-detached house, known by its reference (for example 3B-04).
 - **Unit registry**: the Admin screen for naming units and setting how many of each type exist.
-- **Unit type**: 2-bedroom, 3-bedroom, 4-bedroom or Semi-detached. It carries the nightly rate, the guest maximum and the car spaces.
+- **Unit type**: 2-bedroom, 3-bedroom, 4-bedroom or Semi-detached. It carries the nightly rate, the guest maximum and the car spaces (the most cars a customer can enter when booking online).
 
 ## Screens and tools
 
@@ -6925,13 +7070,13 @@ A deposit's stage is worked out by the system and only moves forward.
 - **Entry QR code (entry code)**: the code in the Confirmation email and on the customer's booking page. A guard who scans it gets the booking's gate card; anyone else sees only a masked summary. **Replace code** makes a new one and stops the old one working.
 - **Field screens**: the phone screens for the gate (Gate) and housekeeping (Departures), at portal.bruneiapartment.com/field.
 - **Find your booking**: the website page where a customer opens their booking with the reference and phone number.
-- **Gate**: the guard's phone screen: today's arrivals, guests already in, guests leaving, day passes, and cash to take.
+- **Gate**: the guard's phone screen: today's arrivals, guests already in, guests leaving, day passes, and cash to take. A red card ("Payment not settled") is one whose money is not settled; **Extra** beside **Guests** reports more people than booked.
 - **History**: the permanent record, on each booking's page, of everything that happened to it, who did it and when.
 - **Accounting pack**: the PDF the system builds for each booking for the accountant, once it has at least one confirmed payment. It is built when money is recorded or verified, and rebuilt overnight when something changes.
 - **Identity document (IC)**: the guest's IC or passport copy, stored privately on the booking and deleted automatically after the retention period.
 - **Live figure**: a figure in curly brackets in an FAQ answer, such as {security deposit}, which the website fills in from Property settings.
 - **Note**: a permanent staff comment on a booking, either Internal (office only) or for Housekeeping (shown on the cleaner's phone).
-- **Notifications (the bell)**: the portal's list of events that need attention, such as new online bookings, payments to verify and failed emails.
+- **Notifications (the bell)**: the portal's list of events that need attention, such as new online bookings, payments to verify, failed emails and extra guests reported at the gate.
 - **Portal**: the staff system at portal.bruneiapartment.com.
 - **Private link / the customer's booking page**: the customer's own page for one booking, opened from their email or through Find your booking. Anyone with the link can see it.
 - **Property settings**: the Admin screen holding the rates, extras, day-pass prices and facilities, document retention periods and bank accounts.

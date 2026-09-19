@@ -114,6 +114,33 @@ describe('describeAuditEvent', () => {
     ).toBe('Discount removed')
   })
 
+  test('says which way a party moved, on a stay and on a pass', () => {
+    expect(
+      describeAuditEvent(
+        event('booking.party_changed', {
+          before: { chargeable_guests: 4, exempt_guests: 1 },
+          after: { chargeable_guests: 6, exempt_guests: 1 },
+        }),
+      ),
+    ).toBe('Party changed — 5 → 7')
+    expect(
+      describeAuditEvent(
+        event('booking.party_changed', { before: { headcount: 3 }, after: { headcount: 2 } }),
+      ),
+    ).toBe('Party changed — 3 → 2')
+  })
+
+  test('tells extra guests reported to the office from ones the guard settled himself', () => {
+    expect(
+      describeAuditEvent(event('booking.extra_guests_reported', { after: { extra: 2 } })),
+    ).toBe('Extra guests reported at the gate — 2 more')
+    expect(
+      describeAuditEvent(
+        event('booking.extra_guests_reported', { after: { extra: 1, added_cents: 1000 } }),
+      ),
+    ).toBe('Extra guests added at the gate — 1 more')
+  })
+
   test('names which document was opened — the whole point of the G3 log', () => {
     expect(describeAuditEvent(event('document.viewed', { after: { kind: 'identity' } }))).toBe(
       'Identity document opened',

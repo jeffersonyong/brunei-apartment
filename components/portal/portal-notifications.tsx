@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Route } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Bell, CalendarPlus, MailWarning, type LucideIcon } from 'lucide-react'
+import {
+  BadgeCheck,
+  Bell,
+  CalendarPlus,
+  MailWarning,
+  UserPlus,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { markNotificationsSeenAction } from '@/app/(portal)/notifications/actions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -47,6 +54,7 @@ const KIND_ICONS: Record<NotificationKind, LucideIcon> = {
   booking: CalendarPlus,
   payment: BadgeCheck,
   email: MailWarning,
+  guests: UserPlus,
 }
 
 export function PortalNotifications() {

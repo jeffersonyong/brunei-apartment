@@ -112,6 +112,25 @@ export function partyFromAges(ages: readonly number[], config: PropertyConfig): 
   return { chargeableGuests: ages.length - exemptGuests, exemptGuests }
 }
 
+/**
+ * The extra-person charge for a stay: every guest above the unit type's
+ * maximum, for every night (prd.md §8.2). One builder, so a stay priced whole
+ * and a party changed later (./party-change.ts) write the same line.
+ */
+export function extraPersonLine(
+  maxPax: number,
+  extraPersons: number,
+  nights: number,
+  ratePerNight: Cents,
+): BookingLine {
+  return line(
+    'extra_person',
+    `Extra ${extraPersons === 1 ? 'guest' : 'guests'} above ${maxPax} — ${extraPersons} × ${nights} ${nights === 1 ? 'night' : 'nights'}`,
+    extraPersons * nights,
+    ratePerNight,
+  )
+}
+
 function fail(code: StayPricingErrorCode, message: string): StayPricingResult {
   return { ok: false, error: { code, message } }
 }
@@ -208,14 +227,7 @@ export function priceStay(
   ]
 
   if (extraPersons > 0) {
-    lines.push(
-      line(
-        'extra_person',
-        `Extra ${extraPersons === 1 ? 'guest' : 'guests'} above ${unitType.maxPax} — ${extraPersons} × ${nights} ${nights === 1 ? 'night' : 'nights'}`,
-        extraPersons * nights,
-        config.extraPersonPerNight,
-      ),
-    )
+    lines.push(extraPersonLine(unitType.maxPax, extraPersons, nights, config.extraPersonPerNight))
   }
 
   // Extras, in the order staff put them in, so a receipt reads the way the

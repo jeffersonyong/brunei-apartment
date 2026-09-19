@@ -3,12 +3,20 @@ import type { ComponentProps } from 'react'
 import { Badge } from '@/components/ui/badge'
 import type { GateBooking } from '@/lib/db/gate'
 import { formatStayDate, formatStayRange } from '@/lib/domain/dates'
-import { GATE_CASH_LABELS, gateVerdictSentence, type GateVerdict } from '@/lib/domain/gate'
+import {
+  GATE_CASH_LABELS,
+  gateVerdictSentence,
+  type GateContext,
+  type GateVerdict,
+} from '@/lib/domain/gate'
 import { formatCents } from '@/lib/domain/money'
+import { describeParty } from '@/lib/domain/extra-guests'
 import { formatVehicles } from '@/lib/domain/vehicle'
+import { cn } from '@/lib/utils'
 
 import { GateActionButton, type GateMove } from './gate-action-button'
 import { GateCashButton } from './gate-cash-button'
+import { GateExtraGuestsButton } from './gate-extra-guests-button'
 
 /**
  * One booking at the barrier.
@@ -30,6 +38,18 @@ import { GateCashButton } from './gate-cash-button'
  * **A figure appears only for a reader who takes cash.** `booking.cash` is null
  * for anyone else (lib/db/gate.ts), so a phone signed in without the permission
  * carries no prices at all.
+ *
+ * **A card whose money is not settled is red** (Jason's team, 19 September
+ * 2026) — a deposit not in, the stay or pass still owed, or a transfer nobody
+ * has checked — so the guard is careful with it before anything else is read.
+ * The tint is the negative status pair, the one meaning design.md gives it,
+ * and a line in the micro voice says it in words, because colour alone tells a
+ * colour-blind guard nothing. The inset turns white on it: an object is the
+ * tone a step away from what it sits on.
+ *
+ * **The party is on the card** so the guard can count the car against it, with
+ * a small Extra button beside it for the car that holds more people than the
+ * booking is for (gate-extra-guests-button.tsx).
  */
 
 /** The gate moves the reader holds. */
@@ -122,6 +142,23 @@ function placeOf(booking: GateBooking): string {
   return `Day pass · ${booking.headcount} ${booking.headcount === 1 ? 'person' : 'people'}`
 }
 
+/** Everybody the booking is for, and how that is made up. */
+function partyOf(booking: GateBooking, exemptAgeMax: number): { people: number; detail: string } {
+  if (booking.party.kind === 'pass') {
+    return {
+      people: booking.headcount ?? 0,
+      detail: describeParty(booking.party.bands),
+    }
+  }
+
+  const { counted, exempt } = booking.party
+
+  return {
+    people: counted + exempt,
+    detail: exempt > 0 ? `${exempt} aged ${exemptAgeMax} or under` : '',
+  }
+}
+
 function datesOf(booking: GateBooking): string {
   if (!booking.arrival) {
     return '—'
@@ -132,20 +169,44 @@ function datesOf(booking: GateBooking): string {
     : formatStayDate(booking.arrival)
 }
 
-export function GateCard({ booking, moves }: { booking: GateBooking; moves: GateMoves }) {
+export function GateCard({
+  booking,
+  moves,
+  context,
+}: {
+  booking: GateBooking
+  moves: GateMoves
+  context: GateContext
+}) {
   const cash = moves.mayTakeCash ? booking.cash : null
   const badge = verdictBadge(booking.verdict, cash !== null)
   const move = moveOf(booking.verdict, moves)
   const place = placeOf(booking)
   const plates = formatVehicles(booking.vehicles)
+  const party = partyOf(booking, context.exemptAgeMax)
+  const isRed = booking.moneyUnsettled
+  // Whoever lets this kind of booking in is whoever counts the people in it.
+  const mayReport =
+    booking.verdict.kind !== 'closed' &&
+    (booking.stream === 'day_pass' ? moves.mayAdmit : moves.mayCheckIn)
 
   return (
-    <article className="rounded-lg border border-border bg-card p-card">
+    <article
+      className={cn(
+        'rounded-lg border p-card',
+        isRed ? 'border-destructive bg-badge-negative' : 'border-border bg-card',
+      )}
+    >
+      {isRed ? <p className="mb-sm micro-label text-negative-text">Payment not settled</p> : null}
+
       <div className="flex items-start justify-between gap-md">
         <div className="min-w-0">
           <p className="text-body-md-strong break-words text-foreground">{booking.guestName}</p>
           <p className="mt-xxs text-body-sm text-muted-foreground">
-            <span className="font-mono tabular-nums">{booking.reference}</span> · {place}
+            {/* The unit, or just "Day pass": how many it is for is the Guests
+                line below, where the guard counts against it. */}
+            <span className="font-mono tabular-nums">{booking.reference}</span> ·{' '}
+            {booking.unitRef ?? 'Day pass'}
           </p>
         </div>
         <Badge tone={badge.tone}>{badge.label}</Badge>
@@ -154,7 +215,12 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
       {/* A gray inset inside the card: the facts a guard checks against the
           car, and what he is about to take, labelled in the micro voice
           (design.md §Cards). */}
-      <dl className="mt-md grid grid-cols-2 gap-md rounded-md bg-muted p-md">
+      <dl
+        className={cn(
+          'mt-md grid grid-cols-2 gap-md rounded-md p-md',
+          isRed ? 'bg-card' : 'bg-muted',
+        )}
+      >
         <div className="min-w-0">
           <dt className="micro-label text-muted-foreground">Vehicle</dt>
           <dd className="mt-xxs font-mono text-body-md break-words text-foreground">
@@ -170,6 +236,25 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
             {booking.departure ? 'Staying' : 'Date'}
           </dt>
           <dd className="mt-xxs text-body-sm text-foreground tabular-nums">{datesOf(booking)}</dd>
+        </div>
+        <div className="col-span-2 flex min-w-0 items-center justify-between gap-md">
+          <div className="min-w-0">
+            <dt className="micro-label text-muted-foreground">Guests</dt>
+            <dd className="mt-xxs text-body-md text-foreground tabular-nums">
+              {party.people}
+              {party.detail ? (
+                <span className="text-body-sm text-muted-foreground"> · {party.detail}</span>
+              ) : null}
+            </dd>
+          </div>
+          {mayReport ? (
+            <GateExtraGuestsButton
+              booking={booking}
+              place={place}
+              bookedFor={party.people}
+              passPricing={moves.mayTakeCash ? context.passPricing : null}
+            />
+          ) : null}
         </div>
         {cash ? (
           <div className="col-span-2 min-w-0">
@@ -191,6 +276,13 @@ export function GateCard({ booking, moves }: { booking: GateBooking; moves: Gate
           takesCash: cash !== null,
         })}
       </p>
+
+      {booking.extraReported > 0 ? (
+        <p className="mt-xxs text-body-sm text-muted-foreground">
+          {booking.extraReported} more {booking.extraReported === 1 ? 'person' : 'people'} than
+          booked — the office has been told.
+        </p>
+      ) : null}
 
       {/* Information, never a gate (N53): the guard hands over the keys with no
           units board beside him, so he is told. */}

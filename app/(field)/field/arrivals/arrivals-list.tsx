@@ -7,7 +7,7 @@ import { RefreshLine } from '@/components/field/refresh-line'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { GateBooking, GateList } from '@/lib/db/gate'
-import { matchesGateSearch } from '@/lib/domain/gate'
+import { matchesGateSearch, type GateContext } from '@/lib/domain/gate'
 
 import { GateCard, type GateMoves } from './gate-card'
 
@@ -34,11 +34,13 @@ interface ArrivalsListProps {
   loadedAt: string
   /** Which of the gate's moves the reader holds. */
   moves: GateMoves
+  /** The party line's wording and, for a reader who may use them, the pass prices. */
+  context: GateContext
 }
 
 const SEARCH_FORM_ID = 'gate-search'
 
-export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsListProps) {
+export function ArrivalsList({ list, query, found, loadedAt, moves, context }: ArrivalsListProps) {
   const [term, setTerm] = useState(query)
 
   const typed = term.trim()
@@ -95,6 +97,7 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
         title="Arriving"
         rows={expected}
         moves={moves}
+        context={context}
         empty={typed.length > 0 ? null : 'Nobody else is due to arrive today.'}
       />
 
@@ -104,6 +107,7 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
           title="Leaving today"
           rows={leaving}
           moves={moves}
+          context={context}
           empty={null}
         />
       ) : null}
@@ -114,6 +118,7 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
           title="Day passes"
           rows={dayPasses}
           moves={moves}
+          context={context}
           empty={null}
         />
       ) : null}
@@ -124,6 +129,7 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
           title="Already in"
           rows={inResidence}
           moves={moves}
+          context={context}
           empty={null}
         />
       ) : null}
@@ -153,6 +159,7 @@ export function ArrivalsList({ list, query, found, loadedAt, moves }: ArrivalsLi
           title={`All bookings matching “${query}”`}
           rows={found}
           moves={moves}
+          context={context}
           empty="No open booking matches. Call the office."
         />
       ) : null}
@@ -165,11 +172,12 @@ interface GateSectionProps {
   title: string
   rows: readonly GateBooking[]
   moves: GateMoves
+  context: GateContext
   /** What to say when the section is empty, or null to say nothing. */
   empty: string | null
 }
 
-function GateSection({ id, title, rows, moves, empty }: GateSectionProps) {
+function GateSection({ id, title, rows, moves, context, empty }: GateSectionProps) {
   if (rows.length === 0 && empty === null) {
     return null
   }
@@ -188,7 +196,7 @@ function GateSection({ id, title, rows, moves, empty }: GateSectionProps) {
         <ul className="mt-md grid gap-md">
           {rows.map((row) => (
             <li key={row.id}>
-              <GateCard booking={row} moves={moves} />
+              <GateCard booking={row} moves={moves} context={context} />
             </li>
           ))}
         </ul>

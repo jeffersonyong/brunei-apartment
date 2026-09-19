@@ -50,6 +50,8 @@ export const KNOWN_AUDIT_ACTIONS = [
   'booking.qr_reissued',
   'booking.amended',
   'booking.discounted',
+  'booking.party_changed',
+  'booking.extra_guests_reported',
   'booking.hold',
   'booking.submit_payment',
   'booking.verify_payment',
@@ -406,11 +408,42 @@ function describeBooking(event: AuditEventLike): string | null {
     return discountLabel(event)
   }
 
+  if (event.action === 'booking.party_changed') {
+    // Both sides, because "Party changed" alone sends the reader to the
+    // Party line to find out which way — and the way it went is the point.
+    const from = partySizeOf(event.before)
+    const to = partySizeOf(event.after)
+
+    return from !== null && to !== null ? `Party changed — ${from} → ${to}` : 'Party changed'
+  }
+
+  if (event.action === 'booking.extra_guests_reported') {
+    const extra = typeof event.after?.extra === 'number' ? ` — ${event.after.extra} more` : ''
+
+    // A pass the guard added the visitors to himself is settled; anything
+    // else is waiting for the office.
+    return typeof event.after?.added_cents === 'number'
+      ? `Extra guests added at the gate${extra}`
+      : `Extra guests reported at the gate${extra}`
+  }
+
   if (event.action.startsWith('document.')) {
     return documentLabel(event)
   }
 
   return null
+}
+
+/** Everybody a party counted: a pass's headcount, or a stay's two figures summed. */
+function partySizeOf(side: Record<string, unknown> | null | undefined): number | null {
+  if (typeof side?.headcount === 'number') {
+    return side.headcount
+  }
+
+  const counted = side?.chargeable_guests
+  const exempt = side?.exempt_guests
+
+  return typeof counted === 'number' && typeof exempt === 'number' ? counted + exempt : null
 }
 
 /**

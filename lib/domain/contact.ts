@@ -45,3 +45,13 @@ export const contact: PropertyContact = {
   /** Palm Villa, 4.570085, 114.220738. */
   mapsUrl: 'https://www.google.com/maps/search/?api=1&query=4.570085,114.220738',
 }
+
+/**
+ * The one chat a customer is sent to about something the booking form will not
+ * sell them — today, a car beyond the parking a unit includes. The first number
+ * listed, which is the one `whatsappUrl` already opens.
+ */
+export const officeWhatsApp: { display: string; href: string } = {
+  display: contact.phones[0]!.display,
+  href: contact.whatsappUrl,
+}

@@ -19,7 +19,7 @@ import { Notice } from '@/components/ui/notice'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast-store'
 import { MAX_CHARGE_REASON_LENGTH, MAX_WAIVE_REASON_LENGTH } from '@/lib/domain/deposit'
-import { formatCents, type Cents } from '@/lib/domain/money'
+import { centsFromInput, formatCents, type Cents } from '@/lib/domain/money'
 
 import { addChargeAction, waiveChargeAction, type DepositActionState } from './actions'
 
@@ -79,8 +79,9 @@ function AddChargeDialog({
 
   // Live, from what has been typed, so the sentence about exceeding the
   // deposit appears as the figure crosses it rather than after submitting.
-  const entered = Number.parseFloat(typed)
-  const cents = Number.isFinite(entered) ? Math.round(entered * 100) : 0
+  // The same parser the action uses, so "1,200.00" is 1,200 here too rather
+  // than the 1 `parseFloat` makes of it.
+  const cents = centsFromInput(typed) ?? 0
   const exceeds = cents > 0 && chargesTotal + cents > amount
 
   useEffect(() => {
