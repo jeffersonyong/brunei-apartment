@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Pencil } from 'lucide-react'
@@ -23,13 +24,17 @@ import {
 } from '@/lib/db/documents'
 import { listBookingNotes } from '@/lib/db/notes'
 import { accountingPackChangedAt } from '@/lib/db/packs'
+import { listDayPassParties } from '@/lib/db/party'
 import { listPaymentsForBooking, type Payment } from '@/lib/db/payments'
+import { getPropertyConfig } from '@/lib/db/property-config'
 import { listStaff } from '@/lib/db/staff'
-import { allowedEvents, canAmend, canMarkNoShow } from '@/lib/domain/booking-state'
+import { allowedEvents, canAmend, canMarkNoShow, isTerminal } from '@/lib/domain/booking-state'
+import type { DayPassPartyLine } from '@/lib/domain/day-pass-capacity'
 import { formatStayDate, formatTimestamp, nightsBetween, todayInBrunei } from '@/lib/domain/dates'
 import { balanceOf, canSettle } from '@/lib/domain/balance'
 import { depositAtClose } from '@/lib/domain/deposit'
 import { describeDiscount } from '@/lib/domain/discount'
+import { countsOf, describeParty } from '@/lib/domain/extra-guests'
 import { formatCents } from '@/lib/domain/money'
 import { PAYMENT_METHOD_LABELS } from '@/lib/domain/payment'
 import { mayAttach, mayOpen, uploaderFor } from '@/lib/domain/document'
@@ -44,6 +49,7 @@ import { AccountingPack } from '../accounting-pack'
 import { AdmitPassButton } from '../admit-pass-button'
 import { BookingActions } from '../booking-actions'
 import { BookingHistory } from '../booking-history'
+import { ChangeParty } from '../change-party'
 import { AddNote, BookingNotes } from '../booking-notes'
 import { EntryCode } from '../entry-code'
 import { IdentityDocuments } from '../identity-documents'
@@ -106,19 +112,35 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     notFound()
   }
 
-  const [payments, staff, notes, deposit, documents, everyDocumentId, packChangedAt] =
-    await Promise.all([
-      listPaymentsForBooking(booking.id),
-      listStaff(),
-      listBookingNotes(booking.id),
-      getDepositByBookingId(booking.id),
-      listDocumentsForBooking(booking.id),
-      listDocumentIdsForBooking(booking.id),
-      // Needs the booking id and nothing else, so it belongs here. It was
-      // awaited on its own further down, after the history page — one more
-      // sequential trip for an answer that could have come back with these.
-      accountingPackChangedAt(booking.id),
-    ])
+  const [
+    payments,
+    staff,
+    notes,
+    deposit,
+    documents,
+    everyDocumentId,
+    packChangedAt,
+    config,
+    passParties,
+  ] = await Promise.all([
+    listPaymentsForBooking(booking.id),
+    listStaff(),
+    listBookingNotes(booking.id),
+    getDepositByBookingId(booking.id),
+    listDocumentsForBooking(booking.id),
+    listDocumentIdsForBooking(booking.id),
+    // Needs the booking id and nothing else, so it belongs here. It was
+    // awaited on its own further down, after the history page — one more
+    // sequential trip for an answer that could have come back with these.
+    accountingPackChangedAt(booking.id),
+    // The party dialog prices a change live, and needs the rates to do it.
+    getPropertyConfig(),
+    booking.dayPass
+      ? listDayPassParties([booking.id])
+      : Promise.resolve<ReadonlyMap<string, readonly DayPassPartyLine[]>>(new Map()),
+  ])
+
+  const passParty = passParties.get(booking.id) ?? null
 
   // The trail is the booking's own events with three other records' folded
   // in, read as one page in one query (`listAuditEventPage`). Each keeps its
@@ -189,6 +211,38 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
       : null
 
   const mayAmend = canAmend(booking.status) && hasPermission(actor.permissions, 'booking.amend')
+  // The party reaches further than the Edit screen: a guest already checked in
+  // still gets people added or taken off (Jason's team, 19 September 2026).
+  // Only a closed booking, which takes no more money, is out of reach.
+  const stayUnitType = booking.stay
+    ? config.unitTypes.find((type) => type.id === booking.stay?.unitTypeId)
+    : undefined
+  const partyChange =
+    !isTerminal(booking.status) &&
+    hasPermission(actor.permissions, 'booking.amend') &&
+    (booking.stay ? stayUnitType !== undefined : passParty !== null) ? (
+      <ChangeParty
+        bookingId={booking.id}
+        reference={booking.reference}
+        updatedAt={booking.updatedAt}
+        total={booking.total}
+        paid={booking.paid}
+        config={config}
+        subject={
+          booking.stay && stayUnitType
+            ? {
+                kind: 'stay',
+                chargeableGuests: booking.chargeableGuests,
+                exemptGuests: booking.exemptGuests,
+                lines: booking.lines,
+                unitType: stayUnitType,
+                nights: nightsBetween(booking.stay.range.start, booking.stay.range.end),
+                discount: booking.discount,
+              }
+            : { kind: 'pass', counts: countsOf(passParty ?? []) }
+        }
+      />
+    ) : null
   // One permission per move (N11, 13 September 2026) — see stay-actions.ts.
   // Which move is offered still comes from the state machine, never from a
   // hand-written list of statuses; which of the two arrivals it is comes from
@@ -324,6 +378,8 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
       <div className="mt-lg grid gap-lg lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <GuestAndStaySummary
           booking={booking}
+          passParty={passParty}
+          partyChange={partyChange}
           identityDocuments={documents.filter((document) => document.kind === 'identity')}
           mayOpenIdentity={mayOpen('identity', actor.permissions)}
           mayAttachIdentity={mayAttach('identity', actor.permissions)}
@@ -430,12 +486,18 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
  */
 function GuestAndStaySummary({
   booking,
+  passParty,
+  partyChange,
   identityDocuments,
   mayOpenIdentity,
   mayAttachIdentity,
   actorNames,
 }: {
   booking: Booking
+  /** A day pass's bands as sold; null for a stay. */
+  passParty: readonly DayPassPartyLine[] | null
+  /** The Change control beside the party, for whoever may change it. */
+  partyChange: ReactNode
   identityDocuments: readonly Document[]
   mayOpenIdentity: boolean
   mayAttachIdentity: boolean
@@ -492,14 +554,19 @@ function GuestAndStaySummary({
         {/* "Party", not "Guests". Beside a `Guest` field holding a name, a
             `Guests` field holding a number reads as one of the two being a
             mistake. */}
+        {/* A pass's party is its bands — what the guard counts at the gate —
+            and a stay's is the counted guests and the exempt ones. */}
         <Field
           label="Party"
-          value={String(booking.chargeableGuests)}
+          value={String(booking.dayPass ? booking.dayPass.headcount : booking.chargeableGuests)}
           hint={
-            booking.exemptGuests > 0
-              ? `plus ${booking.exemptGuests} not counted towards occupancy`
-              : undefined
+            passParty
+              ? describeParty(passParty)
+              : booking.exemptGuests > 0
+                ? `plus ${booking.exemptGuests} not counted towards occupancy`
+                : undefined
           }
+          action={partyChange}
         />
         <VehicleField booking={booking} />
       </dl>
@@ -787,6 +854,7 @@ function Field({
   mono,
   figures,
   href,
+  action,
 }: {
   label: string
   value: string
@@ -797,6 +865,8 @@ function Field({
   figures?: boolean
   /** Makes the value actionable — today only `tel:` on the guest's number. */
   href?: string
+  /** A control beside the value — the party's Change. */
+  action?: ReactNode
 }) {
   return (
     <div>
@@ -806,6 +876,7 @@ function Field({
           'mt-xxs text-body-md text-foreground',
           mono && 'font-mono tabular-nums',
           figures && 'tabular-nums',
+          action && 'flex items-baseline gap-sm',
         )}
       >
         {/* Underline on hover rather than a colour: the operations surfaces are
@@ -818,6 +889,7 @@ function Field({
         ) : (
           value
         )}
+        {action}
       </dd>
       {hint ? <dd className="mt-xxs text-caption text-muted-foreground">{hint}</dd> : null}
     </div>
