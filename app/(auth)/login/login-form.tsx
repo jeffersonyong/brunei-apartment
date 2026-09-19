@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-import { AuthScreen, TEXT_ACTION_CLASSES } from '../auth-screen'
+import { AuthScreen } from '../auth-screen'
 import { signInAction, type SignInState } from './actions'
 
 /**
@@ -95,11 +95,18 @@ export function LoginForm({ next, canResetByEmail }: LoginFormProps) {
  * the tooltip saying why is reachable from a keyboard — the construction the
  * portal's notifications control uses for a feature not switched on. On a phone
  * the tooltip never opens, which is why the line under the card says who to ask.
+ *
+ * Underlined on hover only, unlike the other text actions: it sits on the
+ * Password label's row, where every sign-in screen puts it, so its place
+ * already says what it is and a line at rest only adds weight to the card.
  */
 function ForgotPassword({ isAvailable }: { isAvailable: boolean }) {
   if (isAvailable) {
     return (
-      <Link href="/forgot-password" className={`text-body-sm ${TEXT_ACTION_CLASSES}`}>
+      <Link
+        href="/forgot-password"
+        className="rounded-sm text-body-sm text-foreground underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+      >
         Forgot password?
       </Link>
     )
