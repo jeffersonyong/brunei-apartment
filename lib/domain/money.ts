@@ -32,8 +32,12 @@ export function bnd(amount: number): Cents {
   return amount * CENTS_PER_BND
 }
 
-/** The most minor units a typed amount may carry. BND has two. */
-const TYPED_AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/
+/**
+ * A typed amount: whole dollars, either bare (`1368`) or grouped in threes by
+ * the thousands comma `formatCents` writes (`1,368`), then at most two decimal
+ * places. BND has two.
+ */
+const TYPED_AMOUNT_PATTERN = /^(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/
 
 /**
  * The largest amount this system can hold: Postgres `integer`, in cents.
@@ -57,9 +61,18 @@ export const MAX_CENTS: Cents = 2_147_483_647
  * routinely has cents in it.
  *
  * Returns null rather than throwing, and rejects rather than repairs: a
- * grouping comma, a currency symbol, a minus sign or a third decimal place all
- * come back as null so the form can say what it did not understand. Guessing
- * at "1,0O0" is how a payment gets recorded at the wrong amount.
+ * currency symbol, a minus sign or a third decimal place all come back as null
+ * so the form can say what it did not understand. Guessing at "1,0O0" is how a
+ * payment gets recorded at the wrong amount.
+ *
+ * **The thousands comma is read, not guessed at.** Every dialog that asks for
+ * money opens on a figure, and `formatCents` writes that figure as
+ * `1,368.00` — so a parser refusing the comma refused its own screen's
+ * default, and a guard at the gate was told to "enter an amount like 200.00"
+ * over a figure he had not touched. Only a comma that groups exactly three
+ * digits after a lead of one to three is accepted, which is what the grouping
+ * means and all it can mean: `1,36.00`, `10,00` (a decimal comma) and
+ * `1,0000` are still refused.
  *
  * An amount past `MAX_CENTS` is refused for the same reason and not a
  * different one: it is a figure this system cannot store, and letting it
@@ -73,7 +86,7 @@ export function centsFromInput(value: string): Cents | null {
     return null
   }
 
-  const [major, minor = ''] = trimmed.split('.')
+  const [major, minor = ''] = trimmed.replace(/,/g, '').split('.')
   const cents = Number(major) * CENTS_PER_BND + Number(minor.padEnd(2, '0'))
 
   return cents > MAX_CENTS ? null : cents
