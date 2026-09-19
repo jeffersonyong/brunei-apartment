@@ -261,15 +261,22 @@ describe("today's list at the gate", () => {
 
     expect(row).toBeDefined()
     expect(row?.cash).toBeNull()
+    expect(row?.passFigures).toBeNull()
+    // Owed money is said to every reader — as a colour, never a figure.
+    expect(row?.moneyUnsettled).toBe(true)
     expect(Object.keys(row ?? {}).sort()).toEqual(
       [
         'arrival',
         'cash',
         'departure',
+        'extraReported',
         'guestName',
         'headcount',
         'id',
+        'moneyUnsettled',
         'noVehicle',
+        'party',
+        'passFigures',
         'reference',
         'status',
         'stream',

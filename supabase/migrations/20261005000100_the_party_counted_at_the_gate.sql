@@ -126,7 +126,9 @@ begin
         return jsonb_build_object(
           'ok', false,
           'error', 'capacity_exceeded',
-          'remaining', greatest(v_capacity - (v_taken - v_pass.headcount), 0)
+          -- How many more fit, which is what the office is told: the pass's
+          -- own places are already in `taken`.
+          'remaining', greatest(v_capacity - v_taken, 0)
         );
       end if;
     end if;

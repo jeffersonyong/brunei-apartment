@@ -96,7 +96,9 @@ function stayLines(nights: number, extra: number) {
 
 describe('changeBookingParty — a stay', () => {
   test('changes the party and the lines of a guest already checked in, and records it', async () => {
-    const { booking } = await givenCheckedInBooking(STAY)
+    const { booking: sold } = await givenCheckedInBooking(STAY)
+    // Read again: checking in moved `updated_at` past the copy the factory kept.
+    const booking = (await getBookingById(sold.id))!
     const priced = stayLines(3, 2)
 
     const result = await changeBookingParty({
@@ -225,6 +227,7 @@ describe('changeBookingParty — a day pass', () => {
     })
 
     expect(!result.ok && result.error.code).toBe('capacity_exceeded')
+    // Two of the three places are this pass's own, so one more fits.
     expect(!result.ok && result.error.message).toBe('Only 1 more place is left that day.')
     expect((await getBookingById(pass.id))?.dayPass?.headcount).toBe(2)
   })
