@@ -1,4 +1,5 @@
 import type { DayPassPartyLine } from '@/lib/domain/day-pass-capacity'
+import { extraGuestsAwaitingOffice, type PartyEvent } from '@/lib/domain/extra-guests'
 import type { BookingLine } from '@/lib/domain/lines'
 import type { Cents } from '@/lib/domain/money'
 import type { StayParty } from '@/lib/domain/pricing/stay'
@@ -171,5 +172,46 @@ export async function listDayPassParties(
       row.booking_id,
       row.party,
     ]),
+  )
+}
+
+/**
+ * For each booking, how many extra people the guards have reported that the
+ * office has not acted on yet (`extraGuestsAwaitingOffice`). One read for the
+ * whole set; a booking with nothing waiting is absent.
+ */
+export async function listExtraGuestsAwaitingOffice(
+  bookingIds: readonly string[],
+): Promise<ReadonlyMap<string, number>> {
+  if (bookingIds.length === 0) {
+    return new Map()
+  }
+
+  const propertyId = await currentPropertyId()
+
+  const { data, error } = await dataClient()
+    .from('audit_event')
+    .select('entity_id, action, after')
+    .eq('property_id', propertyId)
+    .eq('entity_type', 'booking')
+    .in('entity_id', [...bookingIds])
+    .in('action', ['booking.extra_guests_reported', 'booking.party_changed'])
+    .order('at', { ascending: true })
+    .order('id', { ascending: true })
+
+  if (error) {
+    throw new Error(`Could not read the extra guests reported at the gate: ${error.message}`)
+  }
+
+  const byBooking = new Map<string, PartyEvent[]>()
+
+  for (const row of data as (PartyEvent & { entity_id: string })[]) {
+    byBooking.set(row.entity_id, [...(byBooking.get(row.entity_id) ?? []), row])
+  }
+
+  return new Map(
+    [...byBooking]
+      .map(([id, events]) => [id, extraGuestsAwaitingOffice(events)] as const)
+      .filter(([, awaiting]) => awaiting > 0),
   )
 }

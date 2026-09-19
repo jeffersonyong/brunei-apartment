@@ -11,7 +11,9 @@ import { getActor } from '@/lib/auth/require-permission'
 import { getBookingById, type Booking } from '@/lib/db/bookings'
 import { findBookingIdByEntryToken } from '@/lib/db/entry-qr'
 import { getGateBooking } from '@/lib/db/gate'
+import { getPropertyConfig } from '@/lib/db/property-config'
 import { formatStayDate, formatStayRange, todayInBrunei } from '@/lib/domain/dates'
+import { gateContextOf } from '@/lib/domain/gate'
 import { entrySummarySentence, maskGuestName } from '@/lib/domain/entry-qr'
 
 export const metadata: Metadata = {
@@ -56,10 +58,11 @@ export default async function EntryCodePage({ params }: { params: Promise<{ toke
   if (actor && mayWork(actor.permissions, 'arrivals')) {
     const today = todayInBrunei()
     const mayTakeCash = hasPermission(actor.permissions, 'payment.record_cash')
-    const booking = await getGateBooking(bookingId, today, {
-      withReadiness: true,
-      withCash: mayTakeCash,
-    })
+    const mayAdmit = hasPermission(actor.permissions, 'day_pass.admit')
+    const [booking, config] = await Promise.all([
+      getGateBooking(bookingId, today, { withReadiness: true, withCash: mayTakeCash }),
+      getPropertyConfig(),
+    ])
 
     if (!booking) {
       notFound()
@@ -76,9 +79,10 @@ export default async function EntryCodePage({ params }: { params: Promise<{ toke
             moves={{
               mayCheckIn: hasPermission(actor.permissions, 'booking.check_in'),
               mayCheckOut: hasPermission(actor.permissions, 'booking.check_out'),
-              mayAdmit: hasPermission(actor.permissions, 'day_pass.admit'),
+              mayAdmit,
               mayTakeCash,
             }}
+            context={gateContextOf(config, mayAdmit && mayTakeCash)}
           />
         </div>
       </>

@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest'
 
-import { addToParty, countsOf, describeParty, extraGuestsNote } from './extra-guests'
+import {
+  addToParty,
+  countsOf,
+  describeParty,
+  extraGuestsAwaitingOffice,
+  extraGuestsNote,
+} from './extra-guests'
 import { bnd } from './money'
 
 const SOLD = [
@@ -68,5 +74,42 @@ describe('extraGuestsNote', () => {
     ).toBe(
       'Added at the gate: Adult × 1, Child × 1 (the pass is now for 5). BND 15.00 taken in cash.',
     )
+  })
+
+  test('a visitor who is free is added with nothing to take', () => {
+    expect(
+      extraGuestsNote({
+        extra: 1,
+        bookedFor: 2,
+        remark: '',
+        added: { party: 'Under 1 × 1', nowFor: 3, taken: 0 },
+      }),
+    ).toBe('Added at the gate: Under 1 × 1 (the pass is now for 3). Nothing more to pay.')
+  })
+})
+
+describe('extraGuestsAwaitingOffice', () => {
+  const reported = (extra: number, addedCents?: number) => ({
+    action: 'booking.extra_guests_reported',
+    after: { extra, ...(addedCents === undefined ? {} : { added_cents: addedCents }) },
+  })
+  const changed = { action: 'booking.party_changed', after: {} }
+
+  test('nothing reported is nothing waiting', () => {
+    expect(extraGuestsAwaitingOffice([])).toBe(0)
+  })
+
+  test('adds up what the guards reported', () => {
+    expect(extraGuestsAwaitingOffice([reported(2), reported(1)])).toBe(3)
+  })
+
+  test('the office changing the party answers what was reported before it', () => {
+    expect(extraGuestsAwaitingOffice([reported(2), changed])).toBe(0)
+    expect(extraGuestsAwaitingOffice([reported(2), changed, reported(1)])).toBe(1)
+  })
+
+  test('visitors the guard added to a pass himself are not waiting on anybody', () => {
+    // He adds them, which changes the party, and reports it after.
+    expect(extraGuestsAwaitingOffice([changed, reported(2, 1500)])).toBe(0)
   })
 })

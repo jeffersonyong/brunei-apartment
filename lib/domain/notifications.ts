@@ -18,19 +18,24 @@ import { formatCents } from './money'
  *
  * - a booking a guest made on the website — somebody new is coming;
  * - a payment waiting to be checked — the verification queue has grown;
- * - a booking email that failed — the guest may be waiting for something.
+ * - a booking email that failed — the guest may be waiting for something;
+ * - more people at the gate than a booking is for — the party may need
+ *   changing and an extra charge taking (Jason's team, 19 September 2026).
+ *   To whoever may change the party, `booking.amend`. A pass the guard settled
+ *   himself still reaches them, as done, because money moved at the gate.
  *
  * Hold expiry is not among them because holds do not expire (open question
  * N7), so the event never happens. Nobody is told about something they did
  * themselves; the reader filters on the actor.
  */
 
-export type NotificationKind = 'booking' | 'payment' | 'email'
+export type NotificationKind = 'booking' | 'payment' | 'email' | 'guests'
 
 export const NOTIFICATION_KINDS = [
   { action: 'booking.created_public', kind: 'booking', permission: 'booking.view' },
   { action: 'booking.submit_payment', kind: 'payment', permission: 'payment.verify' },
   { action: 'email.failed', kind: 'email', permission: 'booking.view' },
+  { action: 'booking.extra_guests_reported', kind: 'guests', permission: 'booking.amend' },
 ] as const satisfies readonly {
   action: string
   kind: NotificationKind
@@ -96,7 +101,12 @@ export function toNotification(
   // has since been removed can still be named.
   const payloadReference = typeof event.after?.reference === 'string' ? event.after.reference : null
   const reference = event.subjectLabel ?? payloadReference
-  const amount = kind.kind === 'payment' ? amountOf(event.after) : null
+  const amount =
+    kind.kind === 'payment'
+      ? amountOf(event.after)
+      : kind.kind === 'guests'
+        ? extraOf(event.after)
+        : null
   const detail =
     reference === null
       ? 'A booking since removed'
@@ -120,6 +130,10 @@ function titleOf(kind: NotificationKind, event: NotificationEvent): string {
         : 'New online booking — short stay'
     case 'payment':
       return 'Payment to verify'
+    case 'guests':
+      return typeof event.after?.added_cents === 'number'
+        ? 'Visitors added at the gate'
+        : 'Extra guests at the gate'
     case 'email':
       // The audit log's own sentence, without the reason: the booking's
       // history has it, and a bell line has room for one clause.
@@ -136,6 +150,12 @@ function hrefOf(kind: NotificationKind, reference: string | null): string | null
   }
 
   return reference === null ? null : `/bookings/${reference}`
+}
+
+function extraOf(after: Record<string, unknown> | null): string | null {
+  const extra = after?.extra
+
+  return typeof extra === 'number' && extra > 0 ? `${extra} more` : null
 }
 
 function amountOf(after: Record<string, unknown> | null): string | null {

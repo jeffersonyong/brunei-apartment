@@ -72,10 +72,48 @@ export function extraGuestsNote(input: ExtraGuestsNoteInput): string {
   if (input.added) {
     const { party, nowFor, taken } = input.added
 
-    return `Added at the gate: ${party} (the pass is now for ${nowFor}). BND ${formatCents(taken)} taken in cash.${said}`
+    const money = taken > 0 ? `BND ${formatCents(taken)} taken in cash.` : 'Nothing more to pay.'
+
+    return `Added at the gate: ${party} (the pass is now for ${nowFor}). ${money}${said}`
   }
 
   const people = input.extra === 1 ? 'person' : 'people'
 
   return `Reported at the gate: ${input.extra} more ${people} arrived than the booking is for (booked for ${input.bookedFor}).${said}`
+}
+
+/** One of a booking's events, as the gate reads them to see what the office already knows. */
+export interface PartyEvent {
+  action: string
+  after: Record<string, unknown> | null
+}
+
+/**
+ * How many extra people the guards have reported that the office has not yet
+ * acted on — so a second guard at the barrier sees it was said already, and
+ * does not say it again.
+ *
+ * Summed over the reports since the party last changed: once the office
+ * changes the party, what was reported before it is answered. A report the
+ * guard settled himself (he added the visitors to a pass and took the cash)
+ * is answered by his own change, so it never counts.
+ *
+ * `events` are in the order they happened.
+ */
+export function extraGuestsAwaitingOffice(events: readonly PartyEvent[]): number {
+  let awaiting = 0
+
+  for (const event of events) {
+    if (event.action === 'booking.party_changed') {
+      awaiting = 0
+    } else if (
+      event.action === 'booking.extra_guests_reported' &&
+      typeof event.after?.added_cents !== 'number' &&
+      typeof event.after?.extra === 'number'
+    ) {
+      awaiting += event.after.extra
+    }
+  }
+
+  return awaiting
 }

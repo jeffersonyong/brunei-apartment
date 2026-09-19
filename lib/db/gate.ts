@@ -1,17 +1,21 @@
 import type { BookingStatus } from '@/lib/domain/booking-state'
+import type { DayPassPartyLine } from '@/lib/domain/day-pass-capacity'
 import type { StayDate } from '@/lib/domain/dates'
 import {
   gateCashDueOf,
+  gateMoneyUnsettledOf,
   gateVerdictOf,
   type GateCashDue,
   type GateFacts,
   type GateVerdict,
 } from '@/lib/domain/gate'
+import type { Cents } from '@/lib/domain/money'
 import type { BookingStream } from '@/lib/domain/stream'
 import { unitNotReadyOf } from '@/lib/domain/unit-status'
 import { dataClient } from '@/lib/supabase/data'
 
 import { listDepositsForBookings, type Deposit } from './deposits'
+import { listDayPassParties, listExtraGuestsAwaitingOffice } from './party'
 import { listBookingIdsAwaitingTransfer } from './payments'
 import { currentPropertyId } from './property'
 import { readAllRows } from './rows'
@@ -26,13 +30,16 @@ import { lastStayFactsOf, listUnitStates } from './units'
  * plate or name with no second request on a weak signal (register C3). That
  * makes every field on `GateBooking` something a phone left on the guardhouse
  * desk shows. So it carries what a guard needs to recognise a car and decide —
- * reference, name, unit, plates, headcount, whether the unit is ready — and a
- * verdict already decided on the server. **No phone number, email or access
- * token, and no price or deposit figure** — except the one figure a guard who
- * takes cash has to see: what is owed now, and what it is for (`cash`, N54).
- * Whether that is read is decided on the server for each request, from the
- * reader's `payment.record_cash`, so a phone that may not take the money is
- * never sent it.
+ * reference, name, unit, plates, the party he counts the car against, whether
+ * the unit is ready — and a verdict already decided on the server. **No phone
+ * number, email or access token, and no price or deposit figure** — except
+ * the figures a guard who takes cash has to see: what is owed now, and what
+ * it is for (`cash`, N54), and a pass's total and what is paid on it, which
+ * is what adding visitors at the gate is priced from (`passFigures`). Whether
+ * those are read is decided on the server for each request, from the reader's
+ * `payment.record_cash`, so a phone that may not take the money is never sent
+ * them. That the money is *not settled* is not a figure, and every reader is
+ * shown it: the card turns red (Jason's team, 19 September 2026).
  *
  * ── Which bookings are on the list ────────────────────────────────────────
  *
@@ -81,6 +88,13 @@ export interface GateBooking {
   departure: StayDate | null
   /** Bodies a day pass admits. Null for a stay. */
   headcount: number | null
+  /** Who the booking is for, so the guard can count the car against it. */
+  party: GateParty
+  /**
+   * Extra people guards have reported that the office has not acted on yet
+   * (`extraGuestsAwaitingOffice`), so a second guard sees it was said.
+   */
+  extraReported: number
   vehicles: readonly string[]
   noVehicle: boolean
   verdict: GateVerdict
@@ -96,7 +110,24 @@ export interface GateBooking {
    * due — and always null unless the read asked for it (`withCash`).
    */
   cash: GateCashDue | null
+  /**
+   * Anything about the money not settled — a deposit not held in full, the
+   * stay or pass still owed, or a transfer waiting to be checked. The card is
+   * red. Every reader is shown it; it carries no figure.
+   */
+  moneyUnsettled: boolean
+  /**
+   * A pass's total and what is verified against it, which is what visitors
+   * added at the gate are priced from. Only for a reader who takes cash —
+   * null otherwise, and always null for a stay.
+   */
+  passFigures: { total: Cents; paid: Cents } | null
 }
+
+/** A stay's counted and exempt guests, or the bands a pass was sold for. */
+export type GateParty =
+  | { kind: 'stay'; counted: number; exempt: number }
+  | { kind: 'pass'; bands: readonly DayPassPartyLine[] }
 
 export interface GateList {
   /** Stays open over today and not yet checked in, by unit. */
@@ -117,6 +148,8 @@ interface GateRow {
   guest_name: string
   vehicles: string[]
   no_vehicle: boolean
+  chargeable_guests: number
+  exempt_guests: number
   total_cents: number
   security_deposit_cents: number
   paid_cents: number
@@ -129,7 +162,8 @@ interface GateRow {
 }
 
 const GATE_COLUMNS =
-  'id, reference, status, stream, guest_name, vehicles, no_vehicle, total_cents, ' +
+  'id, reference, status, stream, guest_name, vehicles, no_vehicle, chargeable_guests, ' +
+  'exempt_guests, total_cents, ' +
   'security_deposit_cents, paid_cents, unit_id, unit_ref, check_in, check_out, pass_date, ' +
   'pass_headcount'
 
@@ -293,7 +327,7 @@ async function withVerdicts(
 ): Promise<readonly GateBooking[]> {
   const arriving = rows.filter((row) => isArrivingBy(row, today))
 
-  const [deposits, awaitingTransfer, notReady] = await Promise.all([
+  const [deposits, awaitingTransfer, notReady, passParties, reported] = await Promise.all([
     listDepositsForBookings(
       rows.filter((row) => row.security_deposit_cents > 0).map((row) => row.id),
     ),
@@ -301,6 +335,8 @@ async function withVerdicts(
     options.withReadiness && arriving.length > 0
       ? unitsNotReady(today)
       : Promise.resolve<ReadonlySet<string>>(new Set()),
+    listDayPassParties(rows.filter((row) => row.stream === 'day_pass').map((row) => row.id)),
+    listExtraGuestsAwaitingOffice(rows.map((row) => row.id)),
   ])
 
   return rows.map((row) => {
@@ -321,11 +357,21 @@ async function withVerdicts(
       arrival: facts.arrival,
       departure: facts.departure,
       headcount: row.stream === 'day_pass' ? row.pass_headcount : null,
+      party:
+        row.stream === 'day_pass'
+          ? { kind: 'pass', bands: passParties.get(row.id) ?? [] }
+          : { kind: 'stay', counted: row.chargeable_guests, exempt: row.exempt_guests },
+      extraReported: reported.get(row.id) ?? 0,
       vehicles: row.vehicles,
       noVehicle: row.no_vehicle,
       verdict: gateVerdictOf(facts),
       unitNotReady: isArrivingBy(row, today) && row.unit_id !== null && notReady.has(row.unit_id),
       cash: options.withCash ? gateCashDueOf(facts) : null,
+      moneyUnsettled: gateMoneyUnsettledOf(facts),
+      passFigures:
+        options.withCash && row.stream === 'day_pass'
+          ? { total: row.total_cents, paid: row.paid_cents }
+          : null,
     }
   })
 }

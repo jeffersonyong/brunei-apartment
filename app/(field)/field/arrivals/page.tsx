@@ -4,7 +4,9 @@ import { mayWork } from '@/lib/auth/field-jobs'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
 import { listGateBookings, searchGateBookings, type GateBooking } from '@/lib/db/gate'
+import { getPropertyConfig } from '@/lib/db/property-config'
 import { formatClockTime, formatStayDate, todayInBrunei } from '@/lib/domain/dates'
+import { gateContextOf } from '@/lib/domain/gate'
 
 import { ArrivalsList } from './arrivals-list'
 
@@ -64,14 +66,16 @@ export default async function ArrivalsPage({ searchParams }: PageProps) {
   const query = typeof q === 'string' ? q.trim() : ''
   const today = todayInBrunei()
   const mayTakeCash = hasPermission(actor.permissions, 'payment.record_cash')
+  const mayAdmit = hasPermission(actor.permissions, 'day_pass.admit')
 
-  const [list, found] = await Promise.all([
+  const [list, found, config] = await Promise.all([
     listGateBookings(today, { withReadiness: true, withCash: mayTakeCash }),
     // A search is for the car that is not on today's list — a later day, where
     // the unit's readiness today says nothing.
     query.length > 0
       ? searchGateBookings(query, today, { withReadiness: false, withCash: mayTakeCash })
       : Promise.resolve(null),
+    getPropertyConfig(),
   ])
 
   return (
@@ -87,9 +91,12 @@ export default async function ArrivalsPage({ searchParams }: PageProps) {
         moves={{
           mayCheckIn: hasPermission(actor.permissions, 'booking.check_in'),
           mayCheckOut: hasPermission(actor.permissions, 'booking.check_out'),
-          mayAdmit: hasPermission(actor.permissions, 'day_pass.admit'),
+          mayAdmit,
           mayTakeCash,
         }}
+        // The pass prices reach only a phone that may add visitors to a pass
+        // and take the cash for them.
+        context={gateContextOf(config, mayAdmit && mayTakeCash)}
       />
     </>
   )

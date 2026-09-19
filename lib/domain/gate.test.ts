@@ -8,7 +8,9 @@ import {
   gateRefusalSentence,
   gateVerdictOf,
   gateVerdictSentence,
+  gateMoneyUnsettledOf,
   matchesGateSearch,
+  mayAddVisitorsAtGate,
   type GateCashDue,
   type GateDates,
   type GateFacts,
@@ -410,6 +412,61 @@ describe('gateCashDueOf — a day pass', () => {
       expect(gateCashDueOf(pass({ status, paid: 0 }))).toBeNull()
     },
   )
+})
+
+describe('gateMoneyUnsettledOf — the card the guard is careful with', () => {
+  test.each<[string, GateFacts]>([
+    ['a paid stay with its deposit in', facts()],
+    ['a paid stay whose deposit was waived', facts({ deposit: WAIVED })],
+    ['a paid guest in residence', staying()],
+    ['a stay paid more than it is worth — a refund is not the guard’s', facts({ paid: bnd(450) })],
+    ['a paid pass', pass()],
+    ['an admitted pass', pass({ status: 'completed' })],
+    ['a cancelled stay that still owes', facts({ status: 'cancelled', paid: 0 })],
+    [
+      'a stay checked out owing, which no longer takes money',
+      facts({ status: 'completed', paid: 0 }),
+    ],
+  ])('settled: %s', (_, booking) => {
+    expect(gateMoneyUnsettledOf(booking)).toBe(false)
+  })
+
+  test.each<[string, GateFacts]>([
+    // Jason's case: BND 100 down, the rest to be paid at the gate.
+    ['the deposit in and the stay still to pay', facts({ paid: 0 })],
+    ['part of the stay still to pay', facts({ paid: bnd(200) })],
+    ['no deposit taken', facts({ deposit: NOTHING_IN })],
+    ['a deposit promised by a transfer nobody checked', facts({ deposit: PROMISED })],
+    [
+      'a deposit that arrived short',
+      facts({ deposit: { quoted: bnd(100), held: bnd(60), collected: true, promised: false } }),
+    ],
+    ['a transfer waiting to be checked', facts({ paid: 0, transferPending: true })],
+    ['a guest in residence still owing', staying({ paid: bnd(100) })],
+    ['a pass not paid', pass({ paid: 0 })],
+    ['a pass paid by a transfer nobody checked', pass({ paid: 0, transferPending: true })],
+  ])('unsettled: %s', (_, booking) => {
+    expect(gateMoneyUnsettledOf(booking)).toBe(true)
+  })
+})
+
+describe('mayAddVisitorsAtGate — a pass the guard settles himself', () => {
+  test('a paid pass on its day, and one still to pay at the gate', () => {
+    expect(mayAddVisitorsAtGate(gateVerdictOf(pass()))).toBe(true)
+    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ paid: 0 })))).toBe(true)
+  })
+
+  test('not an admitted pass, which is closed, nor one waiting on a transfer or another day', () => {
+    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ status: 'completed' })))).toBe(false)
+    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ paid: 0, transferPending: true })))).toBe(
+      false,
+    )
+    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ arrival: TOMORROW })))).toBe(false)
+  })
+
+  test('never a stay — the office changes a stay’s party', () => {
+    expect(mayAddVisitorsAtGate(gateVerdictOf(facts()))).toBe(false)
+  })
 })
 
 describe('gateCashStalenessOf — the same notes are never recorded twice', () => {
