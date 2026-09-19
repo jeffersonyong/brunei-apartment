@@ -9,10 +9,12 @@ import { Card } from '@/components/ui/card'
 import { QuoteLines } from '@/components/quote-lines'
 import { getDepositByBookingId } from '@/lib/db/deposits'
 import { listDocumentsForBooking } from '@/lib/db/documents'
+import { readFoodMenuImage, readFoodNotice } from '@/lib/db/food-notice'
 import { getBookingByAccessToken } from '@/lib/db/public-bookings'
 import { readPropertySettings } from '@/lib/db/settings'
 import { balanceOf } from '@/lib/domain/balance'
 import { formatStayDate, formatStayRange, nightsBetween } from '@/lib/domain/dates'
+import { isFoodNoticeShown } from '@/lib/domain/food-notice'
 import { formatCents, type Cents } from '@/lib/domain/money'
 import {
   CLOSED_REASONS,
@@ -23,6 +25,7 @@ import {
 
 import { readPrivacyPolicyPublished } from '../../_components/privacy-policy-link'
 
+import { CheckInCard, FoodCard, GettingHereCard } from './arrival-cards'
 import { EntryCodeCard } from './entry-code-card'
 import { SendAFile } from './send-a-file'
 import { TransferInstructions } from './transfer-instructions'
@@ -66,11 +69,13 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   const stage = publicStageOf(booking.status)
   const plan = transferPlanFor(booking)
   // Both kinds in one read: they were two requests differing in one filter.
-  const [settings, deposit, documents, hasPrivacyPolicy] = await Promise.all([
+  const [settings, deposit, documents, hasPrivacyPolicy, food] = await Promise.all([
     readPropertySettings(),
     getDepositByBookingId(booking.id),
     listDocumentsForBooking(booking.id, ['payment_slip', 'identity']),
     readPrivacyPolicyPublished(),
+    // Only a confirmed booking is told about food, so only it reads the notice.
+    stage === 'confirmed' ? readFoodForBooking() : null,
   ])
 
   const slips = documents.filter((document) => document.kind === 'payment_slip')
@@ -247,9 +252,7 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
         {stage === 'checking' && shortfall === 0 ? (
           <p className="mt-xl text-body-sm text-muted-foreground">
             We have your booking and are checking for the transfer. Once we verify it,{' '}
-            {booking.guestEmail
-              ? 'we will email your confirmation and a QR code for entry, which will be on this page too.'
-              : 'your QR code for entry will be on this page.'}
+            {verifiedPromise(booking.stream === 'short_stay', Boolean(booking.guestEmail))}
           </p>
         ) : null}
 
@@ -265,6 +268,17 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
         {stage === 'confirmed' ? (
           <EntryCodeCard token={token} booking={booking} className="mt-xl" />
         ) : null}
+
+        {/* After the code, because the code is what gets them through the gate
+            and these are what happens once they are through it. A day pass
+            has no key or apartment, so only a stay is given the steps. */}
+        {stage === 'confirmed' && booking.stream === 'short_stay' ? (
+          <CheckInCard className="mt-xl" />
+        ) : null}
+
+        {stage === 'confirmed' ? <GettingHereCard className="mt-xl" /> : null}
+
+        {food ? <FoodCard notice={food.notice} hasMenu={food.hasMenu} className="mt-xl" /> : null}
 
         {stage === 'closed' ? (
           <Callout tone="negative" className="mt-xl">
@@ -328,6 +342,45 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
       </div>
     </section>
   )
+}
+
+/**
+ * The food notice, and whether there is a flyer to link to — or null, which
+ * leaves the card off, when the notice is empty or could not be read. A guest's
+ * own booking never fails to render because the food provider's details did.
+ */
+async function readFoodForBooking(): Promise<{
+  notice: { body: string; phone: string }
+  hasMenu: boolean
+} | null> {
+  try {
+    const [notice, menu] = await Promise.all([readFoodNotice(), readFoodMenuImage()])
+
+    return isFoodNoticeShown(notice) ? { notice, hasMenu: menu !== null } : null
+  } catch (error) {
+    console.error('The booking page could not read the food notice; leaving it out.', error)
+
+    return null
+  }
+}
+
+/**
+ * What arrives once the transfer is verified, finishing the "checking"
+ * sentence (architecture.md §9). Where it arrives depends on whether the guest
+ * gave an address, and a stay is told its check-in instructions come then too
+ * (Jeff, 19 September 2026) so nobody asks for them while we are still
+ * checking.
+ */
+function verifiedPromise(isStay: boolean, hasEmail: boolean): string {
+  if (isStay) {
+    return hasEmail
+      ? 'we will email your confirmation, a QR code for entry and your check-in instructions, which will all be on this page too.'
+      : 'your QR code for entry and your check-in instructions will be on this page.'
+  }
+
+  return hasEmail
+    ? 'we will email your confirmation and a QR code for entry, which will be on this page too.'
+    : 'your QR code for entry will be on this page.'
 }
 
 /** The status chip's tone and words, or null where the callout says it. */

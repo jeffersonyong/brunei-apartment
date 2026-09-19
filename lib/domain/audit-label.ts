@@ -143,6 +143,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'booking_extra.removed',
   'booking_extra.restored',
   'privacy_policy.published',
+  'food_notice.updated',
 ] as const
 
 /** The families the audit screen filters by, in the order it offers them. */
@@ -170,6 +171,7 @@ export const AUDIT_FAMILIES = [
   'faq',
   'booking_extra',
   'privacy_policy',
+  'food_notice',
 ] as const
 
 export type AuditFamily = (typeof AUDIT_FAMILIES)[number]
@@ -209,6 +211,7 @@ export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
   faq: 'Website FAQs',
   booking_extra: 'Settings — extras',
   privacy_policy: 'Privacy policy',
+  food_notice: 'Website food notice',
 }
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -297,6 +300,7 @@ export function describeAuditEvent(event: AuditEventLike): string {
     describeFaq(event) ??
     describeBookingExtra(event) ??
     describePrivacyPolicy(event) ??
+    describeFoodNotice(event) ??
     ACTION_LABELS[event.action]
 
   return described ?? fallbackLabel(event.action)
@@ -918,6 +922,37 @@ function describePrivacyPolicy(event: AuditEventLike): string | null {
     : 'New version of the privacy policy published'
 }
 
+// ── Website food notice ────────────────────────────────────────────────────
+
+/**
+ * What guests are told about food (Jeff, 19 September 2026). One verb, and the
+ * sentence says which half moved: the words, the number, or both. Emptying
+ * the text is worth saying outright, because it takes the notice off the
+ * booking page, the email and the food page at once.
+ */
+function describeFoodNotice(event: AuditEventLike): string | null {
+  if (event.action !== 'food_notice.updated') {
+    return null
+  }
+
+  if (event.after?.body === '') {
+    return 'Food notice taken off the website'
+  }
+
+  if (event.before?.body === '') {
+    return 'Food notice put on the website'
+  }
+
+  const bodyChanged = event.before?.body !== event.after?.body
+  const phoneChanged = event.before?.phone !== event.after?.phone
+
+  if (bodyChanged && phoneChanged) {
+    return 'Food notice and number changed'
+  }
+
+  return phoneChanged ? 'Food provider number changed' : 'Food notice changed'
+}
+
 // ── Where an event points ──────────────────────────────────────────────────
 
 /**
@@ -953,6 +988,7 @@ export const AUDIT_ENTITY_TYPES = [
   'faq',
   'booking_extra',
   'privacy_policy_version',
+  'food_notice',
 ] as const
 
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number]
@@ -983,6 +1019,7 @@ export const AUDIT_ENTITY_LABELS: Readonly<Record<AuditEntityType, string>> = {
   faq: 'Website FAQ',
   booking_extra: 'Booking extra',
   privacy_policy_version: 'Privacy policy',
+  food_notice: 'Food notice',
 }
 
 /**
@@ -1031,14 +1068,20 @@ export function auditSubjectHref(entityType: string, subjectLabel: string | null
       return '/settings/property?tab=documents'
     case 'bank_account':
       return '/settings/property?tab=bank-accounts'
+    // The flyer is a photograph, but it is edited on the Food tab beside the
+    // notice it illustrates, not among the front page's photographs.
     case 'site_image':
-      return '/settings/website?tab=photos'
+      return subjectLabel === 'Food menu'
+        ? '/settings/website?tab=food'
+        : '/settings/website?tab=photos'
     case 'faq':
       return '/settings/website?tab=faqs'
     case 'booking_extra':
       return '/settings/property?tab=extras'
     case 'privacy_policy_version':
       return '/settings/website?tab=privacy-policy'
+    case 'food_notice':
+      return '/settings/website?tab=food'
     default:
       return null
   }

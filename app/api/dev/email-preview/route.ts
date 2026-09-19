@@ -171,6 +171,11 @@ function modelFor(preview: BookingPreviewCase) {
     findBookingUrl: 'https://palmvilla.bn/find-booking',
     // A confirmed booking has a code by construction (the database issues it).
     hasEntryCode: kind === 'booking_confirmed',
+    food: {
+      body: 'Please note that there is no restaurant at Palm Villa. However, a food menu is available at the poolside tables for your convenience.\nTo place an order, contact the food provider directly.\nFREE DELIVERY is available for orders of BND 20 and above.',
+      phone: '+673 333 5410',
+      menuUrl: 'https://palmvilla.bn/food',
+    },
   })
 
   if (!built.ok) {

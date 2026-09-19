@@ -145,7 +145,7 @@ begin
         ('changing-and-arriving', 'find-my-booking', 'We have lost the link to our booking. What now?', E'Open it again with your booking reference and the phone number you booked with. It works whether you booked online or with us at the counter.', false),
         ('anything-else', 'long-term-rentals', 'Do you do long-term rentals?', E'Yes. Terms are agreed per tenancy — message us and we will talk it through.', false),
         ('anything-else', 'events', 'Can we hold an event, or use something a day pass does not cover?', E'Call us. Both are arranged case by case rather than sold online, so a conversation gets you a better answer than this page can.', false),
-        ('anything-else', 'where-are-you', 'Where are you?', E'Bandar Seri Begawan, Brunei Darussalam.', false)
+        ('anything-else', 'where-are-you', 'Where are you?', E'Lot 9163, Spg 84-92-52-33, Jln Setia Diraja, Kpg Mumong A, Mukim Kuala Belait, KA1531.\nThe map is under "Getting here" on our home page.', false)
     ) as v (topic, slug, question, answer, featured)
   ) as spec;
 end;

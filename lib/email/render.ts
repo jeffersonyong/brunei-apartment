@@ -1,5 +1,8 @@
 import type {
   BookingEmailModel,
+  EmailCheckIn,
+  EmailFood,
+  EmailLocation,
   EmailQuote,
   EmailRow,
   EmailStatus,
@@ -208,6 +211,9 @@ function renderHtml(model: BookingEmailModel, entryCodeSrc: string): string {
       : `<p style="margin:12px 0 0 0;font-size:12px;line-height:16px;color:${MUTE}">${escape(model.depositNote)}</p>`,
     model.transfer === null ? '' : transfer(model.transfer),
     model.arrival.length === 0 ? '' : arrival(model.arrival),
+    model.checkIn === null ? '' : checkIn(model.checkIn),
+    model.location === null ? '' : location(model.location),
+    model.food === null ? '' : food(model.food),
     action(model),
     footer(model),
   ]
@@ -388,6 +394,62 @@ function arrival(sentences: readonly string[]): string {
   return section('When you arrive', body)
 }
 
+/**
+ * The steps as a real ordered list, so a client that strips styles still
+ * numbers them. `padding-left` rather than a margin, because Outlook indents a
+ * list by its padding and draws the numbers outside a zero one.
+ */
+function checkIn(model: EmailCheckIn): string {
+  const steps = model.steps
+    .map(
+      (step) =>
+        `<li style="margin:6px 0 0 0;font-size:14px;line-height:21px;color:${INK}">${escape(step)}</li>`,
+    )
+    .join('')
+
+  return section(
+    'Check-in instructions',
+    `<ol style="margin:8px 0 0 0;padding:0 0 0 20px">${steps}</ol>` +
+      `<p style="margin:12px 0 0 0;font-size:14px;line-height:21px;color:${MUTE}">${escape(model.signOff)}</p>`,
+  )
+}
+
+/** The address a line at a time, then the pin as an underlined ink link. */
+function location(model: EmailLocation): string {
+  const address = model.address.map(escape).join('<br>')
+
+  return section(
+    'Getting here',
+    `<p style="margin:8px 0 0 0;font-size:14px;line-height:21px;color:${INK}">${address}</p>` +
+      `<p style="margin:8px 0 0 0;font-size:14px;line-height:21px"><a href="${escape(model.mapsUrl)}" style="color:${INK};text-decoration:underline">${escape(model.mapsLabel)}</a></p>`,
+  )
+}
+
+/**
+ * The notice a paragraph a line, then the number and the menu as underlined
+ * ink links — the location's construction, so the two read as one register.
+ */
+function food(model: EmailFood): string {
+  const paragraphs = model.paragraphs
+    .map(
+      (paragraph) =>
+        `<p style="margin:8px 0 0 0;font-size:14px;line-height:21px;color:${INK}">${escape(paragraph)}</p>`,
+    )
+    .join('')
+  const links = [
+    model.call,
+    model.menu === null ? null : { label: model.menu.label, href: model.menu.url },
+  ]
+    .filter((link) => link !== null)
+    .map(
+      (link) =>
+        `<p style="margin:8px 0 0 0;font-size:14px;line-height:21px"><a href="${escape(link.href)}" style="color:${INK};text-decoration:underline">${escape(link.label)}</a></p>`,
+    )
+    .join('')
+
+  return section('Food', paragraphs + links)
+}
+
 function action(model: BookingEmailModel): string {
   if (model.action === null) {
     return ''
@@ -454,11 +516,7 @@ function renderText(model: BookingEmailModel): string {
     // A client that refuses HTML shows no inline image, but it still lists the
     // attachment — so the text names the file it is looking for.
     ...(model.entryCode
-      ? [
-          'YOUR ENTRY CODE',
-          `  ${model.entryCode.guidance} (${model.entryCode.filename})`,
-          '',
-        ]
+      ? ['YOUR ENTRY CODE', `  ${model.entryCode.guidance} (${model.entryCode.filename})`, '']
       : []),
     'WHAT YOU BOOKED',
     ...model.facts.map((row) => `  ${row.label}: ${row.value}`),
@@ -499,6 +557,37 @@ function renderText(model: BookingEmailModel): string {
 
   if (model.arrival.length > 0) {
     parts.push('', 'WHEN YOU ARRIVE', ...model.arrival.map((sentence) => `  ${sentence}`))
+  }
+
+  if (model.checkIn) {
+    parts.push(
+      '',
+      'CHECK-IN INSTRUCTIONS',
+      ...model.checkIn.steps.map((step, index) => `  ${index + 1}. ${step}`),
+      '',
+      `  ${model.checkIn.signOff}`,
+    )
+  }
+
+  if (model.location) {
+    parts.push(
+      '',
+      'GETTING HERE',
+      ...model.location.address.map((line) => `  ${line}`),
+      `  ${model.location.mapsLabel}: ${model.location.mapsUrl}`,
+    )
+  }
+
+  if (model.food) {
+    parts.push('', 'FOOD', ...model.food.paragraphs.map((paragraph) => `  ${paragraph}`))
+
+    if (model.food.call) {
+      parts.push(`  ${model.food.call.label}`)
+    }
+
+    if (model.food.menu) {
+      parts.push(`  ${model.food.menu.label}: ${model.food.menu.url}`)
+    }
   }
 
   if (model.action) {

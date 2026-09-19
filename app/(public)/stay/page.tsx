@@ -16,7 +16,7 @@ import { StayBooking } from './stay-booking'
 export const metadata: Metadata = {
   title: 'Book a stay — Palm Villa',
   description:
-    'Check availability and book a whole apartment or the semi-detached house at Palm Villa, Bandar Seri Begawan.',
+    'Check availability and book a whole apartment or the semi-detached house at Palm Villa, Kuala Belait.',
 }
 
 /**

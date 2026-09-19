@@ -6,6 +6,7 @@ import type { Actor } from '@/lib/auth/require-permission'
 import { getActor } from '@/lib/auth/require-permission'
 
 import { faqsTab } from './faqs/faqs-tab'
+import { foodTab } from './food/food-tab'
 import { photosTab } from './photos/photos-tab'
 import { privacyPolicyTab } from './privacy-policy/privacy-policy-tab'
 import { isWebsiteTab, websiteTabsFor, type WebsiteTab, type WebsiteTabView } from './website-tab'
@@ -35,10 +36,11 @@ const TAB_VIEWS: Record<WebsiteTab, (actor: Actor) => Promise<WebsiteTabView>> =
   photos: photosTab,
   faqs: faqsTab,
   'privacy-policy': privacyPolicyTab,
+  food: foodTab,
 }
 
 const DESCRIPTION =
-  'What the public website shows and says: its photographs, its questions and answers, and its privacy policy. Every change is recorded.'
+  'What the public website shows and says: its photographs, its questions and answers, its privacy policy, and what guests are told about food. Every change is recorded.'
 
 export default async function WebsiteSettingsPage({ searchParams }: PageProps) {
   const actor = await getActor()

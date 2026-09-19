@@ -282,6 +282,32 @@ describe('auditSubjectHref', () => {
   })
 })
 
+describe('the website food notice', () => {
+  const notice = (body: string, phone: string) => ({ body, phone })
+  const updated = (before: Record<string, unknown>, after: Record<string, unknown>) =>
+    describeAuditEvent(event('food_notice.updated', { before, after }))
+
+  test('says whether the notice went up, came down, or which half changed', () => {
+    expect(updated(notice('', ''), notice('Menu at the pool.', ''))).toBe(
+      'Food notice put on the website',
+    )
+    expect(updated(notice('Menu at the pool.', '1'), notice('', ''))).toBe(
+      'Food notice taken off the website',
+    )
+    expect(updated(notice('Menu.', '1'), notice('Menu.', '2'))).toBe('Food provider number changed')
+    expect(updated(notice('Menu.', '1'), notice('New menu.', '1'))).toBe('Food notice changed')
+    expect(updated(notice('Menu.', '1'), notice('New menu.', '2'))).toBe(
+      'Food notice and number changed',
+    )
+  })
+
+  test('points the notice, and the flyer, at the Food tab', () => {
+    expect(auditSubjectHref('food_notice', 'Food')).toBe('/settings/website?tab=food')
+    expect(auditSubjectHref('site_image', 'Food menu')).toBe('/settings/website?tab=food')
+    expect(auditSubjectHref('site_image', 'Front page')).toBe('/settings/website?tab=photos')
+  })
+})
+
 describe('website photos (capability F7)', () => {
   test('says what happened to a photograph, leaving which one to the subject column', () => {
     expect(describeAuditEvent(event('site_image.added', { after: { name: 'Front page' } }))).toBe(

@@ -249,3 +249,11 @@ select seed_faqs(id) from property;
 -- from nothing. Staff add the rest from Admin → Property settings → Extras.
 
 select seed_booking_extras(id) from property;
+
+-- ── What guests are told about food ────────────────────────────────────────
+--
+-- The notice the client wrote, with the provider's number. Defined once in
+-- seed_food_notice() (20261006000200) for the reason seed_faqs() is. Staff
+-- edit it, and add the menu flyer, from Website settings → Food.
+
+select seed_food_notice(id) from property;

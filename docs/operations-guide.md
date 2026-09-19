@@ -5128,7 +5128,7 @@ When the table is empty, it shows one of these:
 
 **Where:** sidebar → Admin → **Website settings**.
 
-**What is on it:** the heading reads "What the public website shows and says: its photographs, its questions and answers, and its privacy policy. Every change is recorded." Below it are three tabs: **Photos**, **FAQs** and **Privacy policy**. Each tab has its own buttons on the right of the tab row.
+**What is on it:** the heading reads "What the public website shows and says: its photographs, its questions and answers, its privacy policy, and what guests are told about food. Every change is recorded." Below it are four tabs: **Photos**, **FAQs**, **Privacy policy** and **Food**. The **Food** tab comes with **Manage website photos** — it has no permission of its own. Each tab has its own buttons on the right of the tab row.
 
 Each tab has a **Download CSV** button, but only people who also hold **Edit settings, roles & the unit registry** (Admin) see it.
 
@@ -5168,6 +5168,17 @@ These photos appear only on the front page of the public site.
   - A status line: "Unsaved changes", "This is what the website shows", or "Draft saved — not on the website yet".
   - The buttons **Discard changes** (only when there are unsaved changes), **Save draft** and **Publish**.
 - **Published versions**: every version the website has shown, newest first, with the date and time and "Published by [name]". The newest one is marked "On the website now". This list does not show each version's wording. The wording is in the Download CSV (Admin only).
+
+**Food tab.** There is no restaurant at Palm Villa; an outside food provider leaves a menu at the poolside tables and delivers. This tab is where you change what guests are told about that — for example when the provider, their number or their delivery terms change. The line at the top reads "What a confirmed guest is told about food, on their booking page, in their confirmation email and on the food page. A change is live as soon as it is saved." While there is a notice, the button on the right is **View the food page**, which opens the public food page in a new tab. Two sections:
+- **Notice**:
+  - **What guests are told** — the text. Each line becomes its own paragraph. It starts as: "Please note that there is no restaurant at Palm Villa. However, a food menu is available at the poolside tables for your convenience." / "To place an order, contact the food provider directly." / "FREE DELIVERY is available for orders of BND 20 and above." (each in quotes is a line). Up to 600 characters.
+  - **Food provider's number** — shown under the text as a number guests can tap to call. It starts as **+673 333 5410**. Digits, spaces, brackets, dashes and a leading + only. Optional.
+  - **Save**. The message is "Food notice saved", "Nothing had changed", or — if you emptied the text — "Food notice taken off the website".
+  - **To stop telling guests about food** (for example, the provider has stopped), empty **What guests are told** and clear the number, then Save. The Food card, the email's Food section and the food page all disappear at once. A number with no text is refused: "Write the text the number goes with, or clear the number too."
+  - If someone else saved the notice while you had the tab open, saving says "Somebody else saved the food notice while you had it open. Copy anything you want to keep, then reload the page to see their version."
+- **Menu flyer**: the provider's menu picture, the **Food menu** place. It works exactly like a place on the Photos tab — **Add photo**, then **Replace**, **Edit** (description only) and **Remove** — except it is shown whole, never cropped, and it has no "which part stays in view" choice. Upload the provider's flyer as a photo (JPEG, PNG or WebP). If there is no flyer, guests get the text and the number but no "See the food menu" link.
+
+Every change on this tab is in the audit log: "Food notice changed", "Food provider number changed", "Food notice and number changed", "Food notice put on the website", "Food notice taken off the website", and for the flyer the usual "Photo added / replaced / removed" against **Food menu**.
 
 ### The portal on a phone or small screen
 
@@ -5966,7 +5977,7 @@ These are the 24 permissions exactly as they are labelled on the **Roles** tab a
 - **Manage tenancies** (Admin, Front Office). Mark a unit as let long-term, change or end the lease.
 
 **Website**
-- **Manage website photos** (Admin). The **Photos** tab of Website settings, including the front-page switch for facility cards.
+- **Manage website photos** (Admin). The **Photos** tab of Website settings, including the front-page switch for facility cards, and the **Food** tab (the food notice and the menu flyer).
 - **Manage website FAQs** (Admin). The **FAQs** tab of Website settings.
 - **Write and publish the privacy policy** (Admin). The **Privacy policy** tab of Website settings.
 
@@ -6148,12 +6159,12 @@ Customers never pay online. Nothing is charged by card. They pay by **bank trans
 - **Book** — a menu with two choices: **Day pass** ("Use the facilities for the day") and **Stay** ("An apartment, by the night").
 
 **Footer**:
-- **Palm Villa**, and **Bandar Seri Begawan, Brunei Darussalam** (opens Google Maps at the property).
+- **Palm Villa**, and the address **Lot 9163, Spg 84-92-52-33, Jln Setia Diraja, Kpg Mumong A, Mukim Kuala Belait, KA1531** (tapping it opens the property's pin in Google Maps).
 - The three phone numbers, each with a **WhatsApp** link beside it: **+673 8959798**, **+673 8837118**, **+673 8986733**. Tapping a number rings it; tapping WhatsApp opens a chat with it.
-- Links: **Day pass**, **Short stays**, **Long-term enquiry**, **Find your booking**, **FAQs**, **Privacy policy**, **WhatsApp**, **Instagram @palmvilla.bn**, **TikTok @palmvilla.bn**.
+- Links: **Day pass**, **Short stays**, **Long-term enquiry**, **Find your booking**, **Getting here** (the map section on the front page), **FAQs**, **Privacy policy**, **WhatsApp**, **Instagram @palmvilla.bn**, **TikTok @palmvilla.bn**.
 - **Privacy policy** is only a working link once an Admin has published a privacy policy (see *Staff access and administration → Website settings*). Until then it shows greyed out and does nothing.
 - On phones, the light/dark theme switch sits in the footer.
-- © year · Bandar Seri Begawan, Brunei Darussalam, and **Staff: Portal · Field**.
+- © year · Kuala Belait, Brunei Darussalam, and **Staff: Portal · Field**.
 
 Wherever the site offers a single "Message us on WhatsApp" or "Start an enquiry" button, it opens a chat with the **first** number, +673 8959798. Wherever it shows a list, it shows all three.
 
@@ -6161,14 +6172,15 @@ Wherever the site offers a single "Message us on WhatsApp" or "Start an enquiry"
 
 Address: bruneiapartment.com. Anyone can open it. Sections from top to bottom:
 
-1. **Hero** — eyebrow "Palm Villa · Bandar Seri Begawan", headline **"Swim today, stay tonight."**, a line "Day passes for the swimming pool, water park and indoor children's playground — and apartment stays from BND ___ a night. One place, in Bandar Seri Begawan.", buttons **See day pass prices** (scrolls to the day-pass section) and **Browse stays** (scrolls to stays), and the front-page photograph.
+1. **Hero** — eyebrow "Palm Villa · Kuala Belait", headline **"Swim today, stay tonight."**, a line "Day passes for the swimming pool, water park and indoor children's playground — and apartment stays from BND ___ a night. One place, in Kuala Belait.", buttons **See day pass prices** (scrolls to the day-pass section) and **Browse stays** (scrolls to stays), and the front-page photograph.
 2. **Day pass** section — heading "A full pool day, from BND ___", the line "One pass covers everything below — pay per person, or take a family bundle.", then one card per facility (photograph, name, and a short description for the pool, water park and indoor children's playground). The row of cards scrolls sideways on tablets and computers and stacks on phones. Below it a card **Day pass** with the price line (for example "From BND 5 per person · family bundles from BND 20") and the button **Book a day pass**.
 3. **Short stays** section — heading "Whole units, from BND ___ a night", "The whole place to yourselves — apartments and a semi-detached house.", one card per unit type (photograph, name, a short line, and "from BND ___ / night"). Every card links to the stay booking page. Button **Book a short stay**. Fine print: "BND ___ refundable security deposit · bookings open up to __ days ahead."
 4. **Long term** — a dark card "Make Palm Villa home": "Longer tenancies are arranged directly with us and priced per tenancy. Tell us what you need and we'll come back with a proposal." Button **Start an enquiry** opens WhatsApp. There is no online booking for long-term tenancies.
 5. **How it works — "Booking is simple"** — three steps: "Pick your day or dates", "Pay your way" ("Transfer to BIBD or Baiduri with your booking reference, and upload the slip as you book. No card needed."), "You're confirmed" ("Your confirmation arrives by email, with a link back to your booking. Quote your reference on arrival."). Fine print repeats the deposit and booking-window line and adds "Pay by bank transfer (BIBD / Baiduri) or cash." Then "Already booked? **Find your booking.**"
 6. **Follow along** — four square photo tiles and **Instagram** / **TikTok** buttons (@palmvilla.bn).
 7. **FAQs** — only if staff have put any FAQs on the front page (at most 6). "The questions guests ask most. Everything else is on the FAQs page." Button **See all FAQs**. Each question opens when tapped.
-8. **"Ready when you are"** closing band — **Check availability** (goes to the stay booking page) and **Message us on WhatsApp**.
+8. **Getting here** — "Kuala Belait, Brunei", the full address (Lot 9163, Spg 84-92-52-33, Jln Setia Diraja, Kpg Mumong A, Mukim Kuala Belait, KA1531), a button **Open in Google Maps**, and an aerial map with the building marked "We are here!". Tapping the map also opens Google Maps. The footer's **Getting here** link scrolls here.
+9. **"Ready when you are"** closing band — **Check availability** (goes to the stay booking page) and **Message us on WhatsApp**.
 
 **Which figures are live, and where they come from.** No price on the front page is typed into the page itself. They all come from **Property settings**:
 
@@ -6254,12 +6266,15 @@ Every stage shows "Reference PV-____", a **What you booked** card and a footnote
 - **A. Send us your IC** — "We need a copy of the lead guest's IC to register the stay." Button **Choose a file** (or **Choose a different file** once one is held). "JPEG, PNG, WebP or PDF, up to 4 MB. Held privately, used only internally for verification." plus, once a privacy policy is published, a link "How we handle your personal data". After sending: "Received, thank you." or "Received [date]." and "Sending another replaces the one we have."
 - **B. Send us your transfer slip** — "Your bank transfer slip will help us verify your transfer faster." Same file rules.
 - If a deposit has been checked and found short: a red box "We have received BND __ of the BND ___ security deposit, so BND __ is still outstanding. Your unit is held, and the booking is confirmed once the rest arrives — send it to the same account, quoting PV-____, or call us if something has gone wrong."
-- Otherwise: "We have your booking and are checking for the transfer. Once we verify it, we will email your confirmation and a QR code for entry, which will be on this page too."
+- Otherwise: "We have your booking and are checking for the transfer. Once we verify it, we will email your confirmation and a QR code for entry, which will be on this page too." For a **stay** the sentence also promises the check-in instructions: "…we will email your confirmation, a QR code for entry and your check-in instructions, which will all be on this page too." (A guest who gave no email address is told these "will be on this page" instead.)
 
 **Stage 3 — Confirmed (status Confirmed, Checked in or Completed).**
 - Green box: "Your booking is confirmed." For a stay it adds either "The BND ___ for the stay is settled when you arrive." or "Everything is settled — there is nothing to pay on arrival.", then "Show the code below at the gate." For a day pass just "Show the code below at the gate."
 - On a **Completed** booking (a stay checked out, or a day pass already admitted) the page still says **You are booked** and "Show the code below at the gate", but no code is shown below it.
 - **Your entry code** card (only while the booking is Confirmed or Checked in): the QR code, the reference underneath, "Show this at the gate. Save it to your phone, or send it to whoever is driving." and a **Save the image** button that downloads the picture.
+- **Check-in instructions** card — **stays only**, not day passes. Five numbered steps: "Please go to the Security Counter.", "Fill in and sign the Registration Form.", "Show the IC of the person who made the booking.", "Security will hand you the apartment key and tell you where to park your car.", "The Wi-Fi password is on a sticker attached to the TV board in the living room." Then "Have a pleasant stay and enjoy your time with us!"
+- **Getting here** card — every confirmed booking, stay or day pass: the address, an **Open in Google Maps** button, and the aerial map.
+- **Food** card — every confirmed booking, stay or day pass, while there is a food notice (Website settings → Food): the notice text, a **Call [number]** button that dials the food provider, and **See the food menu**, which opens the food page — only if a menu flyer has been uploaded.
 - **A. Send us your IC** stays available (no slip box).
 
 **Stage 4 — Closed (Cancelled, No show, Expired).**
@@ -6270,6 +6285,10 @@ Every stage shows "Reference PV-____", a **What you booked** card and a footnote
 - No payment instructions, no uploads, no QR code.
 
 **If the link is wrong or cut short** (for example WhatsApp broke it), the customer sees **"That link does not open a booking"**: "It may have been cut short on the way to you. You can open your booking with the reference from it and the phone number you booked with." Button **Find your booking**, and "Or call us —" with the three numbers. The page deliberately does not say whether the booking exists.
+
+### The food page
+
+Address: bruneiapartment.com/food. Not in the site's menus and hidden from search engines: guests reach it from **See the food menu** on their confirmed booking page and in their confirmation email. It shows the heading **Food**, the food notice, a **Call [number]** button, and the provider's menu flyer, whole; tapping the flyer opens it full size, with the caption "Tap the menu to open it full size." With no flyer uploaded it shows the text and the button only. While the notice is empty (Website settings → Food), the page does not exist — it shows the "page not found" screen.
 
 ### Find your booking
 
@@ -6569,6 +6588,9 @@ All emails come from a no-reply address on bruneiapartment.com. They carry **no 
     - Stay: "BND ___ for the stay is settled when you arrive." or "Everything is settled — there is nothing to pay on arrival." (worked out from what has actually been paid, not the total).
     - Stay: "Check in from __:__, and check out by __:__." (from Property settings).
     - A day pass has only the first sentence.
+  - **Check-in instructions** — **stays only**: the same five numbered steps and closing line as the booking page's Check-in instructions card.
+  - **Getting here** — every confirmed email: the address and an **Open in Google Maps** link. (No map picture — many email apps block pictures.)
+  - **Food** — every confirmed email, stay or day pass, while there is a food notice: the notice text, **Call [number]**, and **See the food menu** (a link to the food page, only if a flyer has been uploaded). The flyer itself is not in the email; the link means a flyer changed later is what the guest sees.
   - **Open your booking** button with the link and the "Anyone with this link…" note — **only if the booking has a private link**. A desk booking that has never been looked up has none, so this part is missing; the Find your booking link in the footer is the way in.
   - Footer: the same as the Booking email, including "This is the only email we send about this booking."
 - **Links in it:** the customer's booking page (if it has one); Find your booking.
@@ -6700,8 +6722,11 @@ The stay and day-pass booking pages use it immediately. The front page and FAQs 
 **Q: The 2-bedroom isn't on the website.**
 A unit type is only offered if the building has at least one unit of that type that is not out of service. Add the units in the Unit registry (see *Units and property settings*).
 
+**Q: Is there a restaurant? Where do guests get food?**
+There is no restaurant at Palm Villa. An outside food provider leaves a menu at the poolside tables and delivers; guests order by calling them directly (+673 333 5410, free delivery on orders of BND 20 and above, as the notice first said). Confirmed guests are told this on their booking page and in their confirmation email, with a link to the provider's menu flyer on the food page (bruneiapartment.com/food). To change the wording, the number or the flyer, see *Staff access and administration → Website settings → Food tab*.
+
 **Q: What contact details does the customer see?**
-Three phone numbers, all on WhatsApp: +673 8959798, +673 8837118, +673 8986733; Instagram and TikTok @palmvilla.bn; and the map link to Bandar Seri Begawan. "Message us on WhatsApp" buttons open +673 8959798. The emails carry the three numbers and say "Call or WhatsApp us". There is no customer email address to reply to.
+Three phone numbers, all on WhatsApp: +673 8959798, +673 8837118, +673 8986733; Instagram and TikTok @palmvilla.bn; and the address, Lot 9163, Spg 84-92-52-33, Jln Setia Diraja, Kpg Mumong A, Mukim Kuala Belait, KA1531, with a link to the property's Google Maps pin (in the footer of every page, and in the front page's Getting here section with an aerial map). "Message us on WhatsApp" buttons open +673 8959798. The emails carry the three numbers and say "Call or WhatsApp us". There is no customer email address to reply to.
 
 **Q: What if a customer replies to one of our emails?**
 The emails come from a no-reply address and nobody reads replies. Ask customers to call or WhatsApp.

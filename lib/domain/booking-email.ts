@@ -1,6 +1,8 @@
 import { balanceOf } from './balance'
 import type { BookingStatus } from './booking-state'
+import { CHECK_IN_SIGN_OFF, CHECK_IN_STEPS } from './check-in'
 import type { PropertyContact } from './contact'
+import { foodNoticeParagraphs, isFoodNoticeShown, telHref } from './food-notice'
 import { formatStayDate, formatStayRange, nightsBetween, type StayDate } from './dates'
 import { entryQrFilename } from './entry-qr'
 import type { BookingLine } from './lines'
@@ -101,6 +103,19 @@ export interface BuildBookingEmailInput {
    * booking has no code, so the email falls back to the reference.
    */
   hasEntryCode: boolean
+  /**
+   * What staff have written about food (Website settings → Food), and the
+   * food page's address when there is a menu flyer on it. An empty `body`
+   * says nothing about food at all.
+   */
+  food: EmailFoodFacts
+}
+
+export interface EmailFoodFacts {
+  body: string
+  phone: string
+  /** Absolute, or null when no flyer is up or the origin is unreadable. */
+  menuUrl: string | null
 }
 
 /** The `cid:` the entry code's image is attached under and the HTML points at. */
@@ -122,6 +137,26 @@ export interface EmailEntryCode {
 export interface EmailRow {
   label: string
   value: string
+}
+
+/** What a stay does at the Security Counter, from lib/domain/check-in.ts. */
+export interface EmailCheckIn {
+  steps: readonly string[]
+  signOff: string
+}
+
+/** The food notice, a number to dial, and the menu flyer's page. */
+export interface EmailFood {
+  paragraphs: readonly string[]
+  call: { label: string; href: string } | null
+  menu: { label: string; url: string } | null
+}
+
+/** Where the building is, and the link to the client's own map pin. */
+export interface EmailLocation {
+  address: readonly string[]
+  mapsUrl: string
+  mapsLabel: string
 }
 
 export interface EmailQuote {
@@ -215,6 +250,18 @@ export interface BookingEmailModel {
   entryCode: EmailEntryCode | null
   /** Present on a confirmed email only. One sentence per line. */
   arrival: readonly string[]
+  /**
+   * A confirmed stay's only: a key, a car space and a Wi-Fi password belong to
+   * an apartment, and a day pass has none of them.
+   */
+  checkIn: EmailCheckIn | null
+  /** Present on a confirmed email only, day pass or stay. */
+  location: EmailLocation | null
+  /**
+   * Present on a confirmed email when staff have written a notice — a day
+   * pass too, since the menu is at the poolside tables.
+   */
+  food: EmailFood | null
   action: EmailAction | null
   footer: EmailFooter
 }
@@ -225,6 +272,8 @@ export type BuildBookingEmailResult =
 const LINK_NOTE = 'Anyone with this link can see this booking, so do not post it publicly.'
 
 const ONLY_EMAIL_NOTE = 'This is the only email we send about this booking.'
+
+const MAPS_LABEL = 'Open in Google Maps'
 
 /**
  * Phrased around what the guest has rather than what the page is called. The
@@ -273,6 +322,7 @@ export function buildBookingEmail(input: BuildBookingEmailInput): BuildBookingEm
   }
 
   const isDayPass = booking.dayPass !== null
+  const isConfirmed = kind === 'booking_confirmed'
   const action = actionFor(input.bookingUrl)
   const entryCode =
     kind === 'booking_confirmed' && input.hasEntryCode ? entryCodeFor(booking.reference) : null
@@ -292,10 +342,13 @@ export function buildBookingEmail(input: BuildBookingEmailInput): BuildBookingEm
       depositNote: depositNoteFor(kind, booking),
       transfer: kind === 'booking_created' ? transferFor(booking, property) : null,
       entryCode,
-      arrival:
-        kind === 'booking_confirmed'
-          ? arrivalFor(booking, property, isDayPass, entryCode !== null)
-          : [],
+      arrival: isConfirmed ? arrivalFor(booking, property, isDayPass, entryCode !== null) : [],
+      checkIn:
+        isConfirmed && !isDayPass ? { steps: CHECK_IN_STEPS, signOff: CHECK_IN_SIGN_OFF } : null,
+      location: isConfirmed
+        ? { address: contact.address, mapsUrl: contact.mapsUrl, mapsLabel: MAPS_LABEL }
+        : null,
+      food: isConfirmed ? foodFor(input.food) : null,
       action,
       footer: {
         propertyName: property.name,
@@ -569,6 +622,18 @@ function entryCodeFor(reference: string): EmailEntryCode {
     alt: `Entry QR code for booking ${reference}`,
     guidance:
       'Show it at the gate. It is attached to this email too, so you can forward it to whoever is driving.',
+  }
+}
+
+function foodFor(facts: EmailFoodFacts): EmailFood | null {
+  if (!isFoodNoticeShown(facts)) {
+    return null
+  }
+
+  return {
+    paragraphs: foodNoticeParagraphs(facts.body),
+    call: facts.phone === '' ? null : { label: `Call ${facts.phone}`, href: telHref(facts.phone) },
+    menu: facts.menuUrl === null ? null : { label: 'See the food menu', url: facts.menuUrl },
   }
 }
 

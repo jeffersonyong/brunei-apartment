@@ -238,5 +238,7 @@ function refused(error: SiteImageWriteError): PhotoActionState {
 
 function revalidateWebsite(): void {
   revalidatePath('/')
+  // The food page shows the `food-menu` flyer, which is placed through here.
+  revalidatePath('/food')
   revalidatePath('/settings/website')
 }

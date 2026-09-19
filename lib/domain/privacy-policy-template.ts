@@ -25,7 +25,7 @@ export function privacyPolicyTemplate(contact: PropertyContact): string {
   const phones = contact.phones.map((phone) => phone.display).join(', ')
 
   return `## Who we are
-Palm Villa is an apartment building in Bandar Seri Begawan, Brunei Darussalam, run by [Fill in: the name of the company or person that operates Palm Villa].
+Palm Villa is an apartment building in ${contact.locality}, Brunei Darussalam, run by [Fill in: the name of the company or person that operates Palm Villa].
 This policy explains what personal data we collect when you book a day pass or a stay with us, why we collect it, who we share it with, and what you can ask us to do with it. We handle personal data in line with Brunei Darussalam's Personal Data Protection Order, 2025.
 
 ## What we collect

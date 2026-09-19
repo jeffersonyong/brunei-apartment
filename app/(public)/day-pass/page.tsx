@@ -10,7 +10,7 @@ import { DayPassBooking } from './day-pass-booking'
 export const metadata: Metadata = {
   title: 'Day passes — Palm Villa',
   description:
-    'Book a facility day pass at Palm Villa, Bandar Seri Begawan. Per-person rates with family bundles applied automatically.',
+    'Book a facility day pass at Palm Villa, Kuala Belait. Per-person rates with family bundles applied automatically.',
 }
 
 /**

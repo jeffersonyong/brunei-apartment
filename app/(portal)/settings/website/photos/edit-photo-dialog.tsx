@@ -87,12 +87,14 @@ export function EditPhotoDialog({
               focus={focus}
               sizes="320px"
             />
-            <FocusPicker
-              name="site-photo-edit-focus"
-              value={focus}
-              onChange={setFocus}
-              disabled={isPending}
-            />
+            {slot.aspect === 'poster' ? null : (
+              <FocusPicker
+                name="site-photo-edit-focus"
+                value={focus}
+                onChange={setFocus}
+                disabled={isPending}
+              />
+            )}
           </div>
 
           <DescriptionField

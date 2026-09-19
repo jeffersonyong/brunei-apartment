@@ -109,11 +109,17 @@ export default async function PublicLayout({ children }: { children: React.React
                 <span aria-hidden className="size-2 rounded-full bg-brand" />
                 Palm Villa
               </p>
-              <p className="mt-sm">
+              {/* The street address, less its first line: the name is the
+                  line above. The whole block opens the client's own pin. */}
+              <address className="mt-sm not-italic">
                 <a href={contact.mapsUrl} target="_blank" rel="noreferrer" className="underline">
-                  Bandar Seri Begawan, Brunei Darussalam
+                  {contact.address.slice(1).map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
                 </a>
-              </p>
+              </address>
               {/* All three carry WhatsApp (N14), so each row offers both: tap
                   the number to call, or the label to open a chat. */}
               <ul className="mt-sm space-y-xxs">
@@ -148,6 +154,9 @@ export default async function PublicLayout({ children }: { children: React.React
                   <Link href="/find-booking">Find your booking</Link>
                 </li>
                 <li>
+                  <Link href="/#getting-here">Getting here</Link>
+                </li>
+                <li>
                   <Link href="/faq">FAQs</Link>
                 </li>
                 <li>
@@ -179,7 +188,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <p className="mt-2xl text-caption opacity-70">
             {/* The year the page was rendered in Brunei, not a typed one that
                 goes stale on 1 January. */}
-            © {todayInBrunei().slice(0, 4)} Palm Villa · Bandar Seri Begawan, Brunei Darussalam
+            © {todayInBrunei().slice(0, 4)} Palm Villa · {contact.locality}, Brunei Darussalam
           </p>
           <p className="mt-sm text-caption opacity-70">
             Staff: <Link href="/dashboard">Portal</Link> · <Link href="/field">Field</Link>

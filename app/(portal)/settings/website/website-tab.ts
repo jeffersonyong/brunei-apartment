@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { Permission } from '@/lib/auth/permissions'
 
 /**
- * The tabs of the Website settings screen (capabilities F7, F9, F10).
+ * The tabs of the Website settings screen (capabilities F7, F9, F10, F14).
  *
  * A plain module with no `'use client'`, for the reason property-tabs.ts
  * records: the server page calls `isWebsiteTab` to read `?tab=`, and a
@@ -19,6 +19,8 @@ export const WEBSITE_TABS = [
   { id: 'photos', label: 'Photos', permission: 'site_image.manage' },
   { id: 'faqs', label: 'FAQs', permission: 'faq.manage' },
   { id: 'privacy-policy', label: 'Privacy policy', permission: 'privacy_policy.manage' },
+  // The flyer's own permission: the notice is its caption (20261006000200).
+  { id: 'food', label: 'Food', permission: 'site_image.manage' },
 ] as const satisfies readonly { id: string; label: string; permission: Permission }[]
 
 export type WebsiteTab = (typeof WEBSITE_TABS)[number]['id']

@@ -5,6 +5,7 @@ import {
   type BookingEmailKind,
   type BookingEmailModel,
 } from '@/lib/domain/booking-email'
+import { CHECK_IN_STEPS } from '@/lib/domain/check-in'
 import type { PropertyContact } from '@/lib/domain/contact'
 import { line } from '@/lib/domain/lines'
 import type { BankAccountSettings } from '@/lib/domain/settings'
@@ -51,6 +52,8 @@ const contact: PropertyContact = {
   instagramUrl: 'https://instagram.com/test',
   tiktokHandle: '@test',
   tiktokUrl: 'https://tiktok.com/@test',
+  address: ['Test Villa', '1 Test Road,', 'Test Town, TT1000'],
+  locality: 'Test Town',
   mapsUrl: 'https://maps.example/test',
 }
 
@@ -107,6 +110,11 @@ function model(
     bookingUrl: URL,
     findBookingUrl: LOOKUP_URL,
     hasEntryCode: overrides.hasEntryCode ?? false,
+    food: {
+      body: 'No restaurant <here>.\nMenu at the pool.',
+      phone: '+673 333 5410',
+      menuUrl: 'https://palmvilla.bn/food',
+    },
   })
 
   if (!result.ok) {
@@ -331,6 +339,72 @@ describe('the entry code', () => {
 
     expect(html).not.toContain('<img')
     expect(html).toContain('Reference <span')
+  })
+})
+
+describe('check-in and getting here', () => {
+  test('a confirmed stay lists the check-in steps in order, as an ordered list', () => {
+    const { html } = renderBookingEmail(model({ kind: 'booking_confirmed' }))
+    const list = html.slice(html.indexOf('<ol'), html.indexOf('</ol>'))
+
+    expect(list).not.toBe('')
+
+    const positions = CHECK_IN_STEPS.map((step) => list.indexOf(step))
+
+    expect(positions.every((position) => position >= 0)).toBe(true)
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions)
+  })
+
+  test('a confirmed email links the map pin and sets out the address', () => {
+    const { html } = renderBookingEmail(model({ kind: 'booking_confirmed' }))
+
+    expect(html).toContain('href="https://maps.example/test"')
+    expect(html).toContain('1 Test Road,')
+    expect(html).toContain('Test Town, TT1000')
+  })
+
+  test('the created email carries neither', () => {
+    const { html, text } = renderBookingEmail(model())
+
+    expect(html).not.toContain('<ol')
+    expect(html).not.toContain('maps.example')
+    expect(text).not.toContain('CHECK-IN')
+  })
+
+  test('the plain text numbers the steps and gives the map as a URL', () => {
+    const { text } = renderBookingEmail(model({ kind: 'booking_confirmed' }))
+
+    CHECK_IN_STEPS.forEach((step, index) => {
+      expect(text).toContain(`${index + 1}. ${step}`)
+    })
+    expect(text).toContain('Open in Google Maps: https://maps.example/test')
+    expect(text).toContain('Test Town, TT1000')
+  })
+})
+
+describe('food', () => {
+  test('a confirmed email sets out the notice escaped, the number to dial and the menu link', () => {
+    const { html } = renderBookingEmail(model({ kind: 'booking_confirmed' }))
+
+    expect(html).toContain('No restaurant &lt;here&gt;.')
+    expect(html).not.toContain('<here>')
+    expect(html).toContain('href="tel:+6733335410"')
+    expect(html).toContain('href="https://palmvilla.bn/food"')
+  })
+
+  test('the plain text gives the number and the menu as a URL', () => {
+    const { text } = renderBookingEmail(model({ kind: 'booking_confirmed' }))
+
+    expect(text).toContain('FOOD')
+    expect(text).toContain('Call +673 333 5410')
+    expect(text).toContain('See the food menu: https://palmvilla.bn/food')
+  })
+
+  test('the created email carries none of it', () => {
+    const { html, text } = renderBookingEmail(model())
+
+    expect(html).not.toContain('palmvilla.bn/food')
+    expect(text).not.toContain('FOOD')
   })
 })
 

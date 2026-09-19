@@ -1,6 +1,6 @@
 import type { SiteImage } from '@/lib/db/site-images'
 import {
-  SITE_IMAGE_SLOTS,
+  FEED_SLOTS,
   aspectFor,
   placementKey,
   type SiteImageAspect,
@@ -50,7 +50,35 @@ export interface PhotoSectionView {
   slots: readonly PhotoSlotView[]
 }
 
-const FEED_SLOTS = SITE_IMAGE_SLOTS.filter((slot) => slot !== 'hero')
+/**
+ * One place and the photograph in it, if any. Exported for the Food tab, whose
+ * menu flyer is a photograph edited on a screen of its own.
+ */
+export function photoSlotView(
+  images: readonly SiteImage[],
+  nameFor: (userId: string) => string,
+  placement: SiteImagePlacement,
+  name: string,
+): PhotoSlotView {
+  const key = placementKey(placement)
+  const image = images.find((candidate) => placementKey(candidate.placement) === key)
+
+  return {
+    key,
+    name,
+    aspect: aspectFor(placement),
+    current: image
+      ? {
+          id: image.id,
+          url: image.url,
+          altText: image.altText,
+          focus: image.focus,
+          uploadedAt: image.uploadedAt,
+          uploadedBy: nameFor(image.uploadedBy),
+        }
+      : null,
+  }
+}
 
 export function photoSections(
   images: readonly SiteImage[],
@@ -62,28 +90,8 @@ export function photoSections(
    */
   dayPassFacilities: readonly { slug: string; name: string; shownOnSite: boolean }[],
 ): readonly PhotoSectionView[] {
-  const byKey = new Map(images.map((image) => [placementKey(image.placement), image]))
-
-  function slotView(placement: SiteImagePlacement, name: string): PhotoSlotView {
-    const key = placementKey(placement)
-    const image = byKey.get(key)
-
-    return {
-      key,
-      name,
-      aspect: aspectFor(placement),
-      current: image
-        ? {
-            id: image.id,
-            url: image.url,
-            altText: image.altText,
-            focus: image.focus,
-            uploadedAt: image.uploadedAt,
-            uploadedBy: nameFor(image.uploadedBy),
-          }
-        : null,
-    }
-  }
+  const slotView = (placement: SiteImagePlacement, name: string): PhotoSlotView =>
+    photoSlotView(images, nameFor, placement, name)
 
   return [
     {

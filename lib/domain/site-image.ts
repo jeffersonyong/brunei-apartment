@@ -31,14 +31,30 @@ export const SITE_IMAGE_BUCKET = 'site-images'
 /* ── Where a photograph belongs ───────────────────────────────────────────── */
 
 /**
- * The places on the landing page that hang off no row: the hero, and the four
- * "Follow along" tiles.
+ * The places on the site that hang off no row: the hero, the four "Follow
+ * along" tiles, and the food provider's menu flyer (Jeff, 19 September 2026),
+ * which the food page shows whole.
  *
  * A unit type and a facility are not slots. Each is already a row, and a
  * photograph is attached to it by the slug a rename never moves
  * (architecture.md §5.1). Mirrored by the CHECK on `site_image.slot`.
  */
-export const SITE_IMAGE_SLOTS = ['hero', 'feed-1', 'feed-2', 'feed-3', 'feed-4'] as const
+export const SITE_IMAGE_SLOTS = [
+  'hero',
+  'feed-1',
+  'feed-2',
+  'feed-3',
+  'feed-4',
+  'food-menu',
+] as const
+
+/** The four "Follow along" tiles, in order. */
+export const FEED_SLOTS = [
+  'feed-1',
+  'feed-2',
+  'feed-3',
+  'feed-4',
+] as const satisfies readonly SiteImageSlot[]
 
 export type SiteImageSlot = (typeof SITE_IMAGE_SLOTS)[number]
 
@@ -53,7 +69,11 @@ export function isSiteImageSlot(value: string): value is SiteImageSlot {
  * event so the trail can still name a photograph after its row is gone.
  */
 export function slotLabel(slot: SiteImageSlot): string {
-  return slot === 'hero' ? 'Front page' : `Follow along — tile ${slot.slice('feed-'.length)}`
+  if (slot === 'hero') {
+    return 'Front page'
+  }
+
+  return slot === 'food-menu' ? 'Food menu' : `Follow along — tile ${slot.slice('feed-'.length)}`
 }
 
 export type SiteImagePlacement =
@@ -113,11 +133,19 @@ export function parsePlacementKey(key: string): SiteImagePlacement | null {
  * The shape a placement is cropped to on the site, in `MediaPlaceholder`'s own
  * words: `photo` is 4:3 and `square` is 1:1. The portal previews every photograph
  * at this shape, so what staff see is what a visitor sees.
+ *
+ * `poster` is the food menu's, and is the one that is never cropped: a flyer
+ * with its phone number trimmed off is worse than no flyer, so it is shown
+ * whole, in a frame the height of a printed page.
  */
-export type SiteImageAspect = 'photo' | 'square'
+export type SiteImageAspect = 'photo' | 'square' | 'poster'
 
 export function aspectFor(placement: SiteImagePlacement): SiteImageAspect {
-  return placement.kind === 'slot' && placement.slot !== 'hero' ? 'square' : 'photo'
+  if (placement.kind !== 'slot' || placement.slot === 'hero') {
+    return 'photo'
+  }
+
+  return placement.slot === 'food-menu' ? 'poster' : 'square'
 }
 
 /* ── Framing ──────────────────────────────────────────────────────────────── */
