@@ -90,3 +90,13 @@ export function findBookingUrl(origin: string): string | null {
 
   return base === null ? null : `${base}/find-booking`
 }
+
+/**
+ * The food page: the notice and the provider's menu flyer (Jeff, 19 September
+ * 2026). A public page like the lookup, so every confirmation can link it.
+ */
+export function foodPageUrl(origin: string): string | null {
+  const base = normaliseOrigin(origin)
+
+  return base === null ? null : `${base}/food`
+}

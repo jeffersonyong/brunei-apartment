@@ -37,6 +37,8 @@ const CONTACT: PropertyContact = {
   instagramUrl: 'https://instagram.com/example',
   tiktokHandle: '@example',
   tiktokUrl: 'https://tiktok.com/@example',
+  address: ['Test Villa', '1 Test Road,', 'Test Town, TT1000'],
+  locality: 'Test Town',
   mapsUrl: 'https://maps.example',
 }
 

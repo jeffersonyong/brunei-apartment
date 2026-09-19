@@ -1051,6 +1051,44 @@ const websitePrivacyPolicy: ExportTable = {
   },
 }
 
+interface FoodNoticeExportRow {
+  body: string
+  phone: string
+  updated_by: string | null
+  updated_at: string
+}
+
+/**
+ * What guests are told about food (19 September 2026) — the notice as it
+ * stands. What it said before is in the audit log's before-and-after.
+ */
+const websiteFoodNotice: ExportTable = {
+  id: 'website-food-notice',
+  label: 'Food notice',
+  description:
+    'What confirmed guests are told about food, the provider’s number, and who last changed it.',
+  count: () => countOf('food_notice'),
+  document: async () => {
+    // One row per property and keyed by it, so there is no `id` for allOf()
+    // to page by — and nothing to page.
+    const { data, error } = await dataClient()
+      .from('food_notice')
+      .select('body, phone, updated_by, updated_at')
+      .eq('property_id', await currentPropertyId())
+
+    if (error) {
+      throw new Error(`Could not read the food notice: ${error.message}`)
+    }
+
+    const rows = data as FoodNoticeExportRow[]
+
+    return {
+      headers: ['Notice', 'Number', 'Updated by', 'Updated'],
+      rows: rows.map((row) => [row.body, row.phone, text(row.updated_by), row.updated_at]),
+    }
+  },
+}
+
 export const EXPORT_TABLES: readonly ExportTable[] = [
   bookings,
   bookingLines,
@@ -1072,6 +1110,7 @@ export const EXPORT_TABLES: readonly ExportTable[] = [
   websitePhotos,
   websiteFaqs,
   websitePrivacyPolicy,
+  websiteFoodNotice,
 ]
 
 export function exportTableById(id: string): ExportTable | undefined {
@@ -1128,6 +1167,8 @@ export const EXPORT_GROUPS = {
   faqs: ['website-faqs'],
   /** Website privacy policy, downloaded beside the policy itself. */
   privacyPolicy: ['website-privacy-policy'],
+  /** The website food notice, downloaded beside the notice itself. */
+  food: ['website-food-notice'],
 } as const satisfies Record<string, readonly string[]>
 
 export type ExportGroupName = keyof typeof EXPORT_GROUPS

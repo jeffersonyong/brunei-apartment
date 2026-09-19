@@ -22,7 +22,7 @@ export function Hero({
     <section aria-labelledby="hero-heading" className="bg-card px-xl py-3xl">
       <div className="mx-auto grid w-full max-w-[1120px] gap-2xl lg:grid-cols-2 lg:items-center">
         <div>
-          <p className="micro-label text-accent-foreground">Palm Villa · Bandar Seri Begawan</p>
+          <p className="micro-label text-accent-foreground">Palm Villa · Kuala Belait</p>
           <h1
             id="hero-heading"
             className="mt-lg max-w-[16ch] font-display text-display-md text-balance text-foreground sm:text-display-lg lg:text-display-xl"
@@ -32,7 +32,7 @@ export function Hero({
           <p className="mt-lg max-w-[52ch] text-body-lg text-copy">
             Day passes for the swimming pool, water park and indoor children’s playground — and
             apartment stays{fromNightlyRate === null ? '' : ` from ${fromNightlyRate} a night`}. One
-            place, in Bandar Seri Begawan.
+            place, in Kuala Belait.
           </p>
           <div className="mt-xl flex flex-wrap gap-sm">
             <Button asChild>

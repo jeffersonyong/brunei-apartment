@@ -31,7 +31,7 @@ This platform replaces that with one web application: a public booking site for 
 
 **How customers reach them.** An Instagram page advertises the units and displays contact numbers. Customers message on WhatsApp. Bookings are handled by the Reservations / Front Office team, who check availability, confirm details, and assist with payment.
 
-**[C] Public contact details** (confirmed 2026-08-27): Instagram and TikTok both `@palmvilla.bn`; phone **+673 8959798 / 8837118 / 8986733**; location 4.570085, 114.220738 (Bandar Seri Begawan). **[C] All three numbers carry WhatsApp** (2026-09-05). **[O]** Which one a booking enquiry should land on is still open — a single "Chat on WhatsApp" button has to pick one, and the site currently links the first (8959798). Worth noting the client's own price list directs event enquiries to **8986733 or 8837118** and not to the number being linked.
+**[C] Public contact details** (confirmed 2026-08-27): Instagram and TikTok both `@palmvilla.bn`; phone **+673 8959798 / 8837118 / 8986733**; location 4.570085, 114.220738. **[C] Address** (2026-09-19): Palm Villa, Lot 9163, Spg 84-92-52-33, Jln Setia Diraja, Kpg Mumong A, Mukim Kuala Belait, KA1531 — Kuala Belait, not Bandar Seri Begawan as this line first said; the pin was always Mumong. Map pin: https://maps.app.goo.gl/LUVkAXvqkjfnNvuh8. **[C] All three numbers carry WhatsApp** (2026-09-05). **[O]** Which one a booking enquiry should land on is still open — a single "Chat on WhatsApp" button has to pick one, and the site currently links the first (8959798). Worth noting the client's own price list directs event enquiries to **8986733 or 8837118** and not to the number being linked.
 
 **How bookings are recorded.** Manually into Excel, including payment status. Bookings are approved by a person before being confirmed, which is currently the only thing preventing double bookings.
 
@@ -42,6 +42,10 @@ This platform replaces that with one web application: a public booking site for 
 **Record keeping.** For each transaction, staff manually compile a PDF pack containing the transfer screenshot, the customer's IC, and the transaction confirmation.
 
 **On arrival.** Customers may fill in a second form. Gates are usually left open, so verification is limited. Security need to be told who to expect.
+
+**[C] The check-in instructions a staying guest is given** (2026-09-19): go to the Security Counter; fill in and sign the Registration Form; show the IC of the person who made the booking; security hands over the apartment key and says where to park; the Wi-Fi password is on a sticker on the TV board in the living room. A confirmed stay sees them on its booking page and in its confirmation email; a day pass does not (no key, no apartment).
+
+**[C] Food** (2026-09-19): there is no restaurant at Palm Villa. An outside provider (Dapur Rasa Sayangku, formerly Restoran WYWY) leaves a menu at the poolside tables and delivers — **+673 333 5410**, free delivery on orders of BND 20 and above. Every confirmed guest, stay or day pass, is told so on their booking page and in their confirmation email, with a link to the provider's flyer. The provider can change, so the words, the number and the flyer are staff-editable (capability F14).
 
 ### Problems this creates
 

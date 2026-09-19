@@ -7,6 +7,7 @@ import { buildBookingEmailMessage } from './booking-emails'
 import { createWalkInBooking } from './bookings'
 import { listPendingDeposits, verifyDeposit } from './deposits'
 import { recordCashPayment } from './payments'
+import { currentPropertyId } from './property'
 import {
   createPublicDayPassBooking,
   createPublicStayBooking,
@@ -288,6 +289,46 @@ describe('what a confirmed booking is told it owes', () => {
     ])
     expect(built.html).toContain('src="cid:entry-qr"')
     expect(built.text).toContain('Show the QR code in this email at the gate')
+  })
+
+  test('says what the food notice in the database says, and nothing once it is emptied', async () => {
+    // The notice is one row per property and the local site holds the seeded
+    // one, so it is set aside and put back whatever happens.
+    const propertyId = await currentPropertyId()
+    const { data: setAside } = await dataClient()
+      .from('food_notice')
+      .select('*')
+      .eq('property_id', propertyId)
+      .maybeSingle()
+
+    try {
+      await dataClient().from('food_notice').upsert({
+        property_id: propertyId,
+        body: 'Integration food notice.\nOrder from the pool.',
+        phone: '+673 000 0000',
+      })
+
+      const { created } = await givenDepositSecuredBooking()
+      const withNotice = await message('booking_confirmed', created.bookingId)
+
+      expect(withNotice.text).toContain('Integration food notice.')
+      expect(withNotice.html).toContain('href="tel:+6730000000"')
+
+      await dataClient()
+        .from('food_notice')
+        .update({ body: '', phone: '' })
+        .eq('property_id', propertyId)
+
+      const without = await message('booking_confirmed', created.bookingId)
+
+      expect(without.text).not.toContain('Integration food notice.')
+    } finally {
+      await dataClient().from('food_notice').delete().eq('property_id', propertyId)
+
+      if (setAside) {
+        await dataClient().from('food_notice').insert(setAside)
+      }
+    }
   })
 
   test('the whole stay is still owed, because a deposit is not a payment', async () => {

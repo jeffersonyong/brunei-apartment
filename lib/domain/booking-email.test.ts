@@ -7,6 +7,7 @@ import {
   type EmailBookingFacts,
   type EmailPropertyFacts,
 } from './booking-email'
+import { CHECK_IN_SIGN_OFF, CHECK_IN_STEPS } from './check-in'
 import type { PropertyContact } from './contact'
 import { line } from './lines'
 import { transferPlanFor } from './public-booking'
@@ -34,7 +35,15 @@ const contact: PropertyContact = {
   instagramUrl: 'https://instagram.com/test',
   tiktokHandle: '@test',
   tiktokUrl: 'https://tiktok.com/@test',
+  address: ['Test Villa', '1 Test Road,', 'Test Town, TT1000'],
+  locality: 'Test Town',
   mapsUrl: 'https://maps.example/test',
+}
+
+const FOOD = {
+  body: 'No restaurant here.\nA menu is at the pool.',
+  phone: '+673 333 5410',
+  menuUrl: 'https://palmvilla.bn/food',
 }
 
 const property = (overrides: Partial<EmailPropertyFacts> = {}): EmailPropertyFacts => ({
@@ -94,6 +103,7 @@ const build = (
     bookingUrl: booking.accessToken === null ? null : `https://palmvilla.bn/booking/${TOKEN}`,
     findBookingUrl: 'https://palmvilla.bn/find-booking',
     hasEntryCode: false,
+    food: FOOD,
     ...overrides,
   })
 
@@ -227,6 +237,75 @@ describe('a day pass differs from a stay', () => {
     const model = built('booking_confirmed', dayPass({ status: 'confirmed' }))
 
     expect(model.arrival).toEqual(['Show reference PV-4822 at the gate.'])
+  })
+})
+
+describe('the confirmed email, and how to check in and find us', () => {
+  test('a confirmed stay carries the check-in steps and the sign-off', () => {
+    expect(built('booking_confirmed', stay({ status: 'confirmed' })).checkIn).toEqual({
+      steps: CHECK_IN_STEPS,
+      signOff: CHECK_IN_SIGN_OFF,
+    })
+  })
+
+  test('a day pass carries no check-in steps, having no key or apartment', () => {
+    expect(built('booking_confirmed', dayPass({ status: 'confirmed' })).checkIn).toBeNull()
+  })
+
+  test('every confirmed email carries the address and the map link', () => {
+    for (const booking of [stay({ status: 'confirmed' }), dayPass({ status: 'confirmed' })]) {
+      expect(built('booking_confirmed', booking).location).toEqual({
+        address: ['Test Villa', '1 Test Road,', 'Test Town, TT1000'],
+        mapsUrl: 'https://maps.example/test',
+        mapsLabel: 'Open in Google Maps',
+      })
+    }
+  })
+
+  test('the created email carries neither, since nothing is confirmed yet', () => {
+    const model = built('booking_created', stay())
+
+    expect(model.checkIn).toBeNull()
+    expect(model.location).toBeNull()
+  })
+})
+
+describe('the confirmed email, and what it says about food', () => {
+  const confirmedWith = (food: BuildBookingEmailInput['food'], booking = stay()) => {
+    const result = build('booking_confirmed', { ...booking, status: 'confirmed' }, { food })
+
+    if (!result.ok) {
+      throw new Error(`Expected an email, got a refusal: ${result.reason}`)
+    }
+
+    return result.model.food
+  }
+
+  test('carries the notice a paragraph a line, a number to call and the menu link', () => {
+    expect(confirmedWith(FOOD)).toEqual({
+      paragraphs: ['No restaurant here.', 'A menu is at the pool.'],
+      call: { label: 'Call +673 333 5410', href: 'tel:+6733335410' },
+      menu: { label: 'See the food menu', url: 'https://palmvilla.bn/food' },
+    })
+  })
+
+  test('a day pass is told too — the menu is at the poolside tables', () => {
+    expect(confirmedWith(FOOD, dayPass())?.paragraphs).toHaveLength(2)
+  })
+
+  test('leaves out the number and the link when there are none', () => {
+    expect(confirmedWith({ ...FOOD, phone: '', menuUrl: null })).toMatchObject({
+      call: null,
+      menu: null,
+    })
+  })
+
+  test('says nothing about food when the notice is empty', () => {
+    expect(confirmedWith({ ...FOOD, body: '' })).toBeNull()
+  })
+
+  test('the created email says nothing about food', () => {
+    expect(built('booking_created', stay()).food).toBeNull()
   })
 })
 

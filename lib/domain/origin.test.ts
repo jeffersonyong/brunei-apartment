@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { bookingUrl, findBookingUrl, normaliseOrigin } from './origin'
+import { bookingUrl, findBookingUrl, foodPageUrl, normaliseOrigin } from './origin'
 
 /**
  * The link an email carries.
@@ -98,5 +98,11 @@ describe('findBookingUrl', () => {
   test('returns null when the origin is unusable', () => {
     expect(findBookingUrl('palmvilla.bn')).toBeNull()
     expect(findBookingUrl('')).toBeNull()
+  })
+})
+
+describe('foodPageUrl', () => {
+  test('points at the public food page, normalising the origin', () => {
+    expect(foodPageUrl('https://palmvilla.bn/')).toBe('https://palmvilla.bn/food')
   })
 })

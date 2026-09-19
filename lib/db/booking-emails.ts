@@ -3,10 +3,11 @@ import {
   buildBookingEmail,
   type BookingEmailKind,
   type BookingEmailRefusal,
+  type EmailFoodFacts,
 } from '@/lib/domain/booking-email'
 import { contact } from '@/lib/domain/contact'
 import { entryCodeShownFor, entryUrl } from '@/lib/domain/entry-qr'
-import { bookingUrl, findBookingUrl } from '@/lib/domain/origin'
+import { bookingUrl, findBookingUrl, foodPageUrl } from '@/lib/domain/origin'
 import { DAY_IN_SECONDS, PUBLIC_LIMITS } from '@/lib/domain/public-booking'
 import { renderBookingEmail } from '@/lib/email/render'
 import { sendEmail, type EmailAttachment, type SendFailureClass } from '@/lib/email/send'
@@ -16,6 +17,7 @@ import { entryQrPng } from '@/lib/qr/entry-qr'
 import { recordAuditEvent } from './audit'
 import { getBookingById } from './bookings'
 import { getEntryToken } from './entry-qr'
+import { readFoodMenuImage, readFoodNotice } from './food-notice'
 import { notePublicAttempt } from './public-bookings'
 import { readPropertySettings } from './settings'
 
@@ -74,6 +76,32 @@ export interface BookingEmailMessage {
 export type BuildBookingEmailMessageResult =
   { ok: true; message: BookingEmailMessage } | { ok: false; reason: BookingEmailSkip }
 
+/** Nothing about food: the created email, and a confirmation whose read failed. */
+const NO_FOOD: EmailFoodFacts = { body: '', phone: '', menuUrl: null }
+
+/**
+ * The food notice, and the food page's address when a flyer is up to see.
+ *
+ * A failure is logged and says nothing about food, rather than failing the
+ * email: a confirmation without the menu is a small loss, and one that never
+ * arrives is the guest calling the office.
+ */
+async function readFoodFacts(origin: string): Promise<EmailFoodFacts> {
+  try {
+    const [notice, menu] = await Promise.all([readFoodNotice(), readFoodMenuImage()])
+
+    return {
+      body: notice.body,
+      phone: notice.phone,
+      menuUrl: menu === null ? null : foodPageUrl(origin),
+    }
+  } catch (error) {
+    console.error('The confirmation could not read the food notice; sending it without.', error)
+
+    return NO_FOOD
+  }
+}
+
 /**
  * Everything except the send. No network, so a test can assert the whole
  * assembly against a booking the application actually produced.
@@ -100,7 +128,11 @@ export async function buildBookingEmailMessage(input: {
       ? entryUrl(input.staffOrigin, await getEntryToken(booking.id))
       : null
 
-  const settings = await readPropertySettings()
+  // The food notice rides on the confirmation only, so only it is read.
+  const [settings, food] = await Promise.all([
+    readPropertySettings(),
+    input.kind === 'booking_confirmed' ? readFoodFacts(input.origin) : NO_FOOD,
+  ])
   const unitTypeName =
     booking.stay === null
       ? null
@@ -120,6 +152,7 @@ export async function buildBookingEmailMessage(input: {
     bookingUrl: bookingUrl(input.origin, booking.accessToken),
     findBookingUrl: findBookingUrl(input.origin),
     hasEntryCode: codeUrl !== null,
+    food,
   })
 
   if (!built.ok) {

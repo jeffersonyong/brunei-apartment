@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils'
 export const PHOTO_ASPECT_CLASSES: Readonly<Record<SiteImageAspect, string>> = {
   photo: 'aspect-[4/3]',
   square: 'aspect-square',
+  // A printed page, A4 upright — the shape of the flyers a provider hands out.
+  poster: 'aspect-[1/1.414]',
 }
 
 interface PhotoFrameProps {
@@ -58,7 +60,8 @@ export function PhotoFrame({
         fill
         sizes={sizes}
         unoptimized={unoptimized}
-        className="object-cover"
+        // The one shape never cropped (aspectFor): a flyer is shown whole.
+        className={aspect === 'poster' ? 'object-contain' : 'object-cover'}
         style={{ objectPosition: objectPositionFor(focus) }}
       />
     </div>

@@ -28,6 +28,14 @@ export interface PropertyContact {
   instagramUrl: string
   tiktokHandle: string
   tiktokUrl: string
+  /**
+   * The postal address, one line per entry, as the client writes it. The
+   * first line is the property's name, so a list that already names Palm
+   * Villa can start from the second.
+   */
+  address: readonly string[]
+  /** The town, for anywhere the site says where it is in a few words. */
+  locality: string
   mapsUrl: string
 }
 
@@ -42,8 +50,17 @@ export const contact: PropertyContact = {
   instagramUrl: 'https://instagram.com/palmvilla.bn',
   tiktokHandle: '@palmvilla.bn',
   tiktokUrl: 'https://tiktok.com/@palmvilla.bn',
-  /** Palm Villa, 4.570085, 114.220738. */
-  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=4.570085,114.220738',
+  // Supplied by Jeff on 19 September 2026. The pin the site linked before
+  // (4.570085, 114.220738) was already here; only the words said Bandar Seri
+  // Begawan, which is 80 km away.
+  address: [
+    'Palm Villa',
+    'Lot 9163, Spg 84-92-52-33, Jln Setia Diraja,',
+    'Kpg Mumong A, Mukim Kuala Belait, KA1531',
+  ],
+  locality: 'Kuala Belait',
+  /** The client's own "Palm Villa location" pin. */
+  mapsUrl: 'https://maps.app.goo.gl/LUVkAXvqkjfnNvuh8',
 }
 
 /**

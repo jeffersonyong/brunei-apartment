@@ -47,15 +47,16 @@ const IMAGE_ID = '0b7d4a3c-8e2f-4a61-b5c9-7d8e9f0a1b2c'
 /* ── Where a photograph belongs ───────────────────────────────────────────── */
 
 describe('the slots', () => {
-  test('are the hero and the four "Follow along" tiles, and nothing else', () => {
+  test('are the hero, the four "Follow along" tiles and the food menu, and nothing else', () => {
     // Mirrored by the CHECK on site_image.slot. Unit types and facilities are
     // not slots: they are rows, addressed by the slug that never moves.
-    expect(SITE_IMAGE_SLOTS).toEqual(['hero', 'feed-1', 'feed-2', 'feed-3', 'feed-4'])
+    expect(SITE_IMAGE_SLOTS).toEqual(['hero', 'feed-1', 'feed-2', 'feed-3', 'feed-4', 'food-menu'])
   })
 
   test('each has a name a person would use', () => {
     expect(slotLabel('hero')).toBe('Front page')
     expect(slotLabel('feed-3')).toBe('Follow along — tile 3')
+    expect(slotLabel('food-menu')).toBe('Food menu')
   })
 
   test('the public bucket is the one architecture.md §8 names', () => {
@@ -91,8 +92,9 @@ describe('placement keys', () => {
 })
 
 describe('the shape a slot is cropped to', () => {
-  test('the "Follow along" tiles are square and everything else is 4:3', () => {
+  test('the "Follow along" tiles are square, the food menu a whole page, and everything else 4:3', () => {
     expect(aspectFor({ kind: 'slot', slot: 'feed-1' })).toBe('square')
+    expect(aspectFor({ kind: 'slot', slot: 'food-menu' })).toBe('poster')
     expect(aspectFor({ kind: 'slot', slot: 'hero' })).toBe('photo')
     expect(aspectFor({ kind: 'unit_type', slug: 'semi-detached' })).toBe('photo')
     expect(aspectFor({ kind: 'facility', slug: 'water-park' })).toBe('photo')

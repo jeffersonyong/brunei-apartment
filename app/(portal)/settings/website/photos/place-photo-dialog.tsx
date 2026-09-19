@@ -178,12 +178,15 @@ export function PlacePhotoDialog({ slot, onClose }: { slot: PhotoSlotView; onClo
                   </p>
                 ) : null}
               </div>
-              <FocusPicker
-                name="site-photo-focus"
-                value={focus}
-                onChange={setFocus}
-                disabled={isPending}
-              />
+              {/* A flyer is never cropped, so there is nothing to keep in view. */}
+              {slot.aspect === 'poster' ? null : (
+                <FocusPicker
+                  name="site-photo-focus"
+                  value={focus}
+                  onChange={setFocus}
+                  disabled={isPending}
+                />
+              )}
             </div>
           ) : null}
 

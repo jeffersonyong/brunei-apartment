@@ -15,6 +15,7 @@ import { DayPassSection } from './_components/day-pass-section'
 import { faqItemFrom, type FaqItem } from './_components/faq-disclosures'
 import { FaqSection } from './_components/faq-section'
 import { FinalCta } from './_components/final-cta'
+import { GettingHereSection } from './_components/getting-here-section'
 import { Hero } from './_components/hero'
 import { HowBookingWorks } from './_components/how-booking-works'
 import { SocialStrip } from './_components/social-strip'
@@ -35,10 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
       : `plus apartment stays from ${figures.fromNightlyRate} a night`
 
   return {
-    title: 'Palm Villa — day passes and stays in Bandar Seri Begawan',
+    title: 'Palm Villa — day passes and stays in Kuala Belait',
     description:
       'Facility day passes for the swimming pool, water park and indoor children’s ' +
-      `playground, ${stays} at Palm Villa, Bandar Seri Begawan.`,
+      `playground, ${stays} at Palm Villa, Kuala Belait.`,
   }
 }
 
@@ -73,6 +74,7 @@ export default async function PublicHomePage() {
       <LongTermSection />
       <HowBookingWorks figures={figures} />
       <SocialStrip images={images.feed} />
+      <GettingHereSection />
       {faqs.length > 0 ? <FaqSection items={faqs} /> : null}
       <FinalCta />
     </>
