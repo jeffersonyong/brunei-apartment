@@ -38,21 +38,24 @@ export const MAX_VEHICLE_REGISTRATION_LENGTH = 20
  * whoever answers R3. This is only a bound on the repeated field, so a stuck
  * key cannot write a thousand rows.
  *
- * The allowance is now *shown* beside the rows — see `vehiclesBeyondParking`
- * — which is a different thing from being enforced by them.
+ * The allowance is *shown* beside the rows — see `vehiclesBeyondParking` —
+ * and on the public stay form it is also where the rows stop (Jason's team,
+ * 19 September 2026). That limit is the allowance, enforced by the form and
+ * the public action; this constant stays the bound on the field everywhere.
  */
 export const MAX_VEHICLES_PER_BOOKING = 10
 
 /**
  * How many of a booking's plates sit beyond the unit type's included spaces.
  *
- * The count, not a verdict, because nothing refuses the extra car. prd.md
- * §7.1's `car_allowance` is what a unit *includes*, and until R3 answers how
- * many bays the property actually has, it is not known to be a physical limit
- * — so the form states it and lets the guest past it (Jeff, 17 September
- * 2026). Refusing the third plate would trade a parking problem for a worse
- * one: §12.5 makes plate lookup the guard's primary path, and a car whose
+ * The count, not a verdict: the caller decides what it means. prd.md §7.1's
+ * `car_allowance` is what a unit *includes*. The desk's forms state it and let
+ * the guest past it (Jeff, 17 September 2026) — staff have agreed the extra
+ * car, and §12.5 makes plate lookup the guard's primary path, so a car whose
  * registration the form turned away is a car nobody can match at the gate.
+ * The public stay form refuses past it instead, and sends the customer to the
+ * office's WhatsApp to confirm another car first (Jason's team, 19 September
+ * 2026).
  *
  * Blank rows do not count. A form always shows one empty row and grows by
  * empty rows, so counting them would warn about cars nobody has typed.

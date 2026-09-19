@@ -241,7 +241,7 @@ export async function addToPassAtGateAction(
     if (!paid.ok) {
       // The pass is for the new party and owes the difference, which the card
       // now shows in red — so the guard finishes it the ordinary way.
-      await reportExtraGuests({
+      await noteForTheOffice({
         bookingId: booking.id,
         extra: addedCount,
         body: `Added at the gate: ${addedParty} (the pass is now for ${repriced.headcount}). The cash was not recorded.`,
@@ -265,7 +265,10 @@ export async function addToPassAtGateAction(
     }
   }
 
-  await reportExtraGuests({
+  // By now the party has changed and the cash is recorded. The note is the
+  // office's account of it, and a note that failed to save must not reach the
+  // guard as "that did not go through" — he would ask the visitor to pay again.
+  await noteForTheOffice({
     bookingId: booking.id,
     extra: addedCount,
     body: extraGuestsNote({
@@ -307,6 +310,20 @@ function bookedFor(booking: GateBooking): number {
   return booking.party.kind === 'stay'
     ? booking.party.counted + booking.party.exempt
     : (booking.headcount ?? 0)
+}
+
+/**
+ * The note after money has moved at the gate. Best-effort by design: the
+ * party and the cash are already written, and the history carries both, so a
+ * note that failed is logged rather than turned into a failure of what
+ * succeeded.
+ */
+async function noteForTheOffice(input: Parameters<typeof reportExtraGuests>[0]): Promise<void> {
+  try {
+    await reportExtraGuests(input)
+  } catch (error) {
+    console.error('The gate note for the office could not be saved', error)
+  }
 }
 
 function revalidateGate(booking: GateBooking): void {
