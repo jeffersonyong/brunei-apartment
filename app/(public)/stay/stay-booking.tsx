@@ -9,6 +9,7 @@ import type { StayDateRange } from '@/components/ui/calendar-grid'
 import { Notice } from '@/components/ui/notice'
 import { QuoteLines } from '@/components/quote-lines'
 import { peakExtraUse } from '@/lib/domain/availability-calendar'
+import { officeWhatsApp } from '@/lib/domain/contact'
 import type { PropertyConfig } from '@/lib/domain/config'
 import { formatStayRange, nightsBetween, type StayDate } from '@/lib/domain/dates'
 import type { PropertyExtra } from '@/lib/domain/extras'
@@ -262,7 +263,8 @@ export function StayBooking({
                 {/* One row per car. A family arriving in two is the ordinary
                     case, and prd.md §12.5 makes the plate the guard's primary
                     lookup — so a second car with nowhere to go is a car nobody
-                    can match at the gate. */}
+                    can match at the gate. The rows stop at the unit's parking,
+                    and a car beyond it is arranged on WhatsApp first. */}
                 <div className="mt-lg">
                   <VehicleFields
                     vehicles={vehicles}
@@ -274,6 +276,7 @@ export function StayBooking({
                     parking={
                       unitType ? { unitTypeName: unitType.name, spaces: unitType.carParks } : null
                     }
+                    extraCarsContact={officeWhatsApp}
                   />
                 </div>
               </fieldset>

@@ -64,7 +64,7 @@ import { cn } from '@/lib/utils'
  * caller passes: the desk needs to be told why the box matters, and a customer
  * needs to be told what it means.
  *
- * ── The parking allowance is stated, not enforced ──────────────────────────
+ * ── The parking allowance: stated at the desk, a limit for a customer ──────
  *
  * A stay's unit type includes a number of spaces (prd.md §7.1), and until this
  * existed the form never mentioned it — a guest booking a 2-bed for three cars
@@ -72,12 +72,16 @@ import { cn } from '@/lib/utils'
  * includes, standing quietly under the rows, and a warning once the plates
  * entered are past it.
  *
- * It stops there deliberately (Jeff, 17 September 2026). The rows stay
- * addable, because §12.5 makes plate lookup the guard's primary path and a
- * third plate the form refused is a third car nobody can match at the gate —
- * and because R3, which asks how many bays the property actually has, is still
- * open, so the allowance is not yet known to be a physical limit. prd.md §13
- * carries the decision.
+ * **The desk's forms stop there.** Staff taking a booking have already agreed
+ * the extra car with the guest, and a plate the form refused is a car nobody
+ * can match at the gate (§12.5).
+ *
+ * **A customer's form stops at the allowance** (Jason's team, 19 September
+ * 2026): `extraCarsContact` caps the rows at the spaces the unit includes, and
+ * where the Add button was, a notice says to message the office first to
+ * confirm another car. A customer who picks a smaller unit after typing more
+ * plates is asked to remove the extra rows, and the action refuses them too —
+ * the cap is a rule, not a courtesy of this screen.
  *
  * Day passes pass nothing: a pass has no unit and so no allowance, and visitor
  * parking is the other half of R3.
@@ -104,6 +108,13 @@ interface VehicleFieldsProps {
    * nothing.
    */
   parking?: { unitTypeName: string; spaces: number } | null
+  /**
+   * Who a customer asks for a car beyond the allowance. Passed by the public
+   * stay form only, and only meaningful with `parking`: the rows then stop at
+   * the spaces included, and a notice naming this number takes the Add
+   * button's place. The desk's forms omit it and keep the warning.
+   */
+  extraCarsContact?: { display: string; href: string } | null
 }
 
 export function VehicleFields({
@@ -114,11 +125,14 @@ export function VehicleFields({
   error,
   noVehicleDescription = 'Only for the rare guest with no car. Security check arrivals by registration, so a booking with neither a plate nor this box ticked cannot be matched at the gate.',
   parking = null,
+  extraCarsContact = null,
 }: VehicleFieldsProps) {
   // Always at least one row to type into: a section whose only control is an
   // "Add" button asks the staff member to do a step the form could have done.
   const rows = vehicles.length > 0 ? vehicles : ['']
-  const canAdd = !noVehicle && rows.length < MAX_VEHICLES_PER_BOOKING
+  const limit = parking && extraCarsContact ? parking.spaces : null
+  const canAdd =
+    !noVehicle && rows.length < Math.min(MAX_VEHICLES_PER_BOOKING, limit ?? Infinity)
 
   // Ticking "arriving without a vehicle" makes the allowance moot, and a
   // warning left standing over disabled rows would be the form arguing with a
@@ -201,9 +215,26 @@ export function VehicleFields({
           <Notice tone="warning">
             <p>
               The {parking.unitTypeName} includes {spacesLabel}.{' '}
-              {overflow === 1
-                ? 'The extra car is still recorded so Security can match it at the gate, but it may not have a bay.'
-                : `The extra ${overflow} cars are still recorded so Security can match them at the gate, but they may not have a bay.`}
+              {extraCarsContact ? (
+                <>
+                  Remove {overflow === 1 ? 'the extra car' : `the extra ${overflow} cars`} to
+                  continue. To bring {overflow === 1 ? 'it' : 'them'}, message us on WhatsApp at{' '}
+                  <ContactLink contact={extraCarsContact} /> first to confirm.
+                </>
+              ) : overflow === 1 ? (
+                'The extra car is still recorded so Security can match it at the gate, but it may not have a bay.'
+              ) : (
+                `The extra ${overflow} cars are still recorded so Security can match them at the gate, but they may not have a bay.`
+              )}
+            </p>
+          </Notice>
+        ) : extraCarsContact && limit !== null && rows.length >= limit ? (
+          // Where the Add button was: the allowance is reached, and the way to
+          // another car is a conversation, not a row.
+          <Notice>
+            <p>
+              The {parking.unitTypeName} includes {spacesLabel}. Bringing another car? Message us on
+              WhatsApp at <ContactLink contact={extraCarsContact} /> first to confirm it.
             </p>
           </Notice>
         ) : (
@@ -255,5 +286,19 @@ export function VehicleFields({
           decision on every submit instead of inferring one from a missing key. */}
       <input type="hidden" name="noVehicle" value={noVehicle ? 'true' : 'false'} />
     </div>
+  )
+}
+
+/** The number a customer messages about another car, opening the chat. */
+function ContactLink({ contact }: { contact: { display: string; href: string } }) {
+  return (
+    <a
+      href={contact.href}
+      target="_blank"
+      rel="noreferrer"
+      className="font-medium whitespace-nowrap underline underline-offset-2"
+    >
+      {contact.display}
+    </a>
   )
 }

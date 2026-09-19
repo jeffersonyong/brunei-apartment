@@ -10,6 +10,7 @@ import { scheduleBookingCreatedEmail } from '@/app/schedule-booking-email'
 import { clientIpFrom, hashPhoneKey, hashPublicKey } from '@/lib/auth/access-token'
 import { createPublicStayBooking, notePublicAttempt } from '@/lib/db/public-bookings'
 import { getPropertyConfig } from '@/lib/db/property-config'
+import { officeWhatsApp } from '@/lib/domain/contact'
 import { isStayDate } from '@/lib/domain/dates'
 import { extraSelectionsFrom } from '@/lib/domain/extras'
 import {
@@ -25,6 +26,7 @@ import {
   normaliseVehicleRegistrations,
   MAX_VEHICLES_PER_BOOKING,
   MAX_VEHICLE_REGISTRATION_LENGTH,
+  vehiclesBeyondParking,
 } from '@/lib/domain/vehicle'
 
 /**
@@ -172,6 +174,26 @@ export async function createPublicStayAction(
 
   if (!quote.ok) {
     return { status: 'error', message: quote.error.message, submitted }
+  }
+
+  // The parking cap, decided here as well as on the form (VehicleFields): a
+  // customer brings as many cars as the unit includes, and arranges another
+  // with the office first. The unit type is known to exist — `priceStay` has
+  // just refused one that does not.
+  const unitType = config.unitTypes.find((type) => type.id === input.unitTypeSlug)
+  const extraCars = unitType ? vehiclesBeyondParking(vehicles, unitType.carParks) : 0
+
+  if (unitType && extraCars > 0) {
+    return {
+      status: 'error',
+      message: 'Check the highlighted fields.',
+      fieldErrors: {
+        vehicles: `The ${unitType.name} includes ${unitType.carParks} parking ${
+          unitType.carParks === 1 ? 'space' : 'spaces'
+        }. To bring another car, message us on WhatsApp at ${officeWhatsApp.display} first.`,
+      },
+      submitted,
+    }
   }
 
   const created = await createPublicStayBooking({
