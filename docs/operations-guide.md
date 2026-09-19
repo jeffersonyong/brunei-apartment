@@ -1961,6 +1961,8 @@ On opening the Edit screen:
 - If Property settings are set to **Refuse the booking** for a party over the maximum, a stay can't be changed to more than the maximum: "3-bedroom takes up to 8 guests; this party is 9."
 - A day pass is still bound by the day's visitor limit: "Only 2 more places are left that day." / "The facilities are full for that day, so nobody more can be added."
 - The dates, unit and extras of a **checked-in** guest still cannot be changed. An extension after check-in is still a second booking, and late check-out asked for after check-in still cannot be charged through the system (see *How to edit (amend) a booking*).
+- **Extra people found out only after the guest has checked out:** the booking is closed, so **Change** is not offered and no payment can be recorded against it. Charge them against the security deposit instead — the deposit's page → **Charges** → **Add charge**, with the amount and a reason such as "2 extra guests × 3 nights" (see *Deposits, reports and finance → How to raise a charge against a deposit*). It comes off what is returned to the guest when the release is approved; if it is more than the deposit, the rest is recorded as owed by the guest.
+- **Change the party before the guest checks out** whenever you can: until then, what they owe shows on the Gate card and the guard can take it when the keys come back.
 
 **If you see an error:**
 - "A booking needs at least one guest above the exempt age." / "A booking needs at least one guest." — **Over 3** is 0.
