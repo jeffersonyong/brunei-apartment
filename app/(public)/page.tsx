@@ -74,8 +74,8 @@ export default async function PublicHomePage() {
       <LongTermSection />
       <HowBookingWorks figures={figures} />
       <SocialStrip images={images.feed} />
-      {faqs.length > 0 ? <FaqSection items={faqs} /> : null}
       <GettingHereSection />
+      {faqs.length > 0 ? <FaqSection items={faqs} /> : null}
       <FinalCta />
     </>
   )
