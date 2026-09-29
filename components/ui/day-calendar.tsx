@@ -10,6 +10,7 @@ import {
   useCalendarFocus,
   type DayBounds,
 } from '@/components/ui/calendar-grid'
+import { CalendarJump } from '@/components/ui/calendar-jump'
 import { todayInBrunei, type StayDate } from '@/lib/domain/dates'
 import { cn } from '@/lib/utils'
 
@@ -39,10 +40,21 @@ interface DayCalendarProps {
   /** Fires on the click — one click is the whole selection. */
   onSelect: (day: StayDate) => void
   bounds?: DayBounds
+  /** Shows the year jump over the grid — the field's footer toggle owns it. */
+  isJumping?: boolean
+  /** A month was picked in the jump; the grid is on it now. */
+  onJumped?: () => void
   className?: string
 }
 
-export function DayCalendar({ value, onSelect, bounds = {}, className }: DayCalendarProps) {
+export function DayCalendar({
+  value,
+  onSelect,
+  bounds = {},
+  isJumping = false,
+  onJumped,
+  className,
+}: DayCalendarProps) {
   const [today] = useState(() => todayInBrunei())
 
   // Opens on the chosen day, otherwise on today — pulled inside the bounds, so
@@ -51,13 +63,14 @@ export function DayCalendar({ value, onSelect, bounds = {}, className }: DayCale
     monthOf(value ?? clampDay(today, bounds)),
   )
 
-  const { gridRef, focusedDay, setFocusedDay, reveal, handleNavigationKey } = useCalendarFocus({
-    initialDay: value ?? clampDay(today, bounds),
-    months: 1,
-    leadMonth,
-    setLeadMonth,
-    bounds,
-  })
+  const { gridRef, focusedDay, setFocusedDay, reveal, jumpTo, handleNavigationKey } =
+    useCalendarFocus({
+      initialDay: value ?? clampDay(today, bounds),
+      months: 1,
+      leadMonth,
+      setLeadMonth,
+      bounds,
+    })
 
   function pick(day: StayDate, shouldReveal = false) {
     if (shouldReveal) {
@@ -69,25 +82,43 @@ export function DayCalendar({ value, onSelect, bounds = {}, className }: DayCale
   }
 
   return (
-    <div ref={gridRef} className={cn('inline-block', className)} onKeyDown={handleNavigationKey}>
-      <MonthHeader
-        month={leadMonth}
-        showPrevious
-        showNext
-        disablePrevious={isMonthOutOfBounds(shiftMonth(leadMonth, -1), bounds)}
-        disableNext={isMonthOutOfBounds(shiftMonth(leadMonth, 1), bounds)}
-        onPrevious={() => setLeadMonth(shiftMonth(leadMonth, -1))}
-        onNext={() => setLeadMonth(shiftMonth(leadMonth, 1))}
-      />
-      <MonthGrid
-        month={leadMonth}
-        today={today}
-        // A single day is a range whose ends are equal: one filled cell, no band.
-        active={value ? { start: value, end: value } : null}
-        focusedDay={focusedDay}
-        bounds={bounds}
-        onPick={pick}
-      />
+    <div className={cn('relative inline-block', className)}>
+      {/* Hidden, not removed, while the jump is up: it keeps the panel its
+          size, and `invisible` takes it out of the tab order and the
+          accessibility tree as well as out of sight. */}
+      <div ref={gridRef} className={cn(isJumping && 'invisible')} onKeyDown={handleNavigationKey}>
+        <MonthHeader
+          month={leadMonth}
+          showPrevious
+          showNext
+          disablePrevious={isMonthOutOfBounds(shiftMonth(leadMonth, -1), bounds)}
+          disableNext={isMonthOutOfBounds(shiftMonth(leadMonth, 1), bounds)}
+          onPrevious={() => setLeadMonth(shiftMonth(leadMonth, -1))}
+          onNext={() => setLeadMonth(shiftMonth(leadMonth, 1))}
+        />
+        <MonthGrid
+          month={leadMonth}
+          today={today}
+          // A single day is a range whose ends are equal: one filled cell, no band.
+          active={value ? { start: value, end: value } : null}
+          focusedDay={focusedDay}
+          bounds={bounds}
+          onPick={pick}
+        />
+      </div>
+
+      {isJumping ? (
+        <CalendarJump
+          className="absolute inset-0"
+          month={leadMonth}
+          today={today}
+          bounds={bounds}
+          onPick={(month) => {
+            jumpTo(month)
+            onJumped?.()
+          }}
+        />
+      ) : null}
     </div>
   )
 }

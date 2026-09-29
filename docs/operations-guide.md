@@ -1,6 +1,6 @@
 # Palm Villa operations guide
 
-**Current as of 19 September 2026.** This guide describes the Palm Villa booking and operations system exactly as it works on that date. If a screen looks different from what is described here, the system has changed since, and the person who looks after the system (Jefferson) should be asked.
+**Current as of 29 September 2026.** This guide describes the Palm Villa booking and operations system exactly as it works on that date. If a screen looks different from what is described here, the system has changed since, and the person who looks after the system (Jefferson) should be asked.
 
 ## How this guide is organised
 
@@ -69,6 +69,8 @@ The portal's left-hand menu (on a phone, the menu button at the top) is grouped 
 Everyone sees the whole menu. Opening a screen you are not allowed to use shows a "You don't have access to this screen" card naming the permission it needs; nothing on it can be seen or changed. At the top of every portal screen are **search** (find a booking by its reference, the guest's name or phone, or the unit, or jump to a screen), and the **notifications** bell. Just left of the search box, past a thin divider, is **Ask anything** in violet-blue, with a four-pointed star (on a phone only the star shows).
 
 **Ask anything** opens the help desk: the ChatGPT project that answers questions from this guide. The button opens it in a new tab, so the screen you are asking about stays open. It is only on the portal, not on the Gate or Departures phone screens, and it needs a ChatGPT account. It can't see or change anything in the system: describe what you see, or paste the message on screen.
+
+**Picking a date.** Clicking a date field or a date filter opens a calendar of one month (two side by side on a date filter), with arrows beside the month's name to step one month at a time. Dates are picked on the calendar; they can't be typed. Where a date can be far away — a lease's **Starts** and **Ends**, **End the lease**, the day cash was banked, and every date filter (Stay date, Collected, and the filters on Deposits, Cash-up, Reports and the Audit log) — the bottom of the calendar also has **Choose a year**. Press it and twelve years appear; pick one and its twelve months appear; pick a month and the calendar opens on it, so you then pick the day. Choosing a year or a month does not pick a date by itself. In the years and months, the arrows at the top move twelve years or one year, **Back to days** returns to the calendar without moving, and years or months you can't pick are greyed out. Calendars for booking dates (New booking, changing a booking's dates, the website's day pass) don't have **Choose a year**: they only reach about two months ahead.
 
 ## The big rules
 
@@ -1476,7 +1478,7 @@ The screen is titled **Bookings** — "Every booking across all streams — the 
 - **Search box** — placeholder "Reference, guest, phone or unit". Finds bookings whose **reference, guest name, phone number or unit reference contains** what you type, ignoring capitals. "4821", "lim", "8959" and "3B" all work. It does **not** search email addresses, vehicle registrations, notes or amounts. The search runs when you stop typing for a moment, or at once when you press Enter. Press Esc, or click the small cross, to clear it. The characters , ( ) " \ * % _ are ignored, and only the first 80 characters count. A phone number is matched as it was stored — numbers taken with a country code are stored like "+673 8959798", so typing "8959798" finds it but "6738959798" (no space) does not.
 - **Status** — tick one or several statuses: Draft, Held, Awaiting payment, Confirmed, Checked in, Completed, Expired, Cancelled, No show. Ticking "Confirmed" and "Checked in" together is the way to see who is actually booked in or in the building.
 - **Type** — tick one or several of Short stay, Day pass, Tenancy (the same thing the tiles set, but allowing more than one).
-- **Stay date** — pick a first and last day. A booking matches if **at least one of its nights falls on the days you picked** (not only bookings that *start* in the range). A guest who checks out on the first day you picked is not included; a guest who checks in on the last day is. **A Stay date filter hides every day pass**, even one sold for a day inside the range — to find day passes by day, use the Type filter and read the Dates column instead.
+- **Stay date** — pick a first and last day (**Choose a year** at the bottom of the calendar jumps to another year, and keeps a first day already picked). A booking matches if **at least one of its nights falls on the days you picked** (not only bookings that *start* in the range). A guest who checks out on the first day you picked is not included; a guest who checks in on the last day is. **A Stay date filter hides every day pass**, even one sold for a day inside the range — to find day passes by day, use the Type filter and read the Dates column instead.
 - **Clear** (funnel icon) — appears once any filter is on; clears them all.
 
 The browser's **Back** button undoes the last filter change. The address of the page carries the filters, so a filtered view can be bookmarked or the link sent to a colleague — they will see the same filters (as long as they may open the screen).
@@ -4524,7 +4526,7 @@ This marks a unit as let to a long-term tenant so that it cannot be booked. It r
 2. Press **Mark leased long-term**. The box reads "Mark [unit] leased long-term" and explains: "The unit stops being offered for those dates, by the same rule that stops two guests booking the same night. It becomes available again the day the lease ends."
 3. **Let to**: the tenant's name, for example "Tan Family" (2 to 120 characters). This is free text, not linked to a guest record.
 4. **Starts**: defaults to today. You can pick another date.
-5. **Ends (optional)**: leave it empty for a month-to-month tenancy ("Leave the end date empty for a month-to-month tenancy. The unit stays occupied until somebody ends the lease."). If you pick one, it must be after the start date. The ✕ clears a date picked by mistake.
+5. **Ends (optional)**: leave it empty for a month-to-month tenancy ("Leave the end date empty for a month-to-month tenancy. The unit stays occupied until somebody ends the lease."). If you pick one, it must be after the start date. For a date months or years away, press **Choose a year** at the bottom of the calendar, pick the year, then the month, then the day (see *Picking a date* in *Where things are in the portal*). **Clear** at the bottom of the calendar removes a date picked by mistake.
 6. Press **Mark leased**. To back out: **Don't mark it**.
 
 **What happens next:**
@@ -4556,7 +4558,7 @@ This marks a unit as let to a long-term tenant so that it cannot be booked. It r
 **Where:** Units → the unit's page → **End the lease**. The button only appears while the lease covers today.
 **Steps:**
 1. Press **End the lease**. The box reads "End the lease on [unit]?" with who it is let to and since or until when.
-2. **Ends on**: pick the day the tenant leaves. The unit is bookable again **from that day**. The earliest date the picker offers is the day after the lease started.
+2. **Ends on**: pick the day the tenant leaves. The unit is bookable again **from that day**. The earliest date the picker offers is the day after the lease started. For a date in a later year, **Choose a year** at the bottom of the calendar gets there without paging month by month.
 3. Press the button. It reads **Set the end date** for a lease that had no end date, or **Change the end date** for one that had. To back out: **Leave the lease**.
 
 **What happens next:**

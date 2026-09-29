@@ -142,6 +142,20 @@ export function lastDayOfMonth(month: CalendarMonth): StayDate {
   return days[days.length - 1] ?? firstDayOfMonth(month)
 }
 
+/**
+ * The same day of the month in another month, pulled back to that month's last
+ * day when it has no such day — 31 March moved to April is 30 April, never 1
+ * May. Used wherever focus follows the calendar to a different month.
+ */
+export function sameDayIn(month: CalendarMonth, day: StayDate): StayDate {
+  const days = daysInMonth(month)
+
+  return (
+    days[Math.min(Number(parseStayDate(day).slice(8, 10)), days.length) - 1] ??
+    lastDayOfMonth(month)
+  )
+}
+
 /** The grid's heading, e.g. `September 2026`. */
 export function formatCalendarMonth(month: CalendarMonth): string {
   return new Intl.DateTimeFormat('en-GB', {

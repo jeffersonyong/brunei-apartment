@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { useState } from 'react'
 
 import { RangeCalendar, type StayDateRange } from '@/components/ui/calendar'
+import { FooterButton, YearJumpToggle } from '@/components/ui/calendar-footer'
 import {
   DATE_RANGE_PRESETS,
   matchingPreset,
@@ -66,6 +67,8 @@ export function DateRangePicker({
   const [isOpen, setIsOpen] = useState(false)
   /** The first day of a selection still in progress, for the footer's prompt. */
   const [draftStart, setDraftStart] = useState<StayDate | null>(null)
+  /** The year jump is up in place of the two months. */
+  const [isJumping, setIsJumping] = useState(false)
   const [today] = useState(() => todayInBrunei())
 
   const selectedPreset = matchingPreset(value, today, presets)
@@ -82,8 +85,10 @@ export function DateRangePicker({
         setIsOpen(next)
         // A half-made selection does not survive the panel closing: reopening
         // to find one end already committed, with no memory of having set it,
-        // is worse than starting again.
+        // is worse than starting again. Nor does the year jump — every opening
+        // starts on the days.
         setDraftStart(null)
+        setIsJumping(false)
       }}
     >
       <PopoverTrigger asChild>
@@ -130,6 +135,8 @@ export function DateRangePicker({
               months={months}
               onDraftChange={setDraftStart}
               onSelect={commit}
+              isJumping={isJumping}
+              onJumped={() => setIsJumping(false)}
             />
           </div>
         </div>
@@ -160,19 +167,22 @@ export function DateRangePicker({
               'Pick a first and last day'
             )}
           </p>
-          {value && !draftStart ? (
-            <button
-              type="button"
-              onClick={() => {
-                onChange(null)
-                setIsOpen(false)
-              }}
-              className="inline-flex items-center gap-xs rounded-md px-sm py-xs text-body-sm text-copy transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-popover"
-            >
-              <X aria-hidden className="size-4 text-muted-foreground" />
-              Clear
-            </button>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-xs">
+            {/* A filter is never bounded, so the jump is always offered —
+                "last year's cash-up" is a question the reports are asked. */}
+            <YearJumpToggle isJumping={isJumping} onToggle={() => setIsJumping(!isJumping)} />
+            {value && !draftStart ? (
+              <FooterButton
+                onClick={() => {
+                  onChange(null)
+                  setIsOpen(false)
+                }}
+              >
+                <X aria-hidden className="size-4 text-muted-foreground" />
+                Clear
+              </FooterButton>
+            ) : null}
+          </div>
         </footer>
       </PopoverContent>
     </Popover>

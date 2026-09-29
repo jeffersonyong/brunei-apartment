@@ -7,13 +7,13 @@ import { addDays, type StayDate } from '@/lib/domain/dates'
 import { cn } from '@/lib/utils'
 
 import {
-  daysInMonth,
   firstDayOfMonth,
   formatCalendarMonth,
   formatDayLabel,
   lastDayOfMonth,
   monthGrid,
   monthOf,
+  sameDayIn,
   shiftMonth,
   WEEKDAYS,
   type CalendarCell,
@@ -117,6 +117,10 @@ export function useCalendarFocus({
   onFocusedDayChange?: (day: StayDate) => void
 }) {
   const [focusedDay, setFocusedDay] = useState(initialDay)
+  // Bumped by a jump, which may land on the very day and month already in
+  // view — a change neither of the two values below would register, leaving
+  // focus on the jump's cell as it unmounts.
+  const [focusRequest, setFocusRequest] = useState(0)
   const shouldRestoreFocus = useRef(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -139,7 +143,7 @@ export function useCalendarFocus({
 
     shouldRestoreFocus.current = false
     target?.focus()
-  }, [focusedDay, leadMonth, setLeadMonth])
+  }, [focusedDay, leadMonth, setLeadMonth, focusRequest])
 
   /** Brings a month into the visible window, by the shortest move. */
   function reveal(month: CalendarMonth) {
@@ -184,28 +188,44 @@ export function useCalendarFocus({
     if (event.key === 'PageUp' || event.key === 'PageDown') {
       event.preventDefault()
       const month = shiftMonth(monthOf(focusedDay), event.key === 'PageUp' ? -1 : 1)
-      // Clamp to the month's length so 31 March never lands in April.
-      const days = daysInMonth(month)
-      const day = days[Math.min(Number(focusedDay.slice(8, 10)), days.length) - 1]
-
-      if (day) {
-        moveFocus(day)
-      }
-
+      moveFocus(sameDayIn(month, focusedDay))
       return true
     }
 
     return false
   }
 
-  return { gridRef, focusedDay, setFocusedDay, reveal, moveFocus, handleNavigationKey }
+  /**
+   * Lands on a month the year jump picked (calendar-jump.tsx). Unlike
+   * `reveal`, which scrolls by the shortest move, the picked month always
+   * becomes the lead: a jump names where to look, so it opens on the left
+   * rather than wherever the window happened to reach it. Focus follows to the
+   * same day of that month, pulled inside the bounds — and is reported, as a
+   * keyboard move is, so a half-made range draws its band to where focus
+   * landed rather than to a day the jump left behind.
+   */
+  function jumpTo(month: CalendarMonth) {
+    const day = clampDay(sameDayIn(month, focusedDay), bounds)
+
+    shouldRestoreFocus.current = true
+    setFocusedDay(day)
+    setLeadMonth(monthOf(day))
+    setFocusRequest((request) => request + 1)
+    onFocusedDayChange?.(day)
+  }
+
+  return { gridRef, focusedDay, setFocusedDay, reveal, moveFocus, jumpTo, handleNavigationKey }
 }
 
-interface MonthHeaderProps {
-  month: CalendarMonth
+interface CalendarHeaderProps {
+  /** What is in view: a month, a year, or a page of years. */
+  label: string
+  /** The arrows' accessible names — "Previous month", "Next year". */
+  previousLabel: string
+  nextLabel: string
   showPrevious: boolean
   showNext: boolean
-  /** Retires an arrow that would page into months with nothing selectable. */
+  /** Retires an arrow that would page onto nothing selectable. */
   disablePrevious?: boolean
   disableNext?: boolean
   nextClassName?: string
@@ -213,8 +233,16 @@ interface MonthHeaderProps {
   onNext: () => void
 }
 
-export function MonthHeader({
-  month,
+/**
+ * The line above every grid: what is in view, centred, between two stepping
+ * arrows. The day grid steps a month; the year jump's views step a year or a
+ * page of years with the same arrows in the same places, so moving through
+ * them never asks the hand to find a new control.
+ */
+export function CalendarHeader({
+  label,
+  previousLabel,
+  nextLabel,
   showPrevious,
   showNext,
   disablePrevious,
@@ -222,29 +250,44 @@ export function MonthHeader({
   nextClassName,
   onPrevious,
   onNext,
-}: MonthHeaderProps) {
+}: CalendarHeaderProps) {
   return (
     <div className="relative flex h-control items-center justify-center">
       {showPrevious ? (
         <StepButton
           className="absolute left-0"
-          label="Previous month"
+          label={previousLabel}
           icon={ChevronLeft}
           disabled={disablePrevious}
           onClick={onPrevious}
         />
       ) : null}
-      <span className="text-body-sm-strong text-foreground">{formatCalendarMonth(month)}</span>
+      <span className="text-body-sm-strong text-foreground">{label}</span>
       {showNext ? (
         <StepButton
           className={cn('absolute right-0', nextClassName)}
-          label="Next month"
+          label={nextLabel}
           icon={ChevronRight}
           disabled={disableNext}
           onClick={onNext}
         />
       ) : null}
     </div>
+  )
+}
+
+type MonthHeaderProps = Omit<CalendarHeaderProps, 'label' | 'previousLabel' | 'nextLabel'> & {
+  month: CalendarMonth
+}
+
+export function MonthHeader({ month, ...header }: MonthHeaderProps) {
+  return (
+    <CalendarHeader
+      label={formatCalendarMonth(month)}
+      previousLabel="Previous month"
+      nextLabel="Next month"
+      {...header}
+    />
   )
 }
 
