@@ -993,6 +993,11 @@ function describeRecordDepositFailure(result: RpcRefusal): DepositWriteError {
 export interface CheckInBookingInput {
   bookingId: string
   actorId: string | null
+  /**
+   * How many came through the gate, as the guard counted them (capability
+   * D8). Left out, the whole party is counted — the office's check-in.
+   */
+  arrived?: number
 }
 
 export type CheckInRefusalCode =
@@ -1071,6 +1076,9 @@ export async function checkInBooking(input: CheckInBookingInput): Promise<
     p_from_status: current.status,
     p_to_status: next.status,
     p_actor_id: input.actorId,
+    // Sent only with a count, so the office's check-in names the same five
+    // arguments whichever side of the migration the database is on.
+    ...(input.arrived === undefined ? {} : { p_arrived: input.arrived }),
   })
 
   if (error) {
