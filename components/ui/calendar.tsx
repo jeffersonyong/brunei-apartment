@@ -11,6 +11,7 @@ import {
   type DayBounds,
   type StayDateRange,
 } from '@/components/ui/calendar-grid'
+import { CalendarJump } from '@/components/ui/calendar-jump'
 import { todayInBrunei, type StayDate } from '@/lib/domain/dates'
 import { cn } from '@/lib/utils'
 
@@ -79,6 +80,14 @@ interface RangeCalendarProps {
    * bounded, by the booking window.
    */
   bounds?: DayBounds
+  /**
+   * Shows the year jump over both months — the picker's footer toggle owns
+   * it. A half-made selection survives it: the first click stays anchored
+   * while the view travels to where the second one belongs.
+   */
+  isJumping?: boolean
+  /** A month was picked in the jump; it leads the grid now. */
+  onJumped?: () => void
   className?: string
 }
 
@@ -89,6 +98,8 @@ export function RangeCalendar({
   months = 2,
   selection = 'span',
   bounds = {},
+  isJumping = false,
+  onJumped,
   className,
 }: RangeCalendarProps) {
   const isStay = selection === 'stay'
@@ -102,18 +113,19 @@ export function RangeCalendar({
 
   const provisional = anchor !== null
 
-  const { gridRef, focusedDay, setFocusedDay, reveal, handleNavigationKey } = useCalendarFocus({
-    initialDay: value?.start ?? today,
-    months,
-    leadMonth,
-    setLeadMonth,
-    bounds,
-    onFocusedDayChange: (day) => {
-      if (provisional) {
-        setHovered(day)
-      }
-    },
-  })
+  const { gridRef, focusedDay, setFocusedDay, reveal, jumpTo, handleNavigationKey } =
+    useCalendarFocus({
+      initialDay: value?.start ?? today,
+      months,
+      leadMonth,
+      setLeadMonth,
+      bounds,
+      onFocusedDayChange: (day) => {
+        if (provisional) {
+          setHovered(day)
+        }
+      },
+    })
 
   const visibleMonths = Array.from({ length: months }, (_, offset) => shiftMonth(leadMonth, offset))
 
@@ -182,53 +194,70 @@ export function RangeCalendar({
   }
 
   return (
-    <div
-      ref={gridRef}
-      className={cn('flex items-start', className)}
-      onKeyDown={handleKeyDown}
-      onPointerLeave={() => {
-        if (provisional) {
-          setHovered(anchor)
-        }
-      }}
-    >
-      {visibleMonths.map((month, index) => (
-        <div
-          key={month}
-          className={cn(
-            'shrink-0',
-            index > 0 && 'ml-lg hidden border-l border-divider pl-lg md:block',
-          )}
-        >
-          <MonthHeader
-            month={month}
-            // The lone visible month below `md` has to carry both arrows.
-            showPrevious={index === 0}
-            showNext={index === months - 1 || index === 0}
-            nextClassName={index === 0 && months > 1 ? 'md:hidden' : undefined}
-            // Both arrows step the *lead* month — the trailing month's Next is
-            // the lead's — so both ask about the month the lead is about to
-            // become, never about the far edge of the window. Asking about the
-            // trailing month would strand the last bookable month below `md`,
-            // where only the lead is on screen.
-            disablePrevious={isMonthOutOfBounds(shiftMonth(leadMonth, -1), bounds)}
-            disableNext={isMonthOutOfBounds(shiftMonth(leadMonth, 1), bounds)}
-            onPrevious={() => setLeadMonth(shiftMonth(leadMonth, -1))}
-            onNext={() => setLeadMonth(shiftMonth(leadMonth, 1))}
-          />
-          <MonthGrid
-            month={month}
-            today={today}
-            bounds={bounds}
-            active={active}
-            provisional={provisional}
-            anchor={anchor}
-            focusedDay={focusedDay}
-            onPick={pick}
-            onHover={setHovered}
-          />
-        </div>
-      ))}
+    <div className={cn('relative', className)}>
+      {/* Hidden, not removed, while the jump is up — both months keep the
+          panel its size, and the half-made selection keeps its anchor. */}
+      <div
+        ref={gridRef}
+        className={cn('flex items-start', isJumping && 'invisible')}
+        onKeyDown={handleKeyDown}
+        onPointerLeave={() => {
+          if (provisional) {
+            setHovered(anchor)
+          }
+        }}
+      >
+        {visibleMonths.map((month, index) => (
+          <div
+            key={month}
+            className={cn(
+              'shrink-0',
+              index > 0 && 'ml-lg hidden border-l border-divider pl-lg md:block',
+            )}
+          >
+            <MonthHeader
+              month={month}
+              // The lone visible month below `md` has to carry both arrows.
+              showPrevious={index === 0}
+              showNext={index === months - 1 || index === 0}
+              nextClassName={index === 0 && months > 1 ? 'md:hidden' : undefined}
+              // Both arrows step the *lead* month — the trailing month's Next is
+              // the lead's — so both ask about the month the lead is about to
+              // become, never about the far edge of the window. Asking about the
+              // trailing month would strand the last bookable month below `md`,
+              // where only the lead is on screen.
+              disablePrevious={isMonthOutOfBounds(shiftMonth(leadMonth, -1), bounds)}
+              disableNext={isMonthOutOfBounds(shiftMonth(leadMonth, 1), bounds)}
+              onPrevious={() => setLeadMonth(shiftMonth(leadMonth, -1))}
+              onNext={() => setLeadMonth(shiftMonth(leadMonth, 1))}
+            />
+            <MonthGrid
+              month={month}
+              today={today}
+              bounds={bounds}
+              active={active}
+              provisional={provisional}
+              anchor={anchor}
+              focusedDay={focusedDay}
+              onPick={pick}
+              onHover={setHovered}
+            />
+          </div>
+        ))}
+      </div>
+
+      {isJumping ? (
+        <CalendarJump
+          className="absolute inset-0"
+          month={leadMonth}
+          today={today}
+          bounds={bounds}
+          onPick={(month) => {
+            jumpTo(month)
+            onJumped?.()
+          }}
+        />
+      ) : null}
     </div>
   )
 }

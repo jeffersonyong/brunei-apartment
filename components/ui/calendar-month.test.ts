@@ -10,6 +10,7 @@ import {
   lastDayOfMonth,
   monthGrid,
   monthOf,
+  sameDayIn,
   shiftMonth,
 } from './calendar-month'
 
@@ -145,6 +146,19 @@ describe('lastDayOfMonth', () => {
     expect(lastDayOfMonth('2026-08')).toBe('2026-08-31')
     expect(lastDayOfMonth('2026-02')).toBe('2026-02-28')
     expect(lastDayOfMonth('2028-02')).toBe('2028-02-29')
+  })
+})
+
+describe('sameDayIn', () => {
+  test('keeps the day of the month', () => {
+    expect(sameDayIn('2027-03', '2026-09-12')).toBe('2027-03-12')
+  })
+
+  test('pulls a day the month does not have back to its last', () => {
+    // 31 March has no 31 April, and must not become 1 May.
+    expect(sameDayIn('2026-04', '2026-03-31')).toBe('2026-04-30')
+    expect(sameDayIn('2027-02', '2026-10-30')).toBe('2027-02-28')
+    expect(sameDayIn('2028-02', '2026-10-30')).toBe('2028-02-29')
   })
 })
 

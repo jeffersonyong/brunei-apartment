@@ -3,7 +3,9 @@
 import { CalendarDays, X } from 'lucide-react'
 import { useState } from 'react'
 
+import { FooterButton, YearJumpToggle } from '@/components/ui/calendar-footer'
 import { isOutOfBounds, type DayBounds } from '@/components/ui/calendar-grid'
+import { offersYearJump } from '@/components/ui/calendar-year'
 import { DayCalendar } from '@/components/ui/day-calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { formatStayRange, todayInBrunei, type StayDate } from '@/lib/domain/dates'
@@ -93,6 +95,8 @@ export function DateField({
   className,
 }: DateFieldProps) {
   const [isOpen, setIsOpen] = useState(false)
+  /** The year jump is up in place of the day grid. */
+  const [isJumping, setIsJumping] = useState(false)
   const [uncontrolledValue, setUncontrolledValue] = useState<StayDate | null>(defaultValue)
   const [today] = useState(() => todayInBrunei())
 
@@ -117,10 +121,20 @@ export function DateField({
   // already the answer — a shortcut to where you already are is noise.
   const canJumpToToday = !isOutOfBounds(today, bounds) && value !== today
   const canClear = clearable && value !== null
-  const hasFooter = canJumpToToday || canClear
+  // Only where paging by month is the slow way round — a lease, a banking
+  // date — and never inside the booking window (calendar-year.ts).
+  const canJumpToYear = offersYearJump(bounds)
+  const hasFooter = canJumpToToday || canClear || canJumpToYear
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={(next) => {
+        setIsOpen(next)
+        // Every opening starts on the days, whatever the last one ended on.
+        setIsJumping(false)
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -154,30 +168,42 @@ export function DateField({
           which a fixed width would either crop or leave a margin beside. */}
       <PopoverContent align="start" scale="menu">
         <div className="p-lg">
-          <DayCalendar value={value} onSelect={select} bounds={bounds} />
+          <DayCalendar
+            value={value}
+            onSelect={select}
+            bounds={bounds}
+            isJumping={isJumping}
+            onJumped={() => setIsJumping(false)}
+          />
         </div>
 
         {hasFooter ? (
           // The footer bookends the grid the way the range picker's does: the
           // same hairline, flush to the panel's edges, the shortcut on the left
-          // and the way out of the value on the right.
+          // and, on the right, the ways of moving the view and of leaving the
+          // value — the toggle first, then Clear, in both pickers.
           <footer className="flex items-center justify-between gap-md border-t border-divider px-lg py-md">
             {canJumpToToday ? (
               <FooterButton onClick={() => select(today)}>Today</FooterButton>
             ) : (
               <span />
             )}
-            {canClear ? (
-              <FooterButton
-                onClick={() => {
-                  commit(null)
-                  setIsOpen(false)
-                }}
-              >
-                <X aria-hidden className="size-4 text-muted-foreground" />
-                Clear
-              </FooterButton>
-            ) : null}
+            <div className="flex items-center gap-xs">
+              {canJumpToYear ? (
+                <YearJumpToggle isJumping={isJumping} onToggle={() => setIsJumping(!isJumping)} />
+              ) : null}
+              {canClear ? (
+                <FooterButton
+                  onClick={() => {
+                    commit(null)
+                    setIsOpen(false)
+                  }}
+                >
+                  <X aria-hidden className="size-4 text-muted-foreground" />
+                  Clear
+                </FooterButton>
+              ) : null}
+            </div>
           </footer>
         ) : null}
       </PopoverContent>
@@ -186,17 +212,5 @@ export function DateField({
           without this a `method="get"` form would send nothing. */}
       {name ? <input type="hidden" name={name} value={value ?? ''} /> : null}
     </Popover>
-  )
-}
-
-function FooterButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-xs rounded-md px-sm py-xs text-body-sm text-copy transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-popover"
-    >
-      {children}
-    </button>
   )
 }
