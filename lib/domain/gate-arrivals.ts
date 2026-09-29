@@ -11,8 +11,9 @@ import type { BookingStream } from './stream'
  * nobody, so a forwarded screenshot of a 20-person pass could bring in any
  * number of later groups unnoticed. Now every group that comes through is
  * counted against the booking: the first in the Check in or Admit dialog, and
- * every one after it with Record arrivals — or, once everyone booked is in,
- * with the small Extra button beside the party.
+ * every one after it with Record arrivals — the one button that counts people
+ * in, and whose box also corrects a mis-tap (Jeff, 29 September 2026, after
+ * trying it: a separate Extra and Correct did the same thing twice).
  *
  * **The count records who actually came through, and may go past the
  * booking** (Jeff, 29 September 2026). **The app never turns anyone away**:
@@ -71,8 +72,10 @@ export function gateArrivalsLine(arrivals: GateArrivals): string {
  * - `first` — the count is taken in the Check in or Admit dialog itself.
  * - `more` — Record arrivals, full width, while anyone booked is still to
  *   come.
- * - `all_in` — everyone booked is in, so only the small Extra button, for the
- *   car that holds more people than the booking is for.
+ * - `all_in` — everyone booked is in, so Record arrivals shrinks to a small
+ *   button beside the count: a car with more people than the booking is for
+ *   is the exception, and every card in residence would otherwise carry a
+ *   full-width button all stay.
  *
  * Null when there is nothing to count against: a card the office has to deal
  * with first, a closed booking — even one with a count, reached by its QR code
@@ -136,6 +139,49 @@ export function countedSentence(
   return reported.told
     ? `${line} — the office is told`
     : `${line} — the office could not be told, so call them`
+}
+
+/**
+ * The sum the guard would otherwise do in his head, said as he types (Jeff,
+ * 29 September 2026: "how many more are here now?" left him unsure whether he
+ * was counting the car or giving a new total). Record arrivals counts the car
+ * in front of him and shows what that makes; a correction says what the count
+ * goes from and to.
+ */
+export function arrivalsSumLine(kind: 'more' | 'correct', before: number, count: number): string {
+  if (kind === 'more') {
+    return `${before} in already + ${count} now = ${before + count} in all`
+  }
+
+  return count === before
+    ? 'That is the count already.'
+    : `The count goes from ${before} to ${count}.`
+}
+
+/**
+ * What a counter says when the count goes past the booking: always the whole
+ * overage against the booking, and then what the office hears of it.
+ *
+ * The two are different numbers, and saying only the second — who the office
+ * has not been told about yet — read as the overage itself: a count of four
+ * against two, with one already reported, said "1 more than booked" (Jeff, 29
+ * September 2026). Null while the count is within the booking.
+ */
+export function overBookingNotice(arrivals: GateArrivals, alreadyTold: number): string | null {
+  if (arrivals.over === 0) {
+    return null
+  }
+
+  const over = `That is ${arrivals.over} more than booked (for ${arrivals.booked}).`
+  const toTell = extrasToReport(arrivals.arrived, arrivals.booked, alreadyTold)
+
+  if (toTell === 0) {
+    return `${over} The office already knows.`
+  }
+
+  return toTell === arrivals.over
+    ? `${over} The office is told, and sorts out any extra charge.`
+    : `${over} The office already knows about ${arrivals.over - toTell}, and is told about ${toTell} more.`
 }
 
 /** How a count is entered: the first one, more on top, or a correction of the total. */
@@ -261,8 +307,8 @@ export function arrivalsRefusalSentence(code: ArrivalsRefusalCode, now?: GateArr
 /**
  * Somebody else checked them in or admitted them first — the office, or a
  * second phone. Their count stands, so the guard is shown it and pointed at
- * Correct, rather than told there is nothing more to do while the number he
- * typed goes nowhere.
+ * the correction inside Record arrivals, rather than told there is nothing
+ * more to do while the number he typed goes nowhere.
  */
 export function alreadyCountedSentence(
   move: 'check_in' | 'admit',
@@ -271,6 +317,6 @@ export function alreadyCountedSentence(
   const already = move === 'check_in' ? 'Already checked in' : 'Already admitted'
 
   return arrivals
-    ? `${already} — ${gateArrivalsLine(arrivals)}. Use Correct if that is wrong.`
+    ? `${already} — ${gateArrivalsLine(arrivals)}. If that is wrong, correct it with Record arrivals.`
     : `${already}. Nothing more to do.`
 }

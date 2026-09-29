@@ -21,10 +21,10 @@ import { reportCountedExtras } from './office-report'
 
 /**
  * Counting people through the gate after the first group (capability D8):
- * **Record arrivals** while anyone booked is still to come, the small
- * **Extra** once everyone booked is in, and **Correct** for a mis-tap. The
- * three are one write, `record_gate_arrivals()`, and each shows in the
- * booking's history.
+ * **Record arrivals** — the car in front of the guard added to the count
+ * (`kind: 'more'`), or, from the same box, a mis-tap put right with the total
+ * as it really is (`kind: 'correct'`). Both are one write,
+ * `record_gate_arrivals()`, and the booking's history says which it was.
  *
  * **The count the guard saw goes with it**, and nothing is written if it has
  * moved since — a second phone counted the same car, or a press was repeated

@@ -7,6 +7,7 @@ import {
   arrivalsControlOf,
   arrivalsCountRange,
   arrivalsRefusalSentence,
+  arrivalsSumLine,
   arrivalsTargetOf,
   countedSentence,
   defaultArrivalsCount,
@@ -15,6 +16,7 @@ import {
   firstCountExtrasRouteOf,
   gateArrivalsLine,
   gateArrivalsOf,
+  overBookingNotice,
 } from './gate-arrivals'
 
 const CHECK_IN: GateVerdict = { kind: 'check_in', stay: 'paid' }
@@ -252,10 +254,10 @@ describe('arrivalsRefusalSentence', () => {
 describe('alreadyCountedSentence — somebody else let them in first', () => {
   test('names the count they recorded, so the guard’s own number is not lost', () => {
     expect(alreadyCountedSentence('check_in', gateArrivalsOf(4, 4))).toBe(
-      'Already checked in — 4 of 4 arrived. Use Correct if that is wrong.',
+      'Already checked in — 4 of 4 arrived. If that is wrong, correct it with Record arrivals.',
     )
     expect(alreadyCountedSentence('admit', gateArrivalsOf(20, 15))).toBe(
-      'Already admitted — 15 of 20 arrived · 5 to come. Use Correct if that is wrong.',
+      'Already admitted — 15 of 20 arrived · 5 to come. If that is wrong, correct it with Record arrivals.',
     )
   })
 
@@ -282,6 +284,50 @@ describe('countedSentence — what the toast says once a count is in', () => {
   test('says so when the office could not be told, so the guard calls them', () => {
     expect(countedSentence(gateArrivalsOf(4, 6), { extra: 2, told: false })).toBe(
       '6 arrived · 2 more than booked — the office could not be told, so call them',
+    )
+  })
+})
+
+describe('arrivalsSumLine — the sum done for the guard as he types', () => {
+  test('adds the car in front of him to who is in already', () => {
+    expect(arrivalsSumLine('more', 1, 3)).toBe('1 in already + 3 now = 4 in all')
+  })
+
+  test('a correction says what the count goes from and to', () => {
+    expect(arrivalsSumLine('correct', 3, 1)).toBe('The count goes from 3 to 1.')
+  })
+
+  test('a correction to the same number says so', () => {
+    expect(arrivalsSumLine('correct', 3, 3)).toBe('That is the count already.')
+  })
+})
+
+describe('overBookingNotice — the whole overage, and what the office hears of it', () => {
+  test('nothing while the count is within the booking', () => {
+    expect(overBookingNotice(gateArrivalsOf(4, 3), 0)).toBeNull()
+    expect(overBookingNotice(gateArrivalsOf(4, 4), 2)).toBeNull()
+  })
+
+  test('the office is told about everyone beyond the booking it has not heard of', () => {
+    expect(overBookingNotice(gateArrivalsOf(2, 4), 0)).toBe(
+      'That is 2 more than booked (for 2). The office is told, and sorts out any extra charge.',
+    )
+  })
+
+  test('always the full overage, even when the office already knows about some', () => {
+    // The case the guard met on 29 September: told about one extra earlier,
+    // so a count of four against two used to read "1 more than booked".
+    expect(overBookingNotice(gateArrivalsOf(2, 4), 1)).toBe(
+      'That is 2 more than booked (for 2). The office already knows about 1, and is told about 1 more.',
+    )
+  })
+
+  test('says the office already knows when there is nobody new to tell', () => {
+    expect(overBookingNotice(gateArrivalsOf(2, 3), 1)).toBe(
+      'That is 1 more than booked (for 2). The office already knows.',
+    )
+    expect(overBookingNotice(gateArrivalsOf(2, 3), 4)).toBe(
+      'That is 1 more than booked (for 2). The office already knows.',
     )
   })
 })

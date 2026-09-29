@@ -748,7 +748,7 @@ Cancelling or marking a day pass a no-show gives its places back to that day's d
 - The booking can no longer be edited or cancelled.
 - The unit shows as **Occupied** on the Units board. The deposit shows as **Guest in stay** on the Deposits list.
 - The gate's lists move the guest from arriving to staying.
-- **Everyone on the booking is counted as arrived** — the **Arrived** line on the Guest & stay card and the Gate card read, for example, "4 of 4". The guard counts guests in at the gate as they come through; a check-in here has nobody at the barrier to count, so it counts everyone. If fewer have really come, the guard corrects it at the gate with **Correct**.
+- **Everyone on the booking is counted as arrived** — the **Arrived** line on the Guest & stay card and the Gate card read, for example, "4 of 4". The guard counts guests in at the gate as they come through; a check-in here has nobody at the barrier to count, so it counts everyone. If fewer have really come, the guard corrects it at the gate (**Record arrivals** → **Correct the count instead**).
 - The History gets a **Checked in** entry with your name and the time.
 - **No money is taken and no email is sent.** Check-in never collects anything.
 
@@ -823,7 +823,7 @@ Cancelling or marking a day pass a no-show gives its places back to that day's d
 - A message: **"PV-… admitted"** — *"The day pass is used for today, and the booking is closed."*
 - The status becomes **Completed**. The pass cannot be edited, cancelled or admitted again.
 - The pass stays on the gate's list for the rest of the day, so a visitor who leaves and comes back is still recognised.
-- **Everyone on the pass is counted as arrived** (the **Arrived** line reads, for example, "3 of 3"). The guard can correct it at the gate with **Correct**, and counts any later groups in with **Record arrivals**.
+- **Everyone on the pass is counted as arrived** (the **Arrived** line reads, for example, "3 of 3"). The guard counts any later groups in at the gate with **Record arrivals**, and corrects the number from the same box.
 - History: **Admitted — 3 of 3 arrived**, with your name and the time.
 - No money is taken and no email is sent.
 
@@ -1009,7 +1009,7 @@ The **History** section is the system's own record of everything that happened t
 - **Edited** — the booking was amended; the reason is shown if one was given.
 - **Party changed — 5 → 7** — somebody changed how many people the booking is for with **Change** on the Party line (from 5 people to 7, everybody counted). The **Why** is shown if one was given. When the guard added visitors to a day pass at the gate, it reads the same, with the reason "Visitors added at the gate".
 - **Extra guests reported at the gate — 2 more** — the guard counted more people in at the gate than the booking is for, and the office was told; his words are in **Notes**. **Extra guests added at the gate — 2 more** — the guard added the visitors to a day pass himself as he admitted it, and took the difference.
-- **Arrivals recorded — 15 → 20 of 20** — the guard counted more people in at the gate after the first group (**Record arrivals** or **Extra**): 15 had arrived, now 20, of the 20 booked. **Arrival count corrected — 20 → 18 of 20** — the guard fixed a mis-tap with **Correct**.
+- **Arrivals recorded — 15 → 20 of 20** — the guard counted more people in at the gate after the first group (**Record arrivals**): 15 had arrived, now 20, of the 20 booked. **Arrival count corrected — 20 → 18 of 20** — the guard fixed a mis-tap (**Record arrivals** → **Correct the count instead**).
 - **Discount applied** / **Discount changed** / **Discount removed**
 - **Held** — a wording that exists but is not recorded by anything today; a new held booking shows one of the Created / Booked online lines instead.
 
@@ -1615,7 +1615,7 @@ Rules:
 | **New online booking — short stay** / **New online booking — day pass** | A customer made a booking themselves on the public website. | Holders of **View bookings** (all roles by default) | The booking's page |
 | **Payment to verify** | A booking was sent for payment verification — a customer pressed "I have made the transfer" on the website, or a staff member used **Record the deposit → Bank transfer — verify later** on a booking that was still **Held**. A booking created on New booking with bank transfer, and a stay transfer raised with **Record a payment**, do **not** raise this notification — tell a colleague who verifies payments, or check the queue yourself. The line shows the amount when there is one. | Holders of **Verify payments** (Front Office, Finance, Admin by default) | The **Verification queue** (not the booking) |
 | **Booking email could not be sent** / **Confirmation email could not be sent** / **Email could not be sent** | The system tried to email a guest about their booking and the email failed. The reason is in the booking's history. | Holders of **View bookings** | The booking's page |
-| **Extra guests at the gate** / **Visitors added at the gate** | The guard counted more people in at the Gate than the booking is for — as he checked them in or admitted them, or with **Record arrivals** or **Extra** later. **Extra guests at the gate** means the office is told — change the booking's party (**Change** on the Party line) if an extra charge is due. **Visitors added at the gate** means he added them to a day pass as he admitted it and took the difference in cash himself, so it is only for your information. (If the note on the booking says *"The cash was not recorded, and the pass owes it"*, the pass shows the difference as owing, and the guard takes it with **Take** before admitting.) The line shows how many, e.g. "PV-1001 · Guest name · 2 more". The guard's note is in the booking's **Notes**. | Holders of **Edit bookings** (Front Office and Admin by default) | The booking's page |
+| **Extra guests at the gate** / **Visitors added at the gate** | The guard counted more people in at the Gate than the booking is for — as he checked them in or admitted them, or with **Record arrivals** later. **Extra guests at the gate** means the office is told — change the booking's party (**Change** on the Party line) if an extra charge is due. **Visitors added at the gate** means he added them to a day pass as he admitted it and took the difference in cash himself, so it is only for your information. (If the note on the booking says *"The cash was not recorded, and the pass owes it"*, the pass shows the difference as owing, and the guard takes it with **Take** before admitting.) The line shows how many, e.g. "PV-1001 · Guest name · 2 more". The guard's note is in the booking's **Notes**. | Holders of **Edit bookings** (Front Office and Admin by default) | The booking's page |
 
 Each line shows the title, then the booking reference · guest name (· amount, or · "2 more" for extra guests), and how long ago it happened ("5m", "2h 10m", "3 days").
 
@@ -3610,9 +3610,9 @@ If something is typed and nobody on today's list matches: "Nobody on today's lis
 - A grey panel (white on a red card) with:
   - **Vehicle**: the plate(s), separated by " · ". "No car" if the booking says the guest has no vehicle. "Not recorded" if there is no plate and no "no car" answer.
   - **Staying** (for a stay: arrival – check-out day) or **Date** (for a day pass).
-  - **Guests**: how many people the booking is for, to count the car against. For a stay, the number of people, followed by "· 2 aged 3 or under" when some of them are young children not counted towards the unit's maximum (they come through the gate too, so they are in the number). For a day pass, the headcount followed by the age bands, e.g. "3 · Adult × 2, Child × 1". Once **everyone booked has arrived**, a small **Extra** button sits beside it, for a car with more people than the booking is for.
-  - **Arrived**: once the booking is checked in or admitted, how many have come through the gate against it: "**15 of 20 arrived · 5 to come**", "**20 of 20 arrived**", or "**23 arrived · 3 more than booked**". A small **Correct** button sits beside it, to fix a mis-tap. It counts **first arrivals, not who is inside**: a guest who drives out and back in is not counted again.
-  (**Extra**, **Correct** and **Record arrivals** are shown to whoever may check stays in, on a stay, or admit passes, on a day pass, and only while there is something to count: a stay checked in, or a pass admitted today. See *How to count guests in after the first group (Record arrivals, Extra and Correct)*.)
+  - **Guests**: how many people the booking is for, to count the car against. For a stay, the number of people, followed by "· 2 aged 3 or under" when some of them are young children not counted towards the unit's maximum (they come through the gate too, so they are in the number). For a day pass, the headcount followed by the age bands, e.g. "3 · Adult × 2, Child × 1".
+  - **Arrived**: once the booking is checked in or admitted, how many have come through the gate against it: "**15 of 20 arrived · 5 to come**", "**20 of 20 arrived**", or "**23 arrived · 3 more than booked**". Once everyone booked is in, a small **Record arrivals** button sits beside it, for a car with more people than the booking is for. It counts **first arrivals, not who is inside**: a guest who drives out and back in is not counted again.
+  (**Record arrivals** is shown to whoever may check stays in, on a stay, or admit passes, on a day pass, and only while there is something to count: a stay checked in, or a pass admitted today. The same box corrects a mis-tap. See *How to count guests in after the first group (Record arrivals)*.)
   - **To take**: only on the phone of somebody who may take cash, and only when there is money the gate may take now. It shows the amount and what it is for: **Security deposit**, **Rest of the deposit**, **The stay** or **Day pass**.
 - **A sentence** saying what to do and why (the full list is in *Rules the system enforces → What each Gate sentence means*).
 - Sometimes: "**2 more people than booked — the office has been told.**" A guard has already counted extra people in and the office was told, and the office has not changed the booking's party yet. It disappears once the office changes the party.
@@ -3718,7 +3718,7 @@ Used on the inspection page.
 
 Every confirmed booking has an entry QR code. It is sent to the guest in the confirmation email, shown on the guest's booking page, and available to the office on the booking screen (see *The booking's own page → Entry code* and *The customer side → Emails*). Scanning it with any phone camera opens a page on portal.bruneiapartment.com. **The code itself lets nobody in and grants nothing.** What the page shows depends on who is signed in on the phone that scanned it:
 
-- **A signed-in guard (or anyone who can open the Gate)**: the title **Gate**, today's date, and **the same Gate card** for that one booking, with the same badge, sentence, "To take" amount, count and buttons (**Check in**, **Check out**, **Admit**, **Take BND …**, **Record arrivals**, **Extra**, **Correct**) as on the Gate list. The same rules and refusals apply. The header reads **Palm Villa · Field** with a **Gate list** button back to the full list. Scanning only replaces typing the plate. It changes nothing about what is allowed.
+- **A signed-in guard (or anyone who can open the Gate)**: the title **Gate**, today's date, and **the same Gate card** for that one booking, with the same badge, sentence, "To take" amount, count and buttons (**Check in**, **Check out**, **Admit**, **Take BND …**, **Record arrivals**) as on the Gate list. The same rules and refusals apply. The header reads **Palm Villa · Field** with a **Gate list** button back to the full list. Scanning only replaces typing the plate. It changes nothing about what is allowed.
 - **Other signed-in staff** (e.g. Housekeeping, Finance): the summary below, plus an **Open the booking** button into the portal if they may view bookings.
 - **Anybody not signed in** (the guest checking their own code, or a stranger with a screenshot): title **Palm Villa entry code**, and a card with only:
   - the guest's **first name and the next name's initial** (e.g. "Siti A."; a one-word name shows just its initial);
@@ -3772,7 +3772,7 @@ When the office uses **Replace code** on the booking, the old code stops working
 4. Tap **Check in**. A box asks "Check in {guest name}?", "{reference} · {unit}. Booked for 4. The booking is marked as arrived now, under your name."
 5. **How many are here now?** — count the people in the car. The box starts on the whole party (e.g. **4**); change it if fewer or more have come.
    - **Fewer than booked:** it says "2 still to come. Count them in with Record arrivals when they get here."
-   - **More than booked:** a note says "2 more than booked. The office is told, and sorts out any extra charge.", with **Anything to add (optional)** (e.g. "Came in a second car", up to 280 characters). It does **not** stop the check-in.
+   - **More than booked:** a note says "That is 2 more than booked (for 4). The office is told, and sorts out any extra charge." (or, if the office was already told about some of them, how many it knows about), with **Anything to add (optional)** (e.g. "Came in a second car", up to 280 characters). It does **not** stop the check-in.
 6. Tap **Check in** (it says **Checking in…**), or **Not yet** to back out.
 7. A message confirms "{guest name} is checked in" with the count, e.g. "{reference} · 2 of 4 arrived · 2 to come", or "… 6 arrived · 2 more than booked — the office is told". Hand over the keys.
 
@@ -3793,7 +3793,7 @@ When the office uses **Replace code** on the booking, the old code stops working
 - If the phone's list is old, the button still checks the booking again before doing anything, so a booking the office cancelled or changed a minute ago is refused, not checked in.
 - If the reader lacks "Check guests in", a ready card says "All in order. Call the office to check them in." and shows no button.
 **If you see an error:**
-- "Already checked in — 4 of 4 arrived. Use Correct if that is wrong." Somebody (another phone, the office) checked them in a moment ago, and their count stands. If it is not what you counted, fix it with **Correct** on the card. (A booking checked in without a count says "Already checked in. Nothing more to do.")
+- "Already checked in — 4 of 4 arrived. If that is wrong, correct it with Record arrivals." Somebody (another phone, the office) checked them in a moment ago, and their count stands. If it is not what you counted, tap **Record arrivals** on the card, then **Correct the count instead**. (A booking checked in without a count says "Already checked in. Nothing more to do.")
 - "That number is more than the gate can record in one go. Count them again." The count is more than 50 beyond the booking. / "Say how many are here now." The count box was empty.
 - "The deposit is not in. Call the office." The deposit is not held in full at the moment of the tap. Refresh the list. If the card now shows **Take BND …** for the deposit, take it, then check in. Otherwise call the office.
 - "Booked from {date}. Call the office." The guest is early. The office decides (different unit, or amend the booking).
@@ -3848,8 +3848,8 @@ When the office uses **Replace code** on the booking, the old code stops working
 4. **How many are here now?** — count the people. The box starts on the whole pass (e.g. **20**); change it if fewer or more have come.
    - **Fewer than booked:** it says "5 still to come. Count them in with Record arrivals when they get here."
    - **More than booked, on a phone that takes cash:** the box asks **Who are the 3 extra?** — type how many in each age band (e.g. **Adult**, **Child**); the bands must add up to the extras ("2 named of 3. The bands must add up to the extras counted." until they do). It prices the whole party again, the way the pass was priced (family bundles included), and shows "**Take BND 30.00** · the pass becomes BND 230.00" (or "Nothing more to pay"). Count the notes, then tap **Take BND 30.00 and admit** (or **Add them and admit**). It says **Recording…**.
-   - If they won't pay, or you would rather the office dealt with it, tap **Tell the office instead**: everyone is admitted and the office is told, with a note saying "3 more than booked. The office is told, and sorts out any extra charge." **Take the money instead** switches back.
-   - **More than booked, on a phone without cash** (or a pass with a bank transfer waiting to be checked): the note "3 more than booked. The office is told, and sorts out any extra charge." and **Anything to add (optional)**. It does not stop the admission.
+   - If they won't pay, or you would rather the office dealt with it, tap **Tell the office instead**: everyone is admitted and the office is told, with a note saying "That is 3 more than booked (for 20). The office is told, and sorts out any extra charge." **Take the money instead** switches back.
+   - **More than booked, on a phone without cash** (or a pass with a bank transfer waiting to be checked): the note "That is 3 more than booked (for 20). The office is told, and sorts out any extra charge." and **Anything to add (optional)**. It does not stop the admission.
 5. Tap **Admit** (**Admitting…**) or **Not yet**.
 6. A message confirms "{guest name} is admitted" with the count, e.g. "{reference} · 15 of 20 arrived · 5 to come". When you took money for extras: "BND 30.00 taken — {guest name} admitted" and "{reference} · 23 in, 3 added to the pass".
 
@@ -3864,11 +3864,11 @@ When the office uses **Replace code** on the booking, the old code stops working
 - Only on the pass's **own date** (Brunei time). A pass for another day, earlier or later, goes to the office: "Day pass is for {date}. Call the office."
 - Only when **paid in full** with verified money. Unlike a stay, an unpaid pass stops the car, because nobody meets a day visitor again to collect what is owed.
 - If a bank transfer for the pass is waiting to be checked, the gate takes no cash for it: "A transfer for this booking is waiting to be checked. Call the office."
-- More people than the pass covers are counted in the **Admit** box itself (step 4). A guard who takes cash can add them to the pass and take the difference before they go in; otherwise the office is told. **Once a pass is admitted it takes no more money**, so extras who arrive later are counted with **Record arrivals** or **Extra** and go to the office.
+- More people than the pass covers are counted in the **Admit** box itself (step 4). A guard who takes cash can add them to the pass and take the difference before they go in; otherwise the office is told. **Once a pass is admitted it takes no more money**, so extras who arrive later are counted with **Record arrivals** and go to the office.
 - The day's visitor limit still applies to extras added to a pass. If it is reached, the box says how many places are left; admit fewer, or tap **Tell the office instead** — the app never turns anyone away.
 - **If the money for extras does not go through part-way** (a rare signal or system problem), nothing is left wrong, only unfinished — the message says which: "The visitors were added, but the BND 30.00 was not recorded. Take it with the Take button, then Admit." (the card turns red with **Take BND 30.00**; nobody has been admitted yet, and the next **Admit** starts on the new number), or "The visitors were added and BND 30.00 taken, but the pass was not admitted. Press Admit." (the pass is paid; press **Admit** again).
 **If you see an error:**
-- "Already admitted — 15 of 20 arrived · 5 to come. Use Correct if that is wrong." Another phone or the office admitted it a moment ago, and their count stands. Count the rest in with **Record arrivals**, or fix the number with **Correct**.
+- "Already admitted — 15 of 20 arrived · 5 to come. If that is wrong, correct it with Record arrivals." Another phone or the office admitted it a moment ago, and their count stands. Count the rest in with **Record arrivals**, or fix the number from the same box (**Correct the count instead**).
 - "The visitors were added and BND 30.00 taken, but somebody else admitted the pass a moment ago. Count the rest in with Record arrivals." The extras are on the pass and paid for; record them on the card.
 - "Only 2 more places are left that day. Admit fewer, or tell the office instead." / "The facilities are full for that day, so nobody more can be added. Admit fewer, or tell the office instead." The day's visitor limit is reached. Nothing was added and nothing was taken.
 - "What is owed changed a moment ago. Refresh the list and look again." / "Already recorded. Refresh the list before taking any more money." The pass changed since the box opened (maybe your own earlier press went through). Nothing was added. Refresh and look before trying again; do **not** take the money twice.
@@ -3931,39 +3931,38 @@ The card decides what the money is for, so the guard never has to decide between
 - "This is not what is owed. Say why, and it is recorded with it." (and "This is not what is owed. Say why.") Fill in the reason box and press again.
 - "That may not have gone through. Refresh the list: if the money still shows as owed, nothing was recorded." The phone lost signal and **the money may or may not have been recorded**. Do **not** press again straight away. Tap **Refresh** (or go back to the Gate list). If the card still shows the same **To take** amount, nothing was recorded and you can try again. If it doesn't, it was recorded.
 
-### How to count guests in after the first group (Record arrivals, Extra and Correct)
+### How to count guests in after the first group (Record arrivals)
 
 **Who can do this:** on a stay, "Check guests in" (Security, Front Office, Admin by default); on a day pass, "Admit day passes" (Security, Front Office, Admin by default). An Admin can change these.
-**Where:** Gate → the card, once the guest is checked in or the pass is admitted today (also on a scanned code's card):
-- **Record arrivals** — full width at the bottom, while some of the people booked are still to come;
-- **Extra** — the small button beside **Guests**, once everyone booked has arrived, for a car with more people than the booking is for;
-- **Correct** — the small button beside **Arrived**, to fix a count that was typed wrong.
+**Where:** Gate → the card, once the guest is checked in or the pass is admitted today (also on a scanned code's card). **Record arrivals** is the one button for counting people in:
+- **full width at the bottom**, while some of the people booked are still to come;
+- **small, beside the Arrived line**, once everyone booked is in — for a car with more people than the booking is for.
 
 Not shown on a stay that has checked out, a pass from another day, or a cancelled, expired or no-show booking.
 
 **Why it exists:** a booking's entry code can be scanned more than once, and one group often arrives in several cars. Before this, the card counted nobody after the first check-in or admission, so a forwarded screenshot of a 20-person pass could let in any number of later groups. Now every group is counted against the booking. The count records **who actually came through**, and it can go past the booking. **The app never turns anyone away**: whether extras are refused at the gate is gate policy for the guard to know, not something the app does.
 
-**Recording more arrivals (Record arrivals, or Extra):**
-1. Tap **Record arrivals** (or **Extra**). The box **Record arrivals?** says "{guest name} · {reference} · {unit or Day pass}. 15 of 20 arrived · 5 to come."
-2. **How many more are here now?** — the box starts on everyone still to come (**Record arrivals**) or on **1** (**Extra**). Type how many are in this car.
-3. If that takes the count past the booking, a note says "2 more than booked. The office is told, and sorts out any extra charge.", with **Anything to add (optional)** (up to 280 characters).
-4. Tap **Record** (it says **Recording…**), or **Not yet**.
+**Recording more arrivals:**
+1. Tap **Record arrivals**. The box **Record arrivals?** says "{guest name} · {reference} · {unit or Day pass}. 15 of 20 arrived · 5 to come."
+2. **How many just arrived?** — count the car in front of you. The box starts on everyone still to come (or on **1** once everyone booked is in). Underneath, it does the sum for you as you type: "15 in already + 5 now = 20 in all".
+3. If that takes the count past the booking, a note says the **whole** overage and what the office hears of it: "That is 2 more than booked (for 20). The office is told, and sorts out any extra charge." If the office already knows about some of them, it says so: "That is 2 more than booked (for 20). The office already knows about 1, and is told about 1 more." (or "The office already knows."). When there is anybody new to tell the office about, **Anything to add (optional)** appears (up to 280 characters).
+4. Tap **Record 5** (the button names the number; it says **Recording…**), or **Not yet**.
 5. A message confirms "Arrivals recorded for {guest name}", "{reference} · 20 of 20 arrived" (or "… 22 arrived · 2 more than booked — the office is told").
 
-**Correcting a count (Correct):**
-1. Tap **Correct**. The box **Correct the count?** says "{guest name} · {reference} · {unit or Day pass}. 20 of 20 arrived. Say how many have really come through, in all. The correction shows in the booking's history."
-2. **How many have come through in all?** — the box starts on the current count. Type the true total (it can go down to 0, for example when the office checked a guest in and nobody has driven through the gate yet).
-3. Tap **Correct** (greyed out until the number is different), or **Not yet**.
+**Correcting a count (a mis-tap):**
+1. Tap **Record arrivals**, then **Correct the count instead**. The box becomes **Correct the count?**, "{guest name} · {reference} · {unit or Day pass}. 20 of 20 arrived. The correction shows in the booking's history."
+2. **How many have come through in all?** — the box starts on the current count. Type the true total (it can go down to 0, for example when the office checked a guest in and nobody has driven through the gate yet). Underneath it says "The count goes from 20 to 18."
+3. Tap **Correct** (greyed out until the number is different), or **Not yet**. **Record arrivals instead** switches back.
 4. A message confirms "Count corrected for {guest name}".
 
 **What happens next:**
-- The card's **Arrived** line shows the new count; **Record arrivals** disappears once everyone booked is in, and **Extra** appears.
+- The card's **Arrived** line shows the new count. Once everyone booked is in, the full-width **Record arrivals** becomes the small one beside the count.
 - The booking's history shows "Arrivals recorded — 15 → 20 of 20" or "Arrival count corrected — 20 → 18 of 20", under your name. The office's booking page shows the count beside **Party**.
 - **More than booked:** the office is told — a note on the booking under your name, "Reported at the gate: 2 more people arrived than the booking is for (booked for 20).", followed by anything you typed in quotation marks, and a bell notification ("Extra guests at the gate") for everyone who can edit bookings. The card then says "**2 more people than booked — the office has been told.**" until the office changes the party. The same people are never reported twice: a count that is corrected down and then back up tells the office only about people it has not heard of. If the office could not be told, the message says "… — the office could not be told, so call them": the count was still recorded, so phone the office.
 - On a stay, the office changes the party, and any extra charge shows on the card as cash to take after a **Refresh**. An admitted day pass is closed, so it takes no more money at the gate; the office deals with extras who arrive after admission.
 - Nothing ever stops check-in, check-out or admitting.
 
-**Undoing:** a count is fixed with **Correct**, which is recorded in the history as a correction. A report to the office cannot be taken back from the gate; tell the office.
+**Undoing:** a count is fixed with **Correct the count instead**, which is recorded in the history as a correction. A report to the office cannot be taken back from the gate; tell the office.
 
 **Edge cases and limits:**
 - **It counts first arrivals, not who is inside.** A guest who drives out for lunch and comes back is not counted again. Ask whether they have been in already.
@@ -4190,7 +4189,7 @@ The guard's sign-in has no **Portal** button. However, the Security role holds "
 - **Figures only reach phones that may take the money.** Without "Record cash payments", no amounts are sent to the phone at all.
 - **The same cash can't be recorded twice** from the gate: the figure shown must still be what is owed when the button is pressed.
 - **A red card means the money is not settled** (deposit not held in full, stay or pass still owed, or a transfer waiting to be checked). Every reader sees it; it stops nothing by itself.
-- **Every group is counted in against its booking.** **Check in** and **Admit** ask how many are here now; **Record arrivals**, **Extra** and **Correct** count the rest. The count records who came through, and can go past the booking. It counts first arrivals, not who is inside.
+- **Every group is counted in against its booking.** **Check in** and **Admit** ask how many are here now; **Record arrivals** counts the rest, and corrects a mis-tap. The count records who came through, and can go past the booking. It counts first arrivals, not who is inside.
 - **The app never turns anyone away.** More people than booked never stops a car: whether extras are refused is gate policy for the guard. The office is told, and changes a stay's party. Only a day pass can be enlarged at the gate — by a guard who takes cash, on its own day, as he admits it, and with no transfer waiting.
 - **The same count can't be recorded twice.** Each count must still match the card when it lands.
 - **Readiness is shown, never enforced.**
@@ -4249,13 +4248,13 @@ A: No, and don't count them again. Their card stays on today's list as **Admitte
 A: Type how many are here in the **Check in** or **Admit** box. The card then says, for example, "10 of 20 arrived · 10 to come". When the rest arrive, tap **Record arrivals**.
 
 **Q: I typed the wrong number.**
-A: Tap **Correct** beside **Arrived** and type the true total. The correction shows in the booking's history.
+A: Tap **Record arrivals**, then **Correct the count instead**, and type the true total. The correction shows in the booking's history.
 
 **Q: More people turned up than the day pass covers.**
-A: Type the real number in the **Admit** box. If you take cash, it asks who the extras are by age band and how much to take (**Take BND … and admit**). If they won't pay, tap **Tell the office instead**. If they turn up after the pass is admitted, count them with **Record arrivals** or **Extra** — the office is told, because an admitted pass takes no more money at the gate. Whether to let extras in at all is gate policy; the app never turns anyone away.
+A: Type the real number in the **Admit** box. If you take cash, it asks who the extras are by age band and how much to take (**Take BND … and admit**). If they won't pay, tap **Tell the office instead**. If they turn up after the pass is admitted, count them with **Record arrivals** — the office is told, because an admitted pass takes no more money at the gate. Whether to let extras in at all is gate policy; the app never turns anyone away.
 
 **Q: More people arrived for a stay than the booking is for.**
-A: Type the real number in the **Check in** box (or, once they are checked in, count them with **Record arrivals** or **Extra**). The office gets a note and a bell notification and changes the booking; any extra charge then shows on the card as cash to take. Check-in goes ahead as normal.
+A: Type the real number in the **Check in** box (or, once they are checked in, count them with **Record arrivals**). The office gets a note and a bell notification and changes the booking; any extra charge then shows on the card as cash to take. Check-in goes ahead as normal.
 
 **Q: Why is this card red?**
 A: Its money is not settled: the deposit is not fully in, something is still owed on the stay or pass, or a transfer is waiting to be checked. The sentence under the badge says what to do. Red on its own stops nothing — a guest in residence who still owes for the stay can still come and go.
@@ -4314,9 +4313,7 @@ A: The phone lost signal while recording a count, and it may or may not have lan
 - **Payment not settled**: the words at the top of a red Gate card: the deposit is not held in full, the stay or pass is still owed, or a transfer is waiting to be checked.
 - **Guests (gate card)**: how many people the booking is for, with young children or the day-pass age bands; the guard counts the car against it.
 - **Arrived (gate card)**: how many have come through the gate against the booking, e.g. "15 of 20 arrived · 5 to come". First arrivals, not who is inside.
-- **Record arrivals**: the full-width button that counts later groups in while some of the people booked are still to come.
-- **Extra**: the small button beside Guests, once everyone booked is in, that counts more people in than booked; the office is told.
-- **Correct**: the small button beside Arrived that fixes a mis-typed count; it shows in the booking's history.
+- **Record arrivals**: the one button that counts later groups in — full width while some of the people booked are still to come, small beside Arrived once everyone is in. Its box asks "How many just arrived?" and does the sum; **Correct the count instead** fixes a mis-typed count, which shows in the booking's history.
 - **Security deposit / Rest of the deposit / The stay / Day pass**: what cash taken at the gate is for.
 - **Admit**: letting a paid day pass in on its date; it closes the pass.
 - **Admitted**: a day pass used today; visitors may come and go.
@@ -5612,7 +5609,7 @@ The **What** column is a short sentence. Common ones, by kind:
 - Discount applied / Discount changed / Discount removed
 - Party changed — 5 → 7 (how many people the booking is for, before → after)
 - Extra guests reported at the gate — 2 more / Extra guests added at the gate — 2 more (more people counted in at the Gate than booked)
-- Arrivals recorded — 15 → 20 of 20 / Arrival count corrected — 20 → 18 of 20 (the Gate's **Record arrivals**, **Extra** and **Correct**)
+- Arrivals recorded — 15 → 20 of 20 / Arrival count corrected — 20 → 18 of 20 (the Gate's **Record arrivals**)
 - Checked in — 3 of 4 arrived / Admitted — 15 of 20 arrived (a check-in or admission with the count taken)
 - Booking link issued — found by reference and phone
 - Entry QR code replaced — the old code no longer opens this booking
@@ -5995,9 +5992,9 @@ These are the 24 permissions exactly as they are labelled on the **Roles** tab a
   It also lets you add notes to a booking, and on an entry code's page it shows staff the booking's details. It does not let you open identity documents; that needs **View identity documents**.
 - **Create bookings** (Admin, Front Office). The **New booking** screen, including starting a booking from the Calendar.
 - **Edit bookings** (Admin, Front Office). **Amend** a booking, **Change** the party (how many people) on a booking's page — including a guest already checked in and a day pass — **Replace code** for its entry QR code, and attach or remove identity documents on a booking. Holders get the bell notification when the guard reports extra guests at the gate.
-- **Check guests in** (Admin, Front Office, Security). Check a short-stay guest in, from the booking's page or the Gate, and count a stay's guests in at the Gate (**Record arrivals**, **Extra**, **Correct**), which tells the office about more people than booked. It opens the Gate field screen.
+- **Check guests in** (Admin, Front Office, Security). Check a short-stay guest in, from the booking's page or the Gate, and count a stay's guests in at the Gate (**Record arrivals**), which tells the office about more people than booked. It opens the Gate field screen.
 - **Check guests out** (Admin, Front Office, Security, Housekeeping). Check a guest out, from the booking's page, the Gate, or the Departures screen when the unit is found empty. On its own it does not open the Gate.
-- **Admit day passes** (Admin, Front Office, Security). Let a paid day pass in at the gate or from its booking page, and count its visitors in at the Gate (**Record arrivals**, **Extra**, **Correct**); with **Record cash payments** as well, add extra visitors to the pass as it is admitted and take the difference. It opens the Gate field screen.
+- **Admit day passes** (Admin, Front Office, Security). Let a paid day pass in at the gate or from its booking page, and count its visitors in at the Gate (**Record arrivals**); with **Record cash payments** as well, add extra visitors to the pass as it is admitted and take the difference. It opens the Gate field screen.
 - **Cancel bookings** (Admin, Front Office). Cancel a booking, and mark a guest a no-show from the arrival day onwards.
 - **Discount bookings** (Admin, Front Office). Give, change or remove a discount when creating or amending a booking.
 - **Override booking holds** (Admin, Front Office). Listed on the matrix, but **nothing in the app currently checks it**, so ticking or unticking it changes nothing today.
@@ -6901,7 +6898,7 @@ Each journey below follows one real situation from start to finish, naming who d
 
 This is where the system puts each job's information, not a rule about how anyone must work.
 
-- **Guard (Security):** the **Gate** screen all day: **Arriving** (check in, take deposit or stay cash), **Leaving today** (take any money owed, then check out), **Day passes** (admit), **Already in**. Red cards are the ones whose money is not settled; **Check in** and **Admit** count each party in, and **Record arrivals** and **Extra** count later groups. Anything the Gate says to call the office about goes to the office.
+- **Guard (Security):** the **Gate** screen all day: **Arriving** (check in, take deposit or stay cash), **Leaving today** (take any money owed, then check out), **Day passes** (admit), **Already in**. Red cards are the ones whose money is not settled; **Check in** and **Admit** count each party in, and **Record arrivals** counts later groups. Anything the Gate says to call the office about goes to the office.
 - **Housekeeping:** the **Departures** screen: guests leaving today, units **To inspect**, and units being cleaned (**Mark ready**).
 - **Front Office:** the **Dashboard** (today's arrivals and departures, what is waiting), the **Verification queue**, the bell, **New booking**, and unpaid bookings to chase or cancel.
 - **Finance:** the **Verification queue**, **Deposits** (**Ready to release**), the **Daily cash-up** and **Reports**.
@@ -7136,7 +7133,7 @@ A deposit's stage is worked out by the system and only moves forward.
 - **Entry QR code (entry code)**: the code in the Confirmation email and on the customer's booking page. A guard who scans it gets the booking's gate card; anyone else sees only a masked summary. **Replace code** makes a new one and stops the old one working.
 - **Field screens**: the phone screens for the gate (Gate) and housekeeping (Departures), at portal.bruneiapartment.com/field.
 - **Find your booking**: the website page where a customer opens their booking with the reference and phone number.
-- **Gate**: the guard's phone screen: today's arrivals, guests already in, guests leaving, day passes, and cash to take. A red card ("Payment not settled") is one whose money is not settled; the **Arrived** line counts who has come through against the booking, with **Record arrivals**, **Extra** and **Correct**.
+- **Gate**: the guard's phone screen: today's arrivals, guests already in, guests leaving, day passes, and cash to take. A red card ("Payment not settled") is one whose money is not settled; the **Arrived** line counts who has come through against the booking, with **Record arrivals**.
 - **History**: the permanent record, on each booking's page, of everything that happened to it, who did it and when.
 - **Accounting pack**: the PDF the system builds for each booking for the accountant, once it has at least one confirmed payment. It is built when money is recorded or verified, and rebuilt overnight when something changes.
 - **Identity document (IC)**: the guest's IC or passport copy, stored privately on the booking and deleted automatically after the retention period.

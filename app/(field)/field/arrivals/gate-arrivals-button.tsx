@@ -1,7 +1,7 @@
 'use client'
 
 import { startTransition, useActionState, useEffect, useState, type FormEvent } from 'react'
-import { Pencil, UserPlus, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 
 import { COUNT_MAY_NOT_HAVE_GONE_THROUGH } from '@/components/field/did-not-go-through'
 import { Button } from '@/components/ui/button'
@@ -21,9 +21,12 @@ import { toast } from '@/components/ui/toast-store'
 import type { GateBooking } from '@/lib/db/gate'
 import {
   arrivalsCountRange,
+  arrivalsSumLine,
   arrivalsTargetOf,
   extrasToReport,
   gateArrivalsLine,
+  gateArrivalsOf,
+  overBookingNotice,
   type GateArrivals,
 } from '@/lib/domain/gate-arrivals'
 import { cn } from '@/lib/utils'
@@ -34,45 +37,55 @@ import { ExtraGuestsRemark } from './extra-guests-remark'
 /**
  * Counting people through the gate after the first group (capability D8).
  *
- * Three ways in, one dialog, one write:
+ * **One button** (Jeff, 29 September 2026, after trying two: a separate Extra
+ * and Correct both added people, and did the same thing twice). *Record
+ * arrivals* is full width at the foot of the card while anyone booked is
+ * still to come, opening on everyone still to come; once everyone booked is
+ * in it is a small button beside the count, opening on one — the car with
+ * more people than the booking is for.
  *
- * - **Record arrivals** — full width at the foot of the card while anyone
- *   booked is still to come, opening on everyone still to come.
- * - **Extra** — the small button beside the party once everyone booked is in,
- *   opening on one: the car with more people than the booking is for. It
- *   keeps the place and name it had before the count existed.
- * - **Correct** — beside the count, for a mis-tap: the total as it really is.
- *   The same write, and the booking's history says it was a correction.
+ * **It counts the car in front of the guard**, and says the sum as he types
+ * ("1 in already + 3 now = 4 in all"), so he never adds up in his head. A
+ * mis-tap is put right in the same box: *Correct the count instead* switches
+ * it to the total as it really is. The same write either way, and the
+ * booking's history says which it was.
  *
- * The dialog posts the count the card showed, and the server records nothing
- * if that has moved — a second phone counted the same car, or a press was
+ * The box posts the count the card showed, and the server records nothing if
+ * that has moved — a second phone counted the same car, or a press was
  * repeated after an answer was lost on one bar of signal.
  */
 
 type ArrivalsKind = 'more' | 'correct'
 
-interface ArrivalsDialogProps {
-  kind: ArrivalsKind
+interface RecordArrivalsButtonProps {
   booking: GateBooking
   arrivals: GateArrivals
-  /** What the counter opens on. */
-  initial: number
+  /**
+   * `full` at the foot of the card while anyone booked is still to come;
+   * `small` beside the count once everyone booked is in.
+   */
+  size: 'full' | 'small'
+  /** The card's main button, when it has nothing else to do (`full` only). */
+  isPrimary?: boolean
+  className?: string
 }
 
 export function RecordArrivalsButton({
   booking,
   arrivals,
-  isPrimary,
+  size,
+  isPrimary = false,
   className,
-}: Omit<ArrivalsDialogProps, 'kind' | 'initial'> & { isPrimary: boolean; className?: string }) {
+}: RecordArrivalsButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
     <>
       <Button
         size="touch"
-        variant={isPrimary ? 'primary' : 'tertiary'}
-        className={cn('w-full', className)}
+        variant={size === 'full' && isPrimary ? 'primary' : 'tertiary'}
+        className={cn(size === 'full' ? 'w-full' : 'px-md', className)}
+        aria-label={size === 'small' ? `Record arrivals for ${booking.guestName}` : undefined}
         onClick={() => setIsOpen(true)}
       >
         <Users aria-hidden />
@@ -81,77 +94,7 @@ export function RecordArrivalsButton({
 
       {/* Mounted only while open, so it opens on the card as it is now. */}
       {isOpen ? (
-        <ArrivalsDialog
-          kind="more"
-          booking={booking}
-          arrivals={arrivals}
-          initial={arrivals.toCome}
-          onClose={() => setIsOpen(false)}
-        />
-      ) : null}
-    </>
-  )
-}
-
-export function ExtraArrivalsButton({
-  booking,
-  arrivals,
-}: Omit<ArrivalsDialogProps, 'kind' | 'initial'>) {
-  const [isOpen, setIsOpen] = useState(false)
-
-  return (
-    <>
-      <Button
-        variant="tertiary"
-        size="touch"
-        className="px-md"
-        aria-label={`More people than booked for ${booking.guestName}`}
-        onClick={() => setIsOpen(true)}
-      >
-        <UserPlus aria-hidden />
-        Extra
-      </Button>
-
-      {isOpen ? (
-        <ArrivalsDialog
-          kind="more"
-          booking={booking}
-          arrivals={arrivals}
-          initial={1}
-          onClose={() => setIsOpen(false)}
-        />
-      ) : null}
-    </>
-  )
-}
-
-export function CorrectArrivalsButton({
-  booking,
-  arrivals,
-}: Omit<ArrivalsDialogProps, 'kind' | 'initial'>) {
-  const [isOpen, setIsOpen] = useState(false)
-
-  return (
-    <>
-      <Button
-        variant="tertiary"
-        size="touch"
-        className="px-md"
-        aria-label={`Correct the count for ${booking.guestName}`}
-        onClick={() => setIsOpen(true)}
-      >
-        <Pencil aria-hidden />
-        Correct
-      </Button>
-
-      {isOpen ? (
-        <ArrivalsDialog
-          kind="correct"
-          booking={booking}
-          arrivals={arrivals}
-          initial={arrivals.arrived}
-          onClose={() => setIsOpen(false)}
-        />
+        <ArrivalsDialog booking={booking} arrivals={arrivals} onClose={() => setIsOpen(false)} />
       ) : null}
     </>
   )
@@ -159,20 +102,32 @@ export function CorrectArrivalsButton({
 
 const idle: ArrivalsState = { status: 'idle' }
 
+/** What the counter opens on: everyone still to come, or one more once everyone is in. */
+function opening(kind: ArrivalsKind, arrivals: GateArrivals): string {
+  return String(kind === 'correct' ? arrivals.arrived : Math.max(arrivals.toCome, 1))
+}
+
 function ArrivalsDialog({
-  kind,
   booking,
   arrivals,
-  initial,
   onClose,
-}: ArrivalsDialogProps & { onClose: () => void }) {
+}: {
+  booking: GateBooking
+  arrivals: GateArrivals
+  onClose: () => void
+}) {
+  const [kind, setKind] = useState<ArrivalsKind>('more')
+  const [countText, setCountText] = useState(opening('more', arrivals))
   const range = arrivalsCountRange(kind, booking.partySize, arrivals)
-  const [countText, setCountText] = useState(String(initial))
   const count = /^\d+$/.test(countText) ? Number(countText) : null
   // The count when it is one the server will take, and null otherwise.
   const valid = count !== null && count >= range.min && count <= range.max ? count : null
   const isChange = kind === 'more' || valid !== arrivals.arrived
   const target = valid === null ? null : arrivalsTargetOf({ kind, count: valid }, arrivals.arrived)
+  const notice =
+    target === null
+      ? null
+      : overBookingNotice(gateArrivalsOf(booking.partySize, target), booking.extraReported)
   const toTell =
     target === null ? 0 : extrasToReport(target, booking.partySize, booking.extraReported)
 
@@ -211,6 +166,11 @@ function ArrivalsDialog({
     }
   }, [state.status, onClose])
 
+  function switchTo(next: ArrivalsKind) {
+    setKind(next)
+    setCountText(opening(next, arrivals))
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     // Through a transition rather than `action=`: React 19 resets a form once
     // its action settles, which would empty the count on a refusal.
@@ -230,9 +190,7 @@ function ArrivalsDialog({
           <DialogDescription>
             {booking.guestName} · {booking.reference} · {booking.unitRef ?? 'Day pass'}.{' '}
             {gateArrivalsLine(arrivals)}.
-            {kind === 'correct'
-              ? ' Say how many have really come through, in all. The correction shows in the booking’s history.'
-              : ''}
+            {kind === 'correct' ? ' The correction shows in the booking’s history.' : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -244,9 +202,7 @@ function ArrivalsDialog({
 
           <div className="grid gap-sm">
             <Label htmlFor="arrivals-count">
-              {kind === 'correct'
-                ? 'How many have come through in all?'
-                : 'How many more are here now?'}
+              {kind === 'correct' ? 'How many have come through in all?' : 'How many just arrived?'}
             </Label>
             <Input
               id="arrivals-count"
@@ -260,25 +216,39 @@ function ArrivalsDialog({
               value={countText}
               onChange={(event) => setCountText(event.target.value)}
             />
+            {valid !== null ? (
+              <p className="text-body-sm text-muted-foreground tabular-nums">
+                {arrivalsSumLine(kind, arrivals.arrived, valid)}
+              </p>
+            ) : null}
           </div>
 
-          {toTell > 0 ? (
-            <>
-              <Notice>
-                {toTell} more than booked. The office is told, and sorts out any extra charge.
-              </Notice>
-              <ExtraGuestsRemark />
-            </>
-          ) : null}
+          {notice ? <Notice>{notice}</Notice> : null}
+
+          {toTell > 0 ? <ExtraGuestsRemark /> : null}
 
           {state.status === 'error' ? <FieldError message={state.message} /> : null}
 
           <DialogFooter>
+            <Button
+              type="button"
+              variant="tertiary"
+              size="touch"
+              onClick={() => switchTo(kind === 'more' ? 'correct' : 'more')}
+            >
+              {kind === 'more' ? 'Correct the count instead' : 'Record arrivals instead'}
+            </Button>
             <Button type="button" variant="tertiary" size="touch" onClick={onClose}>
               Not yet
             </Button>
             <Button type="submit" size="touch" disabled={valid === null || !isChange || isPending}>
-              {isPending ? 'Recording…' : kind === 'correct' ? 'Correct' : 'Record'}
+              {isPending
+                ? 'Recording…'
+                : kind === 'correct'
+                  ? 'Correct'
+                  : valid !== null
+                    ? `Record ${valid}`
+                    : 'Record'}
             </Button>
           </DialogFooter>
         </form>

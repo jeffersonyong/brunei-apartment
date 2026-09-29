@@ -16,11 +16,7 @@ import { formatVehicles } from '@/lib/domain/vehicle'
 import { cn } from '@/lib/utils'
 
 import { GateActionButton, type GateMove } from './gate-action-button'
-import {
-  CorrectArrivalsButton,
-  ExtraArrivalsButton,
-  RecordArrivalsButton,
-} from './gate-arrivals-button'
+import { RecordArrivalsButton } from './gate-arrivals-button'
 import { GateCashButton } from './gate-cash-button'
 
 /**
@@ -54,10 +50,10 @@ import { GateCashButton } from './gate-cash-button'
  *
  * **The party is on the card, and so is who has come through against it**
  * (capability D8). Check in and Admit ask how many are here now; after that
- * the card reads "15 of 20 arrived · 5 to come", with **Record arrivals** full
- * width at the foot while anyone booked is still to come, a small **Extra**
- * beside the party once everyone is in, and a small **Correct** beside the
- * count for a mis-tap (gate-arrivals-button.tsx). The count is shown to every
+ * the card reads "15 of 20 arrived · 5 to come", with **Record arrivals** — the
+ * one button that counts people in, and corrects a mis-tap — full width at the
+ * foot while anyone booked is still to come, and small beside the count once
+ * everyone is in (gate-arrivals-button.tsx). The count is shown to every
  * reader; the buttons only to whoever lets this kind of booking in, and only
  * while there is something to count — never on a closed booking reached by
  * its QR code or by search.
@@ -242,19 +238,14 @@ export function GateCard({
           </dt>
           <dd className="mt-xxs text-body-sm text-foreground tabular-nums">{datesOf(booking)}</dd>
         </div>
-        <div className="col-span-2 flex min-w-0 items-center justify-between gap-md">
-          <div className="min-w-0">
-            <dt className="micro-label text-muted-foreground">Guests</dt>
-            <dd className="mt-xxs text-body-md text-foreground tabular-nums">
-              {booking.partySize}
-              {partyDetail ? (
-                <span className="text-body-sm text-muted-foreground"> · {partyDetail}</span>
-              ) : null}
-            </dd>
-          </div>
-          {control === 'all_in' && arrivals ? (
-            <ExtraArrivalsButton booking={booking} arrivals={arrivals} />
-          ) : null}
+        <div className="col-span-2 min-w-0">
+          <dt className="micro-label text-muted-foreground">Guests</dt>
+          <dd className="mt-xxs text-body-md text-foreground tabular-nums">
+            {booking.partySize}
+            {partyDetail ? (
+              <span className="text-body-sm text-muted-foreground"> · {partyDetail}</span>
+            ) : null}
+          </dd>
         </div>
         {arrivals ? (
           <div className="col-span-2 flex min-w-0 items-center justify-between gap-md">
@@ -264,8 +255,8 @@ export function GateCard({
                 {gateArrivalsLine(arrivals)}
               </dd>
             </div>
-            {control === 'more' || control === 'all_in' ? (
-              <CorrectArrivalsButton booking={booking} arrivals={arrivals} />
+            {control === 'all_in' ? (
+              <RecordArrivalsButton booking={booking} arrivals={arrivals} size="small" />
             ) : null}
           </div>
         ) : null}
@@ -335,6 +326,7 @@ export function GateCard({
         <RecordArrivalsButton
           booking={booking}
           arrivals={arrivals}
+          size="full"
           isPrimary={move === null && cash === null}
           className={move || cash ? 'mt-sm' : 'mt-md'}
         />

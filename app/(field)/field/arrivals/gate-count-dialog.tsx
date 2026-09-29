@@ -22,7 +22,13 @@ import { Notice } from '@/components/ui/notice'
 import { toast } from '@/components/ui/toast-store'
 import type { GateBooking } from '@/lib/db/gate'
 import type { PropertyConfig } from '@/lib/domain/config'
-import { arrivalsCountRange, firstCountExtrasRouteOf } from '@/lib/domain/gate-arrivals'
+import {
+  arrivalsCountRange,
+  extrasToReport,
+  firstCountExtrasRouteOf,
+  gateArrivalsOf,
+  overBookingNotice,
+} from '@/lib/domain/gate-arrivals'
 import { formatCents } from '@/lib/domain/money'
 
 import { admitAtGateAction, checkInAtGateAction, type GateActionState } from './actions'
@@ -114,6 +120,11 @@ export function GateCountDialog({
   const valid = count !== null && count >= range.min && count <= range.max ? count : null
   const over = valid === null ? 0 : Math.max(valid - booked, 0)
   const toCome = valid === null ? 0 : Math.max(booked - valid, 0)
+  // The whole overage, and what the office hears of it — some may already
+  // have been reported before anybody was let in.
+  const notice =
+    valid === null ? null : overBookingNotice(gateArrivalsOf(booked, valid), booking.extraReported)
+  const toTell = valid === null ? 0 : extrasToReport(valid, booked, booking.extraReported)
 
   const canSettle =
     firstCountExtrasRouteOf({
@@ -260,13 +271,9 @@ export function GateCountDialog({
             />
           ) : (
             <>
-              {over > 0 ? (
-                <Notice>
-                  {over} more than booked. The office is told, and sorts out any extra charge.
-                </Notice>
-              ) : null}
+              {notice ? <Notice>{notice}</Notice> : null}
 
-              {over > 0 ? <ExtraGuestsRemark /> : null}
+              {toTell > 0 ? <ExtraGuestsRemark /> : null}
 
               {error ? <FieldError message={error} /> : null}
 
