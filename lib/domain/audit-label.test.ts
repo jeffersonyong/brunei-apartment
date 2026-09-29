@@ -141,6 +141,53 @@ describe('describeAuditEvent', () => {
     ).toBe('Extra guests added at the gate — 1 more')
   })
 
+  test('says how many came through when a stay was checked in or a pass admitted', () => {
+    expect(
+      describeAuditEvent(
+        event('booking.check_in', { after: { status: 'checked_in', arrived: 3, booked: 4 } }),
+      ),
+    ).toBe('Checked in — 3 of 4 arrived')
+    expect(
+      describeAuditEvent(
+        event('booking.admit', { after: { status: 'completed', arrived: 15, booked: 20 } }),
+      ),
+    ).toBe('Admitted — 15 of 20 arrived')
+  })
+
+  test('reads an admission recorded before the count by its headcount', () => {
+    expect(
+      describeAuditEvent(event('booking.admit', { after: { arrived: 20, headcount: 20 } })),
+    ).toBe('Admitted — 20 of 20 arrived')
+  })
+
+  test('keeps the plain words for a check-in or admission from before the count', () => {
+    expect(describeAuditEvent(event('booking.check_in', { after: { status: 'checked_in' } }))).toBe(
+      'Checked in',
+    )
+    expect(
+      describeAuditEvent(event('booking.admit', { after: { status: 'completed', headcount: 2 } })),
+    ).toBe('Admitted')
+  })
+
+  test('tells more arrivals from a correction at the gate', () => {
+    expect(
+      describeAuditEvent(
+        event('booking.arrivals_recorded', {
+          before: { arrived: 15 },
+          after: { arrived: 20, booked: 20 },
+        }),
+      ),
+    ).toBe('Arrivals recorded — 15 → 20 of 20')
+    expect(
+      describeAuditEvent(
+        event('booking.arrivals_recorded', {
+          before: { arrived: 20 },
+          after: { arrived: 18, booked: 20, corrected: true },
+        }),
+      ),
+    ).toBe('Arrival count corrected — 20 → 18 of 20')
+  })
+
   test('names which document was opened — the whole point of the G3 log', () => {
     expect(describeAuditEvent(event('document.viewed', { after: { kind: 'identity' } }))).toBe(
       'Identity document opened',

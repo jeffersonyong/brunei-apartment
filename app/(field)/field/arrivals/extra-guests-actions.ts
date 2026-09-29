@@ -9,8 +9,9 @@ import { scheduleBookingConfirmedEmail } from '@/app/schedule-booking-email'
 import { hasPermission } from '@/lib/auth/permissions'
 import { requirePermission } from '@/lib/auth/require-permission'
 import { getBookingById } from '@/lib/db/bookings'
-import { getGateBooking, type GateBooking } from '@/lib/db/gate'
-import { changeBookingParty, listDayPassParties, reportExtraGuests } from '@/lib/db/party'
+import { admitDayPass } from '@/lib/db/day-pass-admission'
+import { getGateBooking, type GateReadOptions } from '@/lib/db/gate'
+import { changeBookingParty, listDayPassParties } from '@/lib/db/party'
 import { recordCashPayment } from '@/lib/db/payments'
 import { getPropertyConfig } from '@/lib/db/property-config'
 import type { PropertyConfig } from '@/lib/domain/config'
@@ -19,129 +20,89 @@ import {
   addToParty,
   countsOf,
   describeParty,
-  extraGuestsNote,
   MAX_EXTRA_GUESTS,
   MAX_EXTRA_GUESTS_REMARK_LENGTH,
 } from '@/lib/domain/extra-guests'
-import { gateRefusalSentence, mayAddVisitorsAtGate } from '@/lib/domain/gate'
+import { gateRefusalSentence } from '@/lib/domain/gate'
+import {
+  alreadyCountedSentence,
+  arrivalsCountRange,
+  arrivalsRefusalSentence,
+  extrasNamedMatch,
+  firstCountExtrasRouteOf,
+} from '@/lib/domain/gate-arrivals'
 import { formatCents, type Cents } from '@/lib/domain/money'
 import { repriceDayPassParty } from '@/lib/domain/pricing/party-change'
 
+import { tellTheOffice } from './office-report'
+
 /**
- * More people at the gate than a booking is for (Jason's team, 19 September
- * 2026).
+ * More visitors at the car than a day pass is for, settled at the gate as
+ * they are admitted (capability D8; Jeff, 19 and 29 September 2026).
  *
- * **A stay: the guard tells the office.** He says how many more, and it becomes
- * a note on the booking and a line in the office's bell. The office changes the
- * party (the booking's Change), and whatever that leaves owing comes back to
- * the card as cash to take.
+ * The Admit dialog asks how many are here now. When that is more than the
+ * pass is for, and the pass is one the guard can settle — its own day, open,
+ * paid, no transfer waiting, and a guard who takes cash — he names the extra
+ * visitors by age band, the pass is priced again for all of them, he takes the
+ * difference, and everybody is admitted. Anything else over a booking is told
+ * to the office (./office-report.ts); so is this, if he chooses — the app never
+ * turns anyone away.
  *
- * **A day pass: the guard settles it himself** (Jeff, the same day). He says
- * who the extra visitors are by age band, the pass is priced again for all of
- * them, and he takes the difference in cash — one dialog, recorded as the
- * office would record it: the party changed under the office's own writer and
- * the cash through the gate's. Admit is never hidden for it; whether he calls
- * the office first is theirs to agree, not the screen's to enforce.
+ * ── Three writers, in order, and where a failure lands ────────────────────
  *
- * The two writes for a pass are not one transaction, on purpose. Each is the
- * product's existing writer with its own checks — capacity under the per-date
- * lock, the amount rule — and the order is chosen so a failure between them
- * leaves nothing wrong, only unfinished: the pass is for the new party and
- * owes the difference, the card says so in red, and the ordinary Take button
- * finishes it.
+ * The party, then the cash, then the admission — each the product's existing
+ * writer with its own checks: capacity under the per-date lock, the amount
+ * rule, and the pass paid in full on its own day. They are deliberately not
+ * one transaction. The order is chosen so a failure between them leaves the
+ * pass unfinished, never wrong:
+ *
+ * 1. **The party is refused** — the day is full, or the pass moved — and
+ *    nothing is written. The guard is told how many places are left, and may
+ *    admit fewer or tell the office instead.
+ * 2. **The cash is not recorded.** The pass is for the new party and owes the
+ *    difference: its card is red with the ordinary Take button, nobody is
+ *    admitted, and the next Admit opens on the new party.
+ * 3. **The admission is refused.** The party and the cash are done, so the
+ *    pass is paid and its card offers Admit again. If a second phone admitted
+ *    it in between, that phone recorded its own count, and the guard is sent to
+ *    Record arrivals for the rest.
+ *
+ * Once the party has moved, the office is told what happened whatever the
+ * cash and the admission answered — best effort, because a note that failed
+ * to save must never reach the guard as "that did not go through", or he
+ * would ask the visitor to pay again. Both writers throw on a failed call as
+ * well as refusing, so each is caught, and a throw lands exactly where a
+ * refusal does.
+ *
+ * A press repeated after an answer was lost on one bar of signal is refused
+ * on the headcount the dialog opened on: the figure alone repeats — one adult
+ * more costs the same on a second press — and the headcount has moved by then.
  */
 
 export interface ExtraGuestsState {
   status: 'idle' | 'error' | 'done'
   message?: string
   /** For the toast. */
-  done?: { guestName: string; taken: Cents | null; reported: number }
+  done?: { guestName: string; taken: Cents; admitted: number; extra: number }
 }
 
 const count = z.coerce.number().int().min(0).max(MAX_EXTRA_GUESTS)
 
-const reportSchema = z.object({
+const schema = z.object({
   bookingId: z.string().uuid(),
-  stream: z.enum(['short_stay', 'day_pass', 'tenancy']),
-  extra: count.min(1, 'Say how many more people arrived.'),
-  remark: z.string().trim().max(MAX_EXTRA_GUESTS_REMARK_LENGTH).default(''),
-})
-
-const addSchema = z.object({
-  bookingId: z.string().uuid(),
+  /** How many are here now — the pass's party and the extras together. */
+  arrived: z.coerce.number().int().min(1),
   /** What the dialog said to take, in cents. The server takes nothing else. */
   expectedTake: z.coerce.number().int().min(0),
-  /**
-   * How many the pass was for when the dialog opened. The figure alone cannot
-   * tell a second press apart: one adult more costs BND 10 on the first press
-   * and again on the second, so a press repeated after an answer was lost on
-   * one bar of signal would add them twice. The headcount has moved by then.
-   */
+  /** How many the pass was for when the dialog opened. */
   expectedHeadcount: z.coerce.number().int().min(1),
   remark: z.string().trim().max(MAX_EXTRA_GUESTS_REMARK_LENGTH).default(''),
 })
 
-/** A report, not a move: it reads the booking, with no turnovers or figures. */
-const READ = { withReadiness: false, withCash: false } as const
+/** A move: the booking alone, with no turnovers or figures. */
+const READ: GateReadOptions = { withReadiness: false, withCash: false }
 
-/** The guard tells the office how many more people arrived. */
-export async function reportExtraGuestsAction(
-  _previous: ExtraGuestsState,
-  formData: FormData,
-): Promise<ExtraGuestsState> {
-  const parsed = reportSchema.safeParse(Object.fromEntries(formData))
-
-  if (!parsed.success) {
-    return { status: 'error', message: parsed.error.issues[0]?.message ?? 'Try again.' }
-  }
-
-  const input = parsed.data
-
-  // The gate's own permission for this kind of booking: whoever checks a stay
-  // in, or admits a pass, is whoever stands at the car counting people.
-  const actor = await requirePermission(
-    input.stream === 'day_pass' ? 'day_pass.admit' : 'booking.check_in',
-  )
-  const booking = await getGateBooking(input.bookingId, todayInBrunei(), READ)
-
-  if (!booking || booking.stream !== input.stream) {
-    return { status: 'error', message: gateRefusalSentence('not_found') }
-  }
-
-  if (booking.verdict.kind === 'closed') {
-    return { status: 'error', message: 'This booking is closed. Call the office.' }
-  }
-
-  const result = await reportExtraGuests({
-    bookingId: booking.id,
-    extra: input.extra,
-    body: extraGuestsNote({
-      extra: input.extra,
-      bookedFor: bookedFor(booking),
-      remark: input.remark,
-    }),
-    addedCents: null,
-    actorId: actor.userId,
-  })
-
-  if (!result.ok) {
-    return { status: 'error', message: gateRefusalSentence('not_found') }
-  }
-
-  revalidateGate(booking)
-
-  return {
-    status: 'done',
-    done: { guestName: booking.guestName, taken: null, reported: input.extra },
-  }
-}
-
-/**
- * The guard adds the visitors he counted to a day pass and takes the
- * difference. Only for a pass on its own day that is open and has no transfer
- * waiting — the ones he could already take cash for.
- */
-export async function addToPassAtGateAction(
+export async function admitWithExtrasAtGateAction(
   _previous: ExtraGuestsState,
   formData: FormData,
 ): Promise<ExtraGuestsState> {
@@ -154,39 +115,66 @@ export async function addToPassAtGateAction(
     }
   }
 
-  const parsed = addSchema.safeParse(Object.fromEntries(formData))
+  const parsed = schema.safeParse(Object.fromEntries(formData))
 
   if (!parsed.success) {
-    return { status: 'error', message: 'Try again.' }
+    return { status: 'error', message: 'Say how many are here now, and who the extras are.' }
   }
 
   const input = parsed.data
+  const today = todayInBrunei()
   const [gate, booking, config] = await Promise.all([
-    getGateBooking(input.bookingId, todayInBrunei(), READ),
+    getGateBooking(input.bookingId, today, READ),
     getBookingById(input.bookingId),
     getPropertyConfig(),
   ])
 
-  if (!gate || !booking || gate.stream !== 'day_pass') {
+  if (!gate || !booking || !booking.dayPass || gate.stream !== 'day_pass') {
     return { status: 'error', message: gateRefusalSentence('not_found') }
   }
 
-  if (!mayAddVisitorsAtGate(gate.verdict)) {
+  if (gate.verdict.kind === 'admitted') {
+    return { status: 'error', message: alreadyCountedSentence('admit', gate.arrivals) }
+  }
+
+  const route = firstCountExtrasRouteOf({
+    stream: gate.stream,
+    verdict: gate.verdict,
+    takesCash: true,
+    moneySettled: !gate.moneyUnsettled,
+    hasRates: true,
+  })
+
+  if (route !== 'settle') {
     return {
       status: 'error',
-      message: 'This pass cannot take more visitors at the gate. Call the office.',
+      message: 'This pass cannot take more visitors at the gate. Tell the office instead.',
     }
   }
 
-  const added = addedCounts(formData, config)
-  const addedCount = Object.values(added).reduce((sum, value) => sum + value, 0)
-
-  if (addedCount < 1) {
-    return { status: 'error', message: 'Say who the extra visitors are.' }
+  if (booking.dayPass.headcount !== input.expectedHeadcount) {
+    return { status: 'error', message: gateRefusalSentence('already_recorded') }
   }
 
-  if (booking.dayPass?.headcount !== input.expectedHeadcount) {
-    return { status: 'error', message: gateRefusalSentence('already_recorded') }
+  if (input.arrived > arrivalsCountRange('first', gate.partySize, null).max) {
+    return { status: 'error', message: arrivalsRefusalSentence('out_of_range') }
+  }
+
+  const extras = input.arrived - booking.dayPass.headcount
+  const added = addedCounts(formData, config)
+
+  if (extras < 1) {
+    return {
+      status: 'error',
+      message: 'Nobody more than the pass is for. Refresh the list and admit them.',
+    }
+  }
+
+  if (!extrasNamedMatch(added, extras)) {
+    return {
+      status: 'error',
+      message: `Say who the ${extras} extra ${extras === 1 ? 'visitor is' : 'visitors are'}, by age.`,
+    }
   }
 
   const sold = (await listDayPassParties([booking.id])).get(booking.id) ?? []
@@ -205,6 +193,7 @@ export async function addToPassAtGateAction(
     return { status: 'error', message: gateRefusalSentence('changed') }
   }
 
+  // 1. The party.
   const changed = await changeBookingParty({
     bookingId: booking.id,
     expectedUpdatedAt: booking.updatedAt,
@@ -221,7 +210,7 @@ export async function addToPassAtGateAction(
       status: 'error',
       message:
         changed.error.code === 'capacity_exceeded'
-          ? `${changed.error.message} Call the office.`
+          ? `${changed.error.message} Admit fewer, or tell the office instead.`
           : gateRefusalSentence('changed'),
     }
   }
@@ -229,66 +218,103 @@ export async function addToPassAtGateAction(
   const addedParty = describeParty(
     config.dayPassAgeBands.map((band) => ({ label: band.label, count: added[band.id] ?? 0 })),
   )
+  const officeNote = { extra: extras, bookedFor: booking.dayPass.headcount, remark: input.remark }
 
-  if (take > 0) {
-    const paid = await recordCashPayment({
+  revalidateGate(gate.reference)
+
+  // 2. The cash.
+  if (take > 0 && !(await tookTheCash(booking.id, take, actor.userId))) {
+    // The extras are in the party now, so the office has nothing to act on —
+    // `added_cents` says so, or the card would read "told" beside a party
+    // that already holds them. What is missing is the money, which the red
+    // card and its Take button finish.
+    await tellTheOffice({
       bookingId: booking.id,
-      amount: take,
-      amountOverrideReason: null,
+      note: {
+        ...officeNote,
+        added: { party: addedParty, nowFor: repriced.headcount, taken: null },
+      },
+      addedCents: 0,
       actorId: actor.userId,
     })
 
-    if (!paid.ok) {
-      // The pass is for the new party and owes the difference, which the card
-      // now shows in red — so the guard finishes it the ordinary way.
-      await noteForTheOffice({
-        bookingId: booking.id,
-        extra: addedCount,
-        body: `Added at the gate: ${addedParty} (the pass is now for ${repriced.headcount}). The cash was not recorded.`,
-        addedCents: null,
-        actorId: actor.userId,
-      })
-      revalidateGate(gate)
-
-      return {
-        status: 'error',
-        message: `The visitors were added, but the BND ${formatCents(take)} was not recorded. Take it with the Take button on the card.`,
-      }
-    }
-
-    // Money reached the pass, so the accounting record is written now
-    // (capability G5), as the gate's own cash does.
-    scheduleAccountingPack(booking.id)
-
-    if (paid.confirmedNow) {
-      scheduleBookingConfirmedEmail(booking.id)
+    return {
+      status: 'error',
+      message: `The visitors were added, but the BND ${formatCents(take)} was not recorded. Take it with the Take button, then Admit.`,
     }
   }
 
-  // By now the party has changed and the cash is recorded. The note is the
-  // office's account of it, and a note that failed to save must not reach the
-  // guard as "that did not go through" — he would ask the visitor to pay again.
-  await noteForTheOffice({
+  // 3. The admission.
+  const admitted = await admittedThem(booking.id, input.arrived, actor.userId)
+
+  await tellTheOffice({
     bookingId: booking.id,
-    extra: addedCount,
-    body: extraGuestsNote({
-      extra: addedCount,
-      bookedFor: bookedFor(gate),
-      remark: input.remark,
-      added: { party: addedParty, nowFor: repriced.headcount, taken: take },
-    }),
+    note: { ...officeNote, added: { party: addedParty, nowFor: repriced.headcount, taken: take } },
     addedCents: take,
     actorId: actor.userId,
   })
 
-  revalidateGate(gate)
-  revalidatePath('/payments')
-  revalidatePath('/payments/cash')
-  revalidatePath('/reports/cash-up')
+  if (!admitted) {
+    const now = await getGateBooking(booking.id, today, READ)
+    const paid = take > 0 ? ` and BND ${formatCents(take)} taken` : ''
+
+    return {
+      status: 'error',
+      message:
+        now?.verdict.kind === 'admitted'
+          ? `The visitors were added${paid}, but somebody else admitted the pass a moment ago. Count the rest in with Record arrivals.`
+          : `The visitors were added${paid}, but the pass was not admitted. Press Admit.`,
+    }
+  }
 
   return {
     status: 'done',
-    done: { guestName: gate.guestName, taken: take, reported: addedCount },
+    done: { guestName: gate.guestName, taken: take, admitted: input.arrived, extra: extras },
+  }
+}
+
+/** Step 2. A refusal and a throw land in the same place: the money is owed. */
+async function tookTheCash(bookingId: string, take: Cents, actorId: string): Promise<boolean> {
+  try {
+    const paid = await recordCashPayment({
+      bookingId,
+      amount: take,
+      amountOverrideReason: null,
+      actorId,
+    })
+
+    if (!paid.ok) {
+      return false
+    }
+
+    // Money reached the pass, so the accounting record is written now
+    // (capability G5), as the gate's own cash does.
+    scheduleAccountingPack(bookingId)
+
+    if (paid.confirmedNow) {
+      scheduleBookingConfirmedEmail(bookingId)
+    }
+
+    revalidatePath('/payments')
+    revalidatePath('/payments/cash')
+    revalidatePath('/reports/cash-up')
+
+    return true
+  } catch (error) {
+    console.error('The gate could not record the cash for visitors added to a pass', error)
+
+    return false
+  }
+}
+
+/** Step 3. A refusal and a throw land in the same place: the pass is paid and not admitted. */
+async function admittedThem(bookingId: string, arrived: number, actorId: string): Promise<boolean> {
+  try {
+    return (await admitDayPass({ bookingId, actorId, arrived })).ok
+  } catch (error) {
+    console.error('The gate could not admit a pass after adding visitors to it', error)
+
+    return false
   }
 }
 
@@ -305,27 +331,7 @@ function addedCounts(formData: FormData, config: PropertyConfig): Record<string,
   return added
 }
 
-/** Everybody the booking is for, as the guard counts them. */
-function bookedFor(booking: GateBooking): number {
-  return booking.party.kind === 'stay'
-    ? booking.party.counted + booking.party.exempt
-    : (booking.headcount ?? 0)
-}
-
-/**
- * The note after money has moved at the gate. Best-effort by design: the
- * party and the cash are already written, and the history carries both, so a
- * note that failed is logged rather than turned into a failure of what
- * succeeded.
- */
-async function noteForTheOffice(input: Parameters<typeof reportExtraGuests>[0]): Promise<void> {
-  try {
-    await reportExtraGuests(input)
-  } catch (error) {
-    console.error('The gate note for the office could not be saved', error)
-  }
-}
-
-function revalidateGate(booking: GateBooking): void {
-  revalidateStayScreens(booking.reference, booking.unitRef)
+function revalidateGate(reference: string): void {
+  // A pass occupies no unit.
+  revalidateStayScreens(reference, null)
 }

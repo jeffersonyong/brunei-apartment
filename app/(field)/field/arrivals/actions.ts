@@ -14,6 +14,7 @@ import { checkInBooking, recordBookingDeposit, topUpBookingDeposit } from '@/lib
 import { getGateBooking, type GateBooking, type GateReadOptions } from '@/lib/db/gate'
 import { recordCashPayment } from '@/lib/db/payments'
 import { todayInBrunei } from '@/lib/domain/dates'
+import { MAX_EXTRA_GUESTS_REMARK_LENGTH } from '@/lib/domain/extra-guests'
 import {
   gateCashStalenessOf,
   gateRefusalSentence,
@@ -21,7 +22,16 @@ import {
   type GateCashDue,
   type GateSentenceOptions,
 } from '@/lib/domain/gate'
+import {
+  alreadyCountedSentence,
+  arrivalsCountRange,
+  arrivalsRefusalSentence,
+  countedSentence,
+  gateArrivalsOf,
+} from '@/lib/domain/gate-arrivals'
 import { centsFromInput, type Cents } from '@/lib/domain/money'
+
+import { reportCountedExtras } from './office-report'
 
 /**
  * The gate's moves: checking a stay in, checking it out, admitting a day pass,
@@ -49,6 +59,15 @@ import { centsFromInput, type Cents } from '@/lib/domain/money'
  * owed — is decided last of all, under the row lock, by the SQL itself.
  *
  * Every refusal is a sentence that tells the guard what to do next.
+ *
+ * ── Checking in and admitting count the guests in ─────────────────────────
+ *
+ * Both dialogs ask how many are here now (capability D8), and the count is
+ * written in the same transaction as the status. It may go past the booking:
+ * the count records who came through, and the app never turns anyone away.
+ * Anybody beyond the booking is reported to the office afterwards — a stay
+ * always, a pass when the guard does not settle it himself
+ * (./extra-guests-actions.ts) — and check-in is never held up for it.
  */
 
 export interface GateActionState {
@@ -56,11 +75,22 @@ export interface GateActionState {
   message?: string
   /** Named in the toast: "Siti Aminah is checked in". */
   guestName?: string
+  /** The toast's second line when guests were counted in: the count, and the office. */
+  detail?: string
 }
 
 const schema = z.object({
   bookingId: z.string().uuid(),
 })
+
+/** Checking in and admitting: the booking, and how many are here now. */
+const countSchema = z.object({
+  bookingId: z.string().uuid(),
+  arrived: z.coerce.number().int().min(1),
+  remark: z.string().trim().max(MAX_EXTRA_GUESTS_REMARK_LENGTH).default(''),
+})
+
+const SAY_HOW_MANY = 'Say how many are here now.'
 
 /** A move reads its one booking again before it writes, and needs no turnovers or figures for it. */
 const READ_FOR_A_MOVE: GateReadOptions = { withReadiness: false, withCash: false }
@@ -82,21 +112,22 @@ export async function checkInAtGateAction(
   formData: FormData,
 ): Promise<GateActionState> {
   const actor = await requirePermission('booking.check_in')
-  const parsed = schema.safeParse(Object.fromEntries(formData))
+  const parsed = countSchema.safeParse(Object.fromEntries(formData))
 
   if (!parsed.success) {
-    return { status: 'error', message: gateRefusalSentence('not_found') }
+    return { status: 'error', message: SAY_HOW_MANY }
   }
 
+  const input = parsed.data
   const today = todayInBrunei()
-  const booking = await getGateBooking(parsed.data.bookingId, today, READ_FOR_A_MOVE)
+  const booking = await getGateBooking(input.bookingId, today, READ_FOR_A_MOVE)
 
   if (!booking) {
     return { status: 'error', message: gateRefusalSentence('not_found') }
   }
 
   if (booking.stream !== 'day_pass' && booking.status === 'checked_in') {
-    return { status: 'error', message: gateRefusalSentence('status_changed', { alreadyIn: true }) }
+    return { status: 'error', message: alreadyCountedSentence('check_in', booking.arrivals) }
   }
 
   if (booking.verdict.kind !== 'check_in') {
@@ -106,22 +137,40 @@ export async function checkInAtGateAction(
     }
   }
 
-  const result = await checkInBooking({ bookingId: booking.id, actorId: actor.userId })
+  if (input.arrived > arrivalsCountRange('first', booking.partySize, null).max) {
+    return { status: 'error', message: arrivalsRefusalSentence('out_of_range') }
+  }
+
+  const result = await checkInBooking({
+    bookingId: booking.id,
+    actorId: actor.userId,
+    arrived: input.arrived,
+  })
 
   if (!result.ok) {
     // Somebody else may have checked them in a moment ago, which is done
-    // rather than failed — so look before choosing the sentence.
+    // rather than failed — so look before choosing the sentence, and show the
+    // guard the count they recorded rather than dropping his.
     const now = await getGateBooking(booking.id, today, READ_FOR_A_MOVE)
 
     return {
       status: 'error',
-      message: gateRefusalSentence(result.error.code, { alreadyIn: now?.status === 'checked_in' }),
+      message:
+        now?.status === 'checked_in'
+          ? alreadyCountedSentence('check_in', now.arrivals)
+          : gateRefusalSentence(result.error.code),
     }
   }
 
+  const reported = await reportCountedExtras(booking, input.arrived, input.remark, actor.userId)
+
   revalidateStayScreens(booking.reference, booking.unitRef)
 
-  return { status: 'done', guestName: booking.guestName }
+  return {
+    status: 'done',
+    guestName: booking.guestName,
+    detail: countedSentence(gateArrivalsOf(booking.partySize, input.arrived), reported),
+  }
 }
 
 /**
@@ -188,24 +237,22 @@ export async function admitAtGateAction(
   formData: FormData,
 ): Promise<GateActionState> {
   const actor = await requirePermission('day_pass.admit')
-  const parsed = schema.safeParse(Object.fromEntries(formData))
+  const parsed = countSchema.safeParse(Object.fromEntries(formData))
 
   if (!parsed.success) {
-    return { status: 'error', message: gateRefusalSentence('not_found') }
+    return { status: 'error', message: SAY_HOW_MANY }
   }
 
+  const input = parsed.data
   const today = todayInBrunei()
-  const booking = await getGateBooking(parsed.data.bookingId, today, READ_FOR_A_MOVE)
+  const booking = await getGateBooking(input.bookingId, today, READ_FOR_A_MOVE)
 
   if (!booking) {
     return { status: 'error', message: gateRefusalSentence('not_found') }
   }
 
   if (booking.verdict.kind === 'admitted') {
-    return {
-      status: 'error',
-      message: gateRefusalSentence('status_changed', { alreadyAdmitted: true }),
-    }
+    return { status: 'error', message: alreadyCountedSentence('admit', booking.arrivals) }
   }
 
   if (booking.verdict.kind !== 'admit') {
@@ -215,7 +262,18 @@ export async function admitAtGateAction(
     }
   }
 
-  const result = await admitDayPass({ bookingId: booking.id, actorId: actor.userId })
+  if (input.arrived > arrivalsCountRange('first', booking.partySize, null).max) {
+    return { status: 'error', message: arrivalsRefusalSentence('out_of_range') }
+  }
+
+  // More than the pass is for, admitted here, is the office's to settle: the
+  // guard chose to tell them, or cannot settle it himself. Settling it at the
+  // gate is admitWithExtrasAtGateAction.
+  const result = await admitDayPass({
+    bookingId: booking.id,
+    actorId: actor.userId,
+    arrived: input.arrived,
+  })
 
   if (!result.ok) {
     // The office, or a second phone, may have admitted it a moment ago.
@@ -223,15 +281,22 @@ export async function admitAtGateAction(
 
     return {
       status: 'error',
-      message: gateRefusalSentence(result.error.code, {
-        alreadyAdmitted: now?.verdict.kind === 'admitted',
-      }),
+      message:
+        now?.verdict.kind === 'admitted'
+          ? alreadyCountedSentence('admit', now.arrivals)
+          : gateRefusalSentence(result.error.code),
     }
   }
 
+  const reported = await reportCountedExtras(booking, input.arrived, input.remark, actor.userId)
+
   revalidateStayScreens(booking.reference, null)
 
-  return { status: 'done', guestName: booking.guestName }
+  return {
+    status: 'done',
+    guestName: booking.guestName,
+    detail: countedSentence(gateArrivalsOf(booking.partySize, input.arrived), reported),
+  }
 }
 
 /* ── Taking cash ──────────────────────────────────────────────────────────── */

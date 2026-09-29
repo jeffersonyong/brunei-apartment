@@ -21,3 +21,12 @@ export const DID_NOT_GO_THROUGH =
  */
 export const CASH_MAY_NOT_HAVE_GONE_THROUGH =
   'That may not have gone through. Refresh the list: if the money still shows as owed, nothing was recorded.'
+
+/**
+ * What the gate says when a count may not have reached the server (capability
+ * D8) — the cash sentence's reasoning, for people rather than money. The
+ * refreshed card says the count as it stands, and counting the same group
+ * again is refused once it has moved (`record_gate_arrivals()`).
+ */
+export const COUNT_MAY_NOT_HAVE_GONE_THROUGH =
+  'That may not have gone through. Refresh the list: if the count has not moved, nothing was recorded.'

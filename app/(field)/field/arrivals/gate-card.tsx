@@ -11,12 +11,13 @@ import {
 } from '@/lib/domain/gate'
 import { formatCents } from '@/lib/domain/money'
 import { describeParty } from '@/lib/domain/extra-guests'
+import { arrivalsControlOf, gateArrivalsLine } from '@/lib/domain/gate-arrivals'
 import { formatVehicles } from '@/lib/domain/vehicle'
 import { cn } from '@/lib/utils'
 
 import { GateActionButton, type GateMove } from './gate-action-button'
+import { RecordArrivalsButton } from './gate-arrivals-button'
 import { GateCashButton } from './gate-cash-button'
-import { GateExtraGuestsButton } from './gate-extra-guests-button'
 
 /**
  * One booking at the barrier.
@@ -47,9 +48,15 @@ import { GateExtraGuestsButton } from './gate-extra-guests-button'
  * colour-blind guard nothing. The inset turns white on it: an object is the
  * tone a step away from what it sits on.
  *
- * **The party is on the card** so the guard can count the car against it, with
- * a small Extra button beside it for the car that holds more people than the
- * booking is for (gate-extra-guests-button.tsx).
+ * **The party is on the card, and so is who has come through against it**
+ * (capability D8). Check in and Admit ask how many are here now; after that
+ * the card reads "15 of 20 arrived · 5 to come", with **Record arrivals** — the
+ * one button that counts people in, and corrects a mis-tap — full width at the
+ * foot while anyone booked is still to come, and small beside the count once
+ * everyone is in (gate-arrivals-button.tsx). The count is shown to every
+ * reader; the buttons only to whoever lets this kind of booking in, and only
+ * while there is something to count — never on a closed booking reached by
+ * its QR code or by search.
  */
 
 /** The gate moves the reader holds. */
@@ -142,21 +149,15 @@ function placeOf(booking: GateBooking): string {
   return `Day pass · ${booking.headcount} ${booking.headcount === 1 ? 'person' : 'people'}`
 }
 
-/** Everybody the booking is for, and how that is made up. */
-function partyOf(booking: GateBooking, exemptAgeMax: number): { people: number; detail: string } {
+/** How everybody the booking is for is made up. */
+function partyDetailOf(booking: GateBooking, exemptAgeMax: number): string {
   if (booking.party.kind === 'pass') {
-    return {
-      people: booking.headcount ?? 0,
-      detail: describeParty(booking.party.bands),
-    }
+    return describeParty(booking.party.bands)
   }
 
-  const { counted, exempt } = booking.party
+  const { exempt } = booking.party
 
-  return {
-    people: counted + exempt,
-    detail: exempt > 0 ? `${exempt} aged ${exemptAgeMax} or under` : '',
-  }
+  return exempt > 0 ? `${exempt} aged ${exemptAgeMax} or under` : ''
 }
 
 function datesOf(booking: GateBooking): string {
@@ -183,12 +184,12 @@ export function GateCard({
   const move = moveOf(booking.verdict, moves)
   const place = placeOf(booking)
   const plates = formatVehicles(booking.vehicles)
-  const party = partyOf(booking, context.exemptAgeMax)
+  const partyDetail = partyDetailOf(booking, context.exemptAgeMax)
   const isRed = booking.moneyUnsettled
   // Whoever lets this kind of booking in is whoever counts the people in it.
-  const mayReport =
-    booking.verdict.kind !== 'closed' &&
-    (booking.stream === 'day_pass' ? moves.mayAdmit : moves.mayCheckIn)
+  const mayCount = booking.stream === 'day_pass' ? moves.mayAdmit : moves.mayCheckIn
+  const control = mayCount ? arrivalsControlOf(booking.verdict, booking.arrivals) : null
+  const arrivals = booking.arrivals
 
   return (
     <article
@@ -237,25 +238,28 @@ export function GateCard({
           </dt>
           <dd className="mt-xxs text-body-sm text-foreground tabular-nums">{datesOf(booking)}</dd>
         </div>
-        <div className="col-span-2 flex min-w-0 items-center justify-between gap-md">
-          <div className="min-w-0">
-            <dt className="micro-label text-muted-foreground">Guests</dt>
-            <dd className="mt-xxs text-body-md text-foreground tabular-nums">
-              {party.people}
-              {party.detail ? (
-                <span className="text-body-sm text-muted-foreground"> · {party.detail}</span>
-              ) : null}
-            </dd>
-          </div>
-          {mayReport ? (
-            <GateExtraGuestsButton
-              booking={booking}
-              place={place}
-              bookedFor={party.people}
-              passPricing={moves.mayTakeCash ? context.passPricing : null}
-            />
-          ) : null}
+        <div className="col-span-2 min-w-0">
+          <dt className="micro-label text-muted-foreground">Guests</dt>
+          <dd className="mt-xxs text-body-md text-foreground tabular-nums">
+            {booking.partySize}
+            {partyDetail ? (
+              <span className="text-body-sm text-muted-foreground"> · {partyDetail}</span>
+            ) : null}
+          </dd>
         </div>
+        {arrivals ? (
+          <div className="col-span-2 flex min-w-0 items-center justify-between gap-md">
+            <div className="min-w-0">
+              <dt className="micro-label text-muted-foreground">Arrived</dt>
+              <dd className="mt-xxs text-body-md text-foreground tabular-nums">
+                {gateArrivalsLine(arrivals)}
+              </dd>
+            </div>
+            {control === 'all_in' ? (
+              <RecordArrivalsButton booking={booking} arrivals={arrivals} size="small" />
+            ) : null}
+          </div>
+        ) : null}
         {cash ? (
           <div className="col-span-2 min-w-0">
             <dt className="micro-label text-muted-foreground">To take</dt>
@@ -307,12 +311,24 @@ export function GateCard({
       {move ? (
         <GateActionButton
           move={move}
-          bookingId={booking.id}
-          reference={booking.reference}
-          guestName={booking.guestName}
+          booking={booking}
           place={place}
           note={noteOf(booking.verdict, cash !== null)}
+          takesCash={moves.mayTakeCash}
+          passPricing={moves.mayTakeCash ? context.passPricing : null}
           className={cash ? 'mt-sm' : 'mt-md'}
+        />
+      ) : null}
+
+      {/* The card's primary only when it has nothing else to do: a move or
+          money in hand comes first at the barrier. */}
+      {control === 'more' && arrivals ? (
+        <RecordArrivalsButton
+          booking={booking}
+          arrivals={arrivals}
+          size="full"
+          isPrimary={move === null && cash === null}
+          className={move || cash ? 'mt-sm' : 'mt-md'}
         />
       ) : null}
     </article>

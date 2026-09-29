@@ -9,11 +9,13 @@ import {
   type GateFacts,
   type GateVerdict,
 } from '@/lib/domain/gate'
+import { gateArrivalsOf, type GateArrivals } from '@/lib/domain/gate-arrivals'
 import type { Cents } from '@/lib/domain/money'
 import type { BookingStream } from '@/lib/domain/stream'
 import { unitNotReadyOf } from '@/lib/domain/unit-status'
 import { dataClient } from '@/lib/supabase/data'
 
+import { listArrivals } from './arrivals'
 import { listDepositsForBookings, type Deposit } from './deposits'
 import { listDayPassParties, listExtraGuestsAwaitingOffice } from './party'
 import { listBookingIdsAwaitingTransfer } from './payments'
@@ -30,8 +32,9 @@ import { lastStayFactsOf, listUnitStates } from './units'
  * plate or name with no second request on a weak signal (register C3). That
  * makes every field on `GateBooking` something a phone left on the guardhouse
  * desk shows. So it carries what a guard needs to recognise a car and decide —
- * reference, name, unit, plates, the party he counts the car against, whether
- * the unit is ready — and a verdict already decided on the server. **No phone
+ * reference, name, unit, plates, the party he counts the car against and how
+ * many have come through against it (D8), whether the unit is ready — and a
+ * verdict already decided on the server. **No phone
  * number, email or access token, and no price or deposit figure** — except
  * the figures a guard who takes cash has to see: what is owed now, and what
  * it is for (`cash`, N54), and a pass's total and what is paid on it, which
@@ -90,6 +93,19 @@ export interface GateBooking {
   headcount: number | null
   /** Who the booking is for, so the guard can count the car against it. */
   party: GateParty
+  /**
+   * Everybody the booking is for, as the gate counts them: a stay's counted
+   * and exempt guests — the small ones come through the gate too — or a
+   * pass's headcount. The same sum `check_in_booking()` records as the whole
+   * party.
+   */
+  partySize: number
+  /**
+   * How many have come through the gate against the booking (capability D8),
+   * from the moment it was checked in or admitted. Null before that — and
+   * for a booking let in without a count, which the app never does.
+   */
+  arrivals: GateArrivals | null
   /**
    * Extra people guards have reported that the office has not acted on yet
    * (`extraGuestsAwaitingOffice`), so a second guard sees it was said.
@@ -327,7 +343,7 @@ async function withVerdicts(
 ): Promise<readonly GateBooking[]> {
   const arriving = rows.filter((row) => isArrivingBy(row, today))
 
-  const [deposits, awaitingTransfer, notReady, passParties, reported] = await Promise.all([
+  const [deposits, awaitingTransfer, notReady, passParties, reported, arrived] = await Promise.all([
     listDepositsForBookings(
       rows.filter((row) => row.security_deposit_cents > 0).map((row) => row.id),
     ),
@@ -337,6 +353,7 @@ async function withVerdicts(
       : Promise.resolve<ReadonlySet<string>>(new Set()),
     listDayPassParties(rows.filter((row) => row.stream === 'day_pass').map((row) => row.id)),
     listExtraGuestsAwaitingOffice(rows.map((row) => row.id)),
+    listArrivals(rows.map((row) => row.id)),
   ])
 
   return rows.map((row) => {
@@ -346,6 +363,11 @@ async function withVerdicts(
       awaitingTransfer.has(row.id),
       today,
     )
+    const partySize =
+      row.stream === 'day_pass'
+        ? (row.pass_headcount ?? 0)
+        : row.chargeable_guests + row.exempt_guests
+    const counted = arrived.get(row.id)
 
     return {
       id: row.id,
@@ -361,6 +383,8 @@ async function withVerdicts(
         row.stream === 'day_pass'
           ? { kind: 'pass', bands: passParties.get(row.id) ?? [] }
           : { kind: 'stay', counted: row.chargeable_guests, exempt: row.exempt_guests },
+      partySize,
+      arrivals: counted === undefined ? null : gateArrivalsOf(partySize, counted),
       extraReported: reported.get(row.id) ?? 0,
       vehicles: row.vehicles,
       noVehicle: row.no_vehicle,

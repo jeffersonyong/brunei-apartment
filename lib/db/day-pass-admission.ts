@@ -39,6 +39,11 @@ export type AdmitRefusalCode =
 export interface AdmitDayPassInput {
   bookingId: string
   actorId: string | null
+  /**
+   * How many came through the gate, as the guard counted them (capability
+   * D8). Left out, the whole pass is counted — the desk's admission.
+   */
+  arrived?: number
 }
 
 export type AdmitDayPassResult =
@@ -82,6 +87,9 @@ export async function admitDayPass(input: AdmitDayPassInput): Promise<AdmitDayPa
     p_from_status: current.status,
     p_to_status: next.status,
     p_actor_id: input.actorId,
+    // Sent only with a count, so the desk's admission names the same five
+    // arguments whichever side of the migration the database is on.
+    ...(input.arrived === undefined ? {} : { p_arrived: input.arrived }),
   })
 
   if (error) {
@@ -122,7 +130,8 @@ function describeAdmitRefusal(result: AdmitRefusal): { code: AdmitRefusalCode; m
     case 'owed':
       return {
         code: result.error,
-        message: 'This day pass is not paid in full. Take the rest from the booking, then admit it.',
+        message:
+          'This day pass is not paid in full. Take the rest from the booking, then admit it.',
       }
     default:
       return { code: 'not_found', message: 'That booking no longer exists.' }

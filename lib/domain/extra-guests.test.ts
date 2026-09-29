@@ -86,6 +86,19 @@ describe('extraGuestsNote', () => {
       }),
     ).toBe('Added at the gate: Under 1 × 1 (the pass is now for 3). Nothing more to pay.')
   })
+
+  test('says so when the cash for them was not recorded, so the office does not assume it was', () => {
+    expect(
+      extraGuestsNote({
+        extra: 3,
+        bookedFor: 20,
+        remark: 'Cousins',
+        added: { party: 'Adult × 3', nowFor: 23, taken: null },
+      }),
+    ).toBe(
+      'Added at the gate: Adult × 3 (the pass is now for 23). The cash was not recorded, and the pass owes it. “Cousins”',
+    )
+  })
 })
 
 describe('extraGuestsAwaitingOffice', () => {

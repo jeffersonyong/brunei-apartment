@@ -52,6 +52,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'booking.discounted',
   'booking.party_changed',
   'booking.extra_guests_reported',
+  'booking.arrivals_recorded',
   'booking.hold',
   'booking.submit_payment',
   'booking.verify_payment',
@@ -221,6 +222,9 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   'booking.check_out': 'Checked out',
   // A day pass let in at the gate, which also closes it (N54).
   'booking.admit': 'Admitted',
+  // The words for an event with no payload to read; `describeBooking` says
+  // which way the count went whenever there is one (capability D8).
+  'booking.arrivals_recorded': 'Arrivals recorded',
   // The booking's own status move, distinct from the payment event beside it.
   // Labelling both "Payment verified" made the trail say the same thing twice:
   // the money is the payment's event, the status is the booking's.
@@ -431,11 +435,54 @@ function describeBooking(event: AuditEventLike): string | null {
       : `Extra guests reported at the gate${extra}`
   }
 
+  if (event.action === 'booking.check_in' || event.action === 'booking.admit') {
+    return letInLabel(event)
+  }
+
+  if (event.action === 'booking.arrivals_recorded') {
+    return arrivalsLabel(event)
+  }
+
   if (event.action.startsWith('document.')) {
     return documentLabel(event)
   }
 
   return null
+}
+
+/**
+ * A check-in or an admission, with how many came through when the gate
+ * counted them (capability D8). One from before the count keeps its plain
+ * words. An admission from before `booked` was written carries the pass's
+ * headcount, which is the same figure.
+ */
+function letInLabel(event: AuditEventLike): string | null {
+  const arrived = event.after?.arrived
+  const booked =
+    typeof event.after?.booked === 'number' ? event.after.booked : event.after?.headcount
+
+  if (typeof arrived !== 'number' || typeof booked !== 'number') {
+    return null
+  }
+
+  const verb = event.action === 'booking.admit' ? 'Admitted' : 'Checked in'
+
+  return `${verb} — ${arrived} of ${booked} arrived`
+}
+
+/** More people counted in at the gate, or a mis-tap corrected: both sides, and the booking. */
+function arrivalsLabel(event: AuditEventLike): string | null {
+  const from = event.before?.arrived
+  const to = event.after?.arrived
+  const booked = event.after?.booked
+
+  if (typeof from !== 'number' || typeof to !== 'number' || typeof booked !== 'number') {
+    return null
+  }
+
+  const verb = event.after?.corrected === true ? 'Arrival count corrected' : 'Arrivals recorded'
+
+  return `${verb} — ${from} → ${to} of ${booked}`
 }
 
 /** Everybody a party counted: a pass's headcount, or a stay's two figures summed. */

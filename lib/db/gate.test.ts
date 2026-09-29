@@ -267,6 +267,7 @@ describe("today's list at the gate", () => {
     expect(Object.keys(row ?? {}).sort()).toEqual(
       [
         'arrival',
+        'arrivals',
         'cash',
         'departure',
         'extraReported',
@@ -276,6 +277,7 @@ describe("today's list at the gate", () => {
         'moneyUnsettled',
         'noVehicle',
         'party',
+        'partySize',
         'passFigures',
         'reference',
         'status',
@@ -608,6 +610,47 @@ describe('admitting a day pass (N54)', () => {
 
     expect(error).toBeNull()
     expect(data).toEqual({ ok: false, error: 'admits_through_admit_day_pass' })
+  })
+})
+
+describe('who has come through the gate (D8)', () => {
+  test('a stay not in yet carries its party and no count; one checked in carries both', async () => {
+    const waiting = await givenBooking({
+      unitRef: '3B-01',
+      checkIn: TODAY,
+      checkOut: LATER,
+      chargeableGuests: 3,
+      exemptGuests: 1,
+    })
+    const inside = await givenCheckedInBooking({
+      unitRef: '3B-02',
+      checkIn: YESTERDAY,
+      checkOut: LATER,
+      chargeableGuests: 2,
+    })
+
+    const list = await listGateBookings(TODAY, PLAIN)
+    const expected = list.expected.find((row) => row.id === waiting.id)
+    const staying = list.inResidence.find((row) => row.id === inside.booking.id)
+
+    expect(expected?.partySize).toBe(4)
+    expect(expected?.arrivals).toBeNull()
+    // Checked in by the office's writer, with no count: the whole party.
+    expect(staying?.arrivals).toEqual({ booked: 2, arrived: 2, toCome: 0, over: 0 })
+  })
+
+  test('an admitted pass carries the count the gate took', async () => {
+    const today = todayInBrunei()
+    const pass = await paidPassOn(today, '+673 710 0109')
+
+    await admitDayPass({ bookingId: pass.bookingId, actorId: null, arrived: 1 })
+
+    const row = (await listGateBookings(today, PLAIN)).dayPasses.find(
+      (r) => r.id === pass.bookingId,
+    )
+
+    expect(row?.partySize).toBe(2)
+    expect(row?.arrivals).toEqual({ booked: 2, arrived: 1, toCome: 1, over: 0 })
   })
 })
 
