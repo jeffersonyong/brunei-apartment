@@ -35,6 +35,7 @@ import { admitAtGateAction, checkInAtGateAction, type GateActionState } from './
 import { ExtraGuestsRemark } from './extra-guests-remark'
 import { admitWithExtrasAtGateAction, type ExtraGuestsState } from './extra-guests-actions'
 import { PassExtrasFields, usePassExtras } from './pass-extras-fields'
+import { STACKED_FOOTER } from './stacked-footer'
 
 /**
  * Checking a stay in, or admitting a day pass — and counting the guests in as
@@ -277,7 +278,7 @@ export function GateCountDialog({
 
               {error ? <FieldError message={error} /> : null}
 
-              <DialogFooter>
+              <DialogFooter className={over > 0 && canSettle ? STACKED_FOOTER : undefined}>
                 <Button type="button" variant="tertiary" size="touch" onClick={onClose}>
                   Not yet
                 </Button>
@@ -337,7 +338,7 @@ function SettleExtras({
 
       {error ? <FieldError message={error} /> : null}
 
-      <DialogFooter>
+      <DialogFooter className={STACKED_FOOTER}>
         <Button type="button" variant="tertiary" size="touch" onClick={onClose}>
           Not yet
         </Button>

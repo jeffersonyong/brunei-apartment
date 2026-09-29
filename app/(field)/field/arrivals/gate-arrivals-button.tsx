@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils'
 
 import { recordArrivalsAtGateAction, type ArrivalsState } from './arrivals-actions'
 import { ExtraGuestsRemark } from './extra-guests-remark'
+import { STACKED_FOOTER } from './stacked-footer'
 
 /**
  * Counting people through the gate after the first group (capability D8).
@@ -229,7 +230,10 @@ function ArrivalsDialog({
 
           {state.status === 'error' ? <FieldError message={state.message} /> : null}
 
-          <DialogFooter>
+          <DialogFooter className={STACKED_FOOTER}>
+            <Button type="button" variant="tertiary" size="touch" onClick={onClose}>
+              Not yet
+            </Button>
             <Button
               type="button"
               variant="tertiary"
@@ -237,9 +241,6 @@ function ArrivalsDialog({
               onClick={() => switchTo(kind === 'more' ? 'correct' : 'more')}
             >
               {kind === 'more' ? 'Correct the count instead' : 'Record arrivals instead'}
-            </Button>
-            <Button type="button" variant="tertiary" size="touch" onClick={onClose}>
-              Not yet
             </Button>
             <Button type="submit" size="touch" disabled={valid === null || !isChange || isPending}>
               {isPending

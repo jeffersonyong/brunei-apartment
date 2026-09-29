@@ -4,7 +4,6 @@ import { useState } from 'react'
 
 import { FieldError } from '@/components/ui/field-error'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import type { GateBooking } from '@/lib/db/gate'
 import type { PropertyConfig } from '@/lib/domain/config'
 import { addToParty, countsOf, MAX_EXTRA_GUESTS } from '@/lib/domain/extra-guests'
@@ -68,15 +67,25 @@ export function PassExtrasFields({
   state: PassExtras
 }) {
   const named = Object.values(state.added).reduce((sum, value) => sum + value, 0)
+  const people = extras === 1 ? 'the extra person' : `the ${extras} extra people`
 
   return (
     <div className="grid gap-md">
-      <fieldset className="grid gap-md">
-        <legend className="micro-label text-muted-foreground">Who are the {extras} extra?</legend>
-        <div className="flex flex-wrap gap-lg">
+      {/* A legend is laid out by the fieldset, not the grid, so it takes its
+          own margin: a grid gap never reaches it. It reads as a question like
+          the box's others, and the bands answer it in the quieter voice. */}
+      <fieldset className="min-w-0">
+        <legend className="mb-md text-body-sm-strong text-foreground">
+          {extras === 1
+            ? 'Who is the extra person, by age?'
+            : `Who are the ${extras} extra people, by age?`}
+        </legend>
+        <div className="flex flex-wrap gap-md">
           {config.dayPassAgeBands.map((band) => (
             <div key={band.id} className="grid gap-sm">
-              <Label htmlFor={`add-${band.id}`}>{band.label}</Label>
+              <label htmlFor={`add-${band.id}`} className="text-body-sm text-muted-foreground">
+                {band.label}
+              </label>
               <Input
                 id={`add-${band.id}`}
                 name={`band-${band.id}`}
@@ -96,9 +105,13 @@ export function PassExtrasFields({
         </div>
       </fieldset>
 
-      {!state.matches && named > 0 ? (
+      {/* Until the bands add up, say why there is nothing to take yet — the
+          admit button waits on it. */}
+      {!state.matches ? (
         <p className="text-body-sm text-muted-foreground tabular-nums">
-          {named} named of {extras}. The bands must add up to the extras counted.
+          {named === 0
+            ? `Put ${people} in an age band to see what to take.`
+            : `${named} named of ${extras}. The bands must add up to ${extras}.`}
         </p>
       ) : null}
 
