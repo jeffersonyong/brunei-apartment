@@ -322,18 +322,6 @@ export function gateMoneyUnsettledOf(facts: GateFacts): boolean {
 }
 
 /**
- * Whether the guard may add visitors he counted to a day pass himself, and
- * take the difference in cash (Jeff, 19 September 2026): a pass on its own day
- * that is paid and ready to admit, or still to pay at the gate — the passes he
- * could already take cash for. An admitted pass is closed and takes no more
- * money, and one waiting on a transfer is the office's; for those the guard
- * tells the office instead.
- */
-export function mayAddVisitorsAtGate(verdict: GateVerdict): boolean {
-  return verdict.kind === 'admit' || (verdict.kind === 'office' && verdict.reason === 'pass_unpaid')
-}
-
-/**
  * Whether the cash a guard confirmed is still the cash owed, asked again just
  * before it is recorded.
  *
@@ -424,7 +412,8 @@ export function gateVerdictSentence(
     case 'leaving':
       return leavingSentence(verdict, dates.departure, options)
     case 'admit':
-      return 'Day pass is paid for today. Check the number of people against the pass.'
+      // How many are here is the Admit dialog's first question (capability D8).
+      return 'Day pass is paid for today.'
     case 'admitted':
       return 'Admitted today. They may come and go.'
     case 'office':
@@ -515,10 +504,6 @@ function officeSentence(
 }
 
 export interface GateRefusalOptions {
-  /** The booking was checked in by somebody else a moment ago. */
-  alreadyIn?: boolean
-  /** The pass was admitted by somebody else a moment ago. */
-  alreadyAdmitted?: boolean
   /** The guest was checked out by somebody else a moment ago. */
   alreadyOut?: boolean
 }
@@ -528,17 +513,11 @@ export interface GateRefusalOptions {
  * few minutes old, or somebody else moved the booking first.
  *
  * Every sentence tells the guard what to do next, because "an error occurred"
- * at a barrier with a queue behind the car is no instruction at all.
+ * at a barrier with a queue behind the car is no instruction at all. A booking
+ * somebody else checked in or admitted first is `alreadyCountedSentence`'s
+ * (./gate-arrivals.ts), which names the count they recorded.
  */
 export function gateRefusalSentence(code: string, options: GateRefusalOptions = {}): string {
-  if (options.alreadyIn) {
-    return 'Already checked in. Nothing more to do.'
-  }
-
-  if (options.alreadyAdmitted) {
-    return 'Already admitted. Nothing more to do.'
-  }
-
   if (options.alreadyOut) {
     return 'Already checked out. Nothing more to do.'
   }

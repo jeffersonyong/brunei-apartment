@@ -223,6 +223,15 @@ function CheckInDialog({
             </Notice>
           ) : null}
 
+          {/* The gate counts a party in as it arrives (capability D8); a
+              check-in here has nobody at the barrier to count, so it records
+              everyone, and says so. */}
+          {canProceed ? (
+            <p className="text-body-sm text-muted-foreground">
+              Everyone on the booking is counted as arrived; the gate can correct it.
+            </p>
+          ) : null}
+
           {state.status === 'error' ? <FieldError message={state.message} /> : null}
 
           <DialogFooter>

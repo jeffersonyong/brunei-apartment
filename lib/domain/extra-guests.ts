@@ -60,8 +60,12 @@ export interface ExtraGuestsNoteInput {
   bookedFor: number
   /** Anything the guard typed. Trimmed; empty adds nothing. */
   remark: string
-  /** Set when the guard added them to a pass himself and took the difference. */
-  added?: { party: string; nowFor: number; taken: Cents }
+  /**
+   * Set when the guard added them to a pass himself and took the difference.
+   * `taken` is null when the cash for them failed to record: the pass owes
+   * it, and its card finishes it with the ordinary Take.
+   */
+  added?: { party: string; nowFor: number; taken: Cents | null }
 }
 
 /** The note the office reads on the booking. */
@@ -72,7 +76,12 @@ export function extraGuestsNote(input: ExtraGuestsNoteInput): string {
   if (input.added) {
     const { party, nowFor, taken } = input.added
 
-    const money = taken > 0 ? `BND ${formatCents(taken)} taken in cash.` : 'Nothing more to pay.'
+    const money =
+      taken === null
+        ? 'The cash was not recorded, and the pass owes it.'
+        : taken > 0
+          ? `BND ${formatCents(taken)} taken in cash.`
+          : 'Nothing more to pay.'
 
     return `Added at the gate: ${party} (the pass is now for ${nowFor}). ${money}${said}`
   }

@@ -113,7 +113,8 @@ function AdmitPassDialog({
           <DialogDescription>
             A day pass for {headcount} {headcount === 1 ? 'person' : 'people'} on{' '}
             {formatStayDate(passDate)}. Admitting uses it for the day and closes the booking — it
-            cannot be edited or cancelled afterwards.
+            cannot be edited or cancelled afterwards. Everyone on the pass is counted as arrived;
+            the gate can correct it.
           </DialogDescription>
         </DialogHeader>
 

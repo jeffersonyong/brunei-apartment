@@ -14,6 +14,7 @@ import { SectionCard } from '@/components/portal/section-card'
 import { Button } from '@/components/ui/button'
 import { hasPermission, type Permission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
+import { listArrivals } from '@/lib/db/arrivals'
 import { listAuditEventPage } from '@/lib/db/audit'
 import { getBookingByReference, type Booking } from '@/lib/db/bookings'
 import { getDepositByBookingId, type Deposit } from '@/lib/db/deposits'
@@ -35,6 +36,7 @@ import { balanceOf, canSettle } from '@/lib/domain/balance'
 import { depositAtClose } from '@/lib/domain/deposit'
 import { describeDiscount } from '@/lib/domain/discount'
 import { countsOf, describeParty } from '@/lib/domain/extra-guests'
+import { gateArrivalsOf } from '@/lib/domain/gate-arrivals'
 import { formatCents } from '@/lib/domain/money'
 import { PAYMENT_METHOD_LABELS } from '@/lib/domain/payment'
 import { mayAttach, mayOpen, uploaderFor } from '@/lib/domain/document'
@@ -122,6 +124,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     packChangedAt,
     config,
     passParties,
+    arrivals,
   ] = await Promise.all([
     listPaymentsForBooking(booking.id),
     listStaff(),
@@ -138,9 +141,12 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     booking.dayPass
       ? listDayPassParties([booking.id])
       : Promise.resolve<ReadonlyMap<string, readonly DayPassPartyLine[]>>(new Map()),
+    // How many have come through the gate (capability D8), once let in.
+    listArrivals([booking.id]),
   ])
 
   const passParty = passParties.get(booking.id) ?? null
+  const arrived = arrivals.get(booking.id) ?? null
 
   // The trail is the booking's own events with three other records' folded
   // in, read as one page in one query (`listAuditEventPage`). Each keeps its
@@ -379,6 +385,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         <GuestAndStaySummary
           booking={booking}
           passParty={passParty}
+          arrived={arrived}
           partyChange={partyChange}
           identityDocuments={documents.filter((document) => document.kind === 'identity')}
           mayOpenIdentity={mayOpen('identity', actor.permissions)}
@@ -480,13 +487,14 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
  *
  * It also settles a gap. `SectionCard` is `h-full` so this card and Money end
  * level, and Money is the taller of the two — this one used to stretch and
- * leave dead space under its four fields. Six fields fill the row honestly,
+ * leave dead space under its four fields. Eight fields fill the rows honestly,
  * which is a better answer than shortening the card and letting the pair sit
  * ragged.
  */
 function GuestAndStaySummary({
   booking,
   passParty,
+  arrived,
   partyChange,
   identityDocuments,
   mayOpenIdentity,
@@ -496,6 +504,8 @@ function GuestAndStaySummary({
   booking: Booking
   /** A day pass's bands as sold; null for a stay. */
   passParty: readonly DayPassPartyLine[] | null
+  /** How many have come through the gate; null until the booking is let in. */
+  arrived: number | null
   /** The Change control beside the party, for whoever may change it. */
   partyChange: ReactNode
   identityDocuments: readonly Document[]
@@ -508,7 +518,7 @@ function GuestAndStaySummary({
 
   return (
     <SectionCard id="guest-stay-heading" title="Guest & stay">
-      {/* Two columns, not a stack: six readouts in one card read as a panel
+      {/* Two columns, not a stack: eight readouts in one card read as a panel
           of figures, and stacked they read as a form nobody can fill in. */}
       <dl className="grid gap-md sm:grid-cols-2">
         <Field label="Guest" value={booking.guestName} />
@@ -568,6 +578,7 @@ function GuestAndStaySummary({
           }
           action={partyChange}
         />
+        <ArrivedField booking={booking} arrived={arrived} />
         <VehicleField booking={booking} />
       </dl>
 
@@ -584,6 +595,41 @@ function GuestAndStaySummary({
         actorNames={actorNames}
       />
     </SectionCard>
+  )
+}
+
+/**
+ * How many have come through the gate against the party (capability D8).
+ *
+ * The gate owns the count — Check in and Admit take it, Record arrivals and
+ * Correct change it — so the office reads it and never edits it; every change
+ * is in the history below. A check-in or admission at the office counts the
+ * whole party. Before anybody is let in there is no count, and the field
+ * says so in words: a zero would read as a count the gate took.
+ */
+function ArrivedField({ booking, arrived }: { booking: Booking; arrived: number | null }) {
+  if (arrived === null) {
+    return <Field label="Arrived" value={isTerminal(booking.status) ? 'Nobody' : 'Nobody yet'} />
+  }
+
+  const booked = booking.dayPass
+    ? booking.dayPass.headcount
+    : booking.chargeableGuests + booking.exemptGuests
+  const { toCome, over } = gateArrivalsOf(booked, arrived)
+
+  return (
+    <Field
+      label="Arrived"
+      value={`${arrived} of ${booked}`}
+      figures
+      hint={
+        toCome > 0
+          ? `${toCome} still to come — counted at the gate`
+          : over > 0
+            ? `${over} more than booked — counted at the gate`
+            : 'Counted at the gate'
+      }
+    />
   )
 }
 

@@ -10,7 +10,6 @@ import {
   gateVerdictSentence,
   gateMoneyUnsettledOf,
   matchesGateSearch,
-  mayAddVisitorsAtGate,
   type GateCashDue,
   type GateDates,
   type GateFacts,
@@ -450,25 +449,6 @@ describe('gateMoneyUnsettledOf — the card the guard is careful with', () => {
   })
 })
 
-describe('mayAddVisitorsAtGate — a pass the guard settles himself', () => {
-  test('a paid pass on its day, and one still to pay at the gate', () => {
-    expect(mayAddVisitorsAtGate(gateVerdictOf(pass()))).toBe(true)
-    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ paid: 0 })))).toBe(true)
-  })
-
-  test('not an admitted pass, which is closed, nor one waiting on a transfer or another day', () => {
-    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ status: 'completed' })))).toBe(false)
-    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ paid: 0, transferPending: true })))).toBe(
-      false,
-    )
-    expect(mayAddVisitorsAtGate(gateVerdictOf(pass({ arrival: TOMORROW })))).toBe(false)
-  })
-
-  test('never a stay — the office changes a stay’s party', () => {
-    expect(mayAddVisitorsAtGate(gateVerdictOf(facts()))).toBe(false)
-  })
-})
-
 describe('gateCashStalenessOf — the same notes are never recorded twice', () => {
   const stay = (amount: number): GateCashDue => ({ kind: 'stay', amount })
 
@@ -537,6 +517,12 @@ describe('gateVerdictSentence', () => {
     { kind: 'in_residence' },
     { kind: 'closed' },
   ]
+
+  test('a paid pass leaves the counting to the Admit dialog, which asks how many are here', () => {
+    expect(gateVerdictSentence({ kind: 'admit' }, DATES, READERS[0]!)).toBe(
+      'Day pass is paid for today.',
+    )
+  })
 
   test('every verdict has a sentence for every reader, and none quotes a figure', () => {
     for (const verdict of every) {
@@ -676,19 +662,9 @@ describe('gateRefusalSentence', () => {
     expect(gateRefusalSentence('deposit_not_secured')).toMatch(/Call the office/)
   })
 
-  test('a booking somebody else checked in first is said to be done', () => {
-    expect(gateRefusalSentence('status_changed', { alreadyIn: true })).toMatch(/Already checked in/)
-  })
-
   test('a guest somebody else checked out first is said to be done', () => {
     expect(gateRefusalSentence('status_changed', { alreadyOut: true })).toMatch(
       /Already checked out/,
-    )
-  })
-
-  test('a pass somebody else admitted first is said to be done', () => {
-    expect(gateRefusalSentence('status_changed', { alreadyAdmitted: true })).toMatch(
-      /Already admitted/,
     )
   })
 
