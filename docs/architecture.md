@@ -241,6 +241,8 @@ The PRD's entity list (§6.2) is the conceptual model. Normative implementation 
 
   **`public_attempt` is the one table here that is not audited**, and that is the point: it is a counter about a request, not a fact about a booking, and the audit trail is the client's record of what people did.
 
+  **The bookings list's saved views are `booking_list_view`, and they are not audited either** (20261008000200, capability B19). A view is a named set of the list's filters — `statuses`, `streams`, `search`, `money_owed` — shared by the property, saved through `save_booking_list_view()` (at most twelve, no two names alike, no two with the same filters, under a per-property lock) and deleted with a plain delete under `booking.view`. **It has no date column**, so a view cannot keep dates. Statuses and streams are not checked against an enum in SQL; `filterFromStored()` (lib/domain/booking-list-view.ts) drops what it does not recognise on read, so a status the state machine retires never needs a data migration and never stops the list rendering. Not audited for `booking_note`'s reason: it approves nothing, moves no money and holds no personal data. The cost is stated: who deleted a view is recorded nowhere; who saved it and when is on the row. *Money owed* filters on **`booking_summary.outstanding_cents`** — `total_cents − paid_cents`, appended to the view by the same migration because PostgREST cannot compare two columns — and on the statuses that have not ended (`owesMoney()`, lib/domain/balance.ts).
+
 ### 5.2 Double-booking prevention (structural)
 
 The availability invariant is enforced **in the database**, not in application logic:

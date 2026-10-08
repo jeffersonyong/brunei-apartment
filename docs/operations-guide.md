@@ -1478,12 +1478,19 @@ The screen is titled **Bookings** — "Every booking across all streams — the 
 - Clicking a tile shows only that type. Clicking the tile that is already selected clears it and shows all types again. A tile selects one type at a time; to see two types together, use the **Type** filter.
 - **Tenancy** always reads 0: long leases are set up on the unit (see *Units and property settings*), not as bookings, so none appear in this register.
 
+**Saved views.** Under the tiles, a row of views the team has saved: **All bookings** first, then each saved view by its name, in the order they were saved. Clicking one sets the filters it holds. The view the list is showing is lifted out of the row (white); when the filters on screen match no view — or when **Stay date** is on as well — none is. Everyone who can open this screen sees the same views. Next to the row:
+- **Save view** — shown when a filter is on and no saved view already holds exactly it (dates aside: a view never holds dates). See *How to save a view, and delete one*.
+- **Delete view** — shown while a saved view is the one being shown.
+
+The screen still opens on **All bookings**; a view is one click away rather than the default.
+
 **The filter row** (directly above the table). Every filter takes effect as soon as you choose it — there is no Apply button.
 
 - **Search box** — placeholder "Reference, guest, phone or unit". Finds bookings whose **reference, guest name, phone number or unit reference contains** what you type, ignoring capitals. "4821", "lim", "8959" and "3B" all work. It does **not** search email addresses, vehicle registrations, notes or amounts. The search runs when you stop typing for a moment, or at once when you press Enter. Press Esc, or click the small cross, to clear it. The characters , ( ) " \ * % _ are ignored, and only the first 80 characters count. A phone number is matched as it was stored — numbers taken with a country code are stored like "+673 8959798", so typing "8959798" finds it but "6738959798" (no space) does not.
 - **Status** — tick one or several statuses: Draft, Held, Awaiting payment, Confirmed, Checked in, Completed, Expired, Cancelled, No show. Ticking "Confirmed" and "Checked in" together is the way to see who is actually booked in or in the building.
 - **Type** — tick one or several of Short stay, Day pass, Tenancy (the same thing the tiles set, but allowing more than one).
 - **Stay date** — pick a first and last day (**Choose a year** at the bottom of the calendar jumps to another year, and keeps a first day already picked). A booking matches if **at least one of its nights falls on the days you picked** (not only bookings that *start* in the range). A guest who checks out on the first day you picked is not included; a guest who checks in on the last day is. **A Stay date filter hides every day pass**, even one sold for a day inside the range — to find day passes by day, use the Type filter and read the Dates column instead.
+- **Money owed** — on or off (it fills grey when on). Shows only bookings that **still owe money for the booking itself and have not ended**: what was charged minus what has been verified. It finds what a status cannot — a stay secured by its deposit is **Confirmed** and still owes the stay until the guest arrives. It counts only verified payments, so a booking whose transfer is waiting in the Verification queue still shows here until someone confirms it. The security deposit is not part of it. **Completed**, Cancelled, Expired and No show bookings never show, even if they owe, because nothing more can be recorded against them (a guest who left owing is dealt with outside the system). Like every filter it combines with the others: **Status: Cancelled** plus **Money owed** shows nothing.
 - **Clear** (funnel icon) — appears once any filter is on; clears them all.
 
 The browser's **Back** button undoes the last filter change. The address of the page carries the filters, so a filtered view can be bookmarked or the link sent to a colleague — they will see the same filters (as long as they may open the screen).
@@ -1727,18 +1734,44 @@ The sections in detail:
 3. **Type** → tick types (several allowed).
 4. **Stay date** → pick the first and last day. Bookings with at least one night on those days are shown.
 5. Type in the search box to narrow further.
-6. **Clear** removes every filter at once. The browser's Back button undoes the last change.
+6. **Money owed** shows only bookings that still owe money and have not ended.
+7. **Clear** removes every filter at once. The browser's Back button undoes the last change.
 
-**Useful views:**
+**Useful views** (any of these can be saved for the team — see the next section):
 - Everything waiting on a bank check: **Status: Awaiting payment**.
 - Who is in the building or booked in: **Status: Confirmed + Checked in**.
-- Everything touching next week: **Stay date** = next Monday to Sunday.
+- Everything touching next week: **Stay date** = next Monday to Sunday (dates cannot be saved in a view).
 - Bookings still being held without payment: **Status: Held**.
+- Everything that still needs chasing: **Status: Held + Awaiting payment + Checked in**, or simply **Money owed**, which also catches confirmed stays secured by their deposit.
 
 **Edge cases and limits:**
 - The Stay date filter never shows day passes (see above).
 - The tile counts ignore the type filter on purpose, so you can see how many of each type match your other filters.
 - A filtered view can be bookmarked or its link sent to a colleague.
+
+### How to save a view, and delete one
+
+**Who can do this:** anyone with **View bookings** — by default all five roles, **Security and Housekeeping included**. Anyone who can save a view can also delete any view, including one somebody else saved.
+
+**Where:** sidebar → Bookings → **All bookings** → the row of views under the type tiles.
+
+**To save:**
+1. Set the filters you want: **Status**, **Type**, the search box, **Money owed** (a type tile counts as a Type filter).
+2. Press **Save view** (beside the row of views). It only appears when a filter is on and no saved view already holds exactly those filters.
+3. Type a **Name** (up to 40 characters, e.g. "Needs chasing") and press **Save view**. **Not now** closes without saving.
+
+**What happens next:** "“Needs chasing” saved for everyone" appears, and the view joins the row for everyone who opens the screen. Clicking it later sets those filters. Nothing about any booking changes.
+
+**To delete:** open the view, press **Delete view**, and confirm with **Delete view** in the box that reads "It disappears for everyone who uses this list. No booking is changed." (**Keep it** closes without deleting.) The list keeps showing the same bookings, now as plain filters.
+
+**Edge cases and limits:**
+- **Dates are never saved.** If **Stay date** is on when you save, the box says "The dates are not saved — a view shows every date."
+- At most **12** views. A 13th is refused: "There are already 12 views. Delete one you no longer use first."
+- Two views cannot share a name, whatever the capitals: "There is already a view with that name. Choose another."
+- Two views cannot hold exactly the same filters: "“Needs chasing” already shows exactly these bookings."
+- A filter set in a different order is the same filter: **Held + Checked in** is the view **Checked in + Held**.
+- Nothing records who deleted a view. Deleting one cannot be undone, but saving the same filters again under the same name puts it back, at the end of the row.
+- If someone else deleted the view while you had it open, deleting it again simply closes the box.
 
 ### How to download the bookings as a spreadsheet (CSV)
 
