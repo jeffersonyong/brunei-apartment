@@ -8,6 +8,7 @@ import { entryQrFilename } from './entry-qr'
 import type { BookingLine } from './lines'
 import { formatCents, type Cents } from './money'
 import { isLikelyEmailAddress, publicStageOf, transferPlanFor } from './public-booking'
+import { restTransferOfferOf } from './rest-transfer'
 import type { BankAccountSettings } from './settings'
 import type { BookingStream } from './stream'
 
@@ -109,6 +110,18 @@ export interface BuildBookingEmailInput {
    * says nothing about food at all.
    */
   food: EmailFoodFacts
+  /**
+   * The day in Brunei the email is written. Paying the rest ahead is offered
+   * until the day before arrival (capability A12), so a confirmation sent on
+   * the day itself does not invite a transfer that would land too late.
+   */
+  today: StayDate
+  /**
+   * A transfer for the stay is already waiting to be checked — the guest
+   * chose "everything now", or has sent the rest. A confirmation must not
+   * then say the stay is due on arrival. Only the confirmed email asks.
+   */
+  pendingStayTransfer: boolean
 }
 
 export interface EmailFoodFacts {
@@ -271,7 +284,25 @@ export type BuildBookingEmailResult =
 
 const LINK_NOTE = 'Anyone with this link can see this booking, so do not post it publicly.'
 
-const ONLY_EMAIL_NOTE = 'This is the only email we send about this booking.'
+/**
+ * What the footer promises about email, which is the booking form's own
+ * promise — two emails, and never a third (prd.md §13). The first says one
+ * more is coming; the second that it was the last. "The only email" was said
+ * on both, and was untrue of the first.
+ */
+const EMAIL_PROMISE: Readonly<Record<BookingEmailKind, string>> = {
+  booking_created:
+    'We will email you once more, when your booking is confirmed, and about nothing else.',
+  booking_confirmed: 'This is the last email we send about this booking.',
+}
+
+/**
+ * The way back to the booking page, said where a sentence needs it. The
+ * "Open your booking" button sits at the foot of the email, after everything
+ * that asks the guest to do something, so a sentence that sends them there
+ * names it.
+ */
+const BUTTON_BELOW = 'open your booking (the button below)'
 
 const MAPS_LABEL = 'Open in Google Maps'
 
@@ -340,9 +371,21 @@ export function buildBookingEmail(input: BuildBookingEmailInput): BuildBookingEm
       facts: factsFor(booking, property, isDayPass),
       quote: quoteFor(booking),
       depositNote: depositNoteFor(kind, booking),
-      transfer: kind === 'booking_created' ? transferFor(booking, property) : null,
+      transfer:
+        kind === 'booking_created'
+          ? transferFor(booking, property, {
+              hasLink: action !== null,
+              canPayAhead: canPayAhead(booking, input.today),
+            })
+          : null,
       entryCode,
-      arrival: isConfirmed ? arrivalFor(booking, property, isDayPass, entryCode !== null) : [],
+      arrival: isConfirmed
+        ? arrivalFor(booking, property, isDayPass, entryCode !== null, {
+            hasLink: action !== null,
+            today: input.today,
+            pendingStayTransfer: input.pendingStayTransfer,
+          })
+        : [],
       checkIn:
         isConfirmed && !isDayPass ? { steps: CHECK_IN_STEPS, signOff: CHECK_IN_SIGN_OFF } : null,
       location: isConfirmed
@@ -353,7 +396,7 @@ export function buildBookingEmail(input: BuildBookingEmailInput): BuildBookingEm
       footer: {
         propertyName: property.name,
         phones: contact.phones.map((phone) => phone.display),
-        notes: [ONLY_EMAIL_NOTE],
+        notes: [EMAIL_PROMISE[kind]],
         lookup:
           input.findBookingUrl === null ? null : { label: LOOKUP_LABEL, url: input.findBookingUrl },
       },
@@ -500,7 +543,21 @@ function depositNoteFor(kind: BookingEmailKind, booking: EmailBookingFacts): str
  * would be deciding for them. The two options are the page's own, word for
  * word.
  */
-function transferFor(booking: EmailBookingFacts, property: EmailPropertyFacts): EmailTransfer {
+/**
+ * Whether the rest of the stay can still be sent ahead: a stay with a deposit,
+ * arriving after today. The page offers it from the same rule
+ * (lib/domain/rest-transfer.ts); this is the part of it a created email can
+ * know, before anything has been paid.
+ */
+function canPayAhead(booking: EmailBookingFacts, today: StayDate): boolean {
+  return booking.stay !== null && booking.securityDeposit > 0 && booking.stay.range.start > today
+}
+
+function transferFor(
+  booking: EmailBookingFacts,
+  property: EmailPropertyFacts,
+  link: { hasLink: boolean; canPayAhead: boolean },
+): EmailTransfer {
   const depositOnly = transferPlanFor(booking, 'deposit_only')
   const everything = transferPlanFor(booking, 'everything')
 
@@ -509,7 +566,10 @@ function transferFor(booking: EmailBookingFacts, property: EmailPropertyFacts): 
         {
           label: `Just the deposit — BND ${formatCents(depositOnly.total)}`,
           amount: depositOnly.total,
-          detail: `Secures your unit. The BND ${formatCents(everything.stay)} for the stay is paid when you arrive.`,
+          detail:
+            link.hasLink && link.canPayAhead
+              ? `Secures your unit. The BND ${formatCents(everything.stay)} for the stay is paid when you arrive, or you can transfer it before then from your booking page.`
+              : `Secures your unit. The BND ${formatCents(everything.stay)} for the stay is paid when you arrive.`,
         },
         {
           label: `Everything now — BND ${formatCents(everything.total)}`,
@@ -540,7 +600,12 @@ function transferFor(booking: EmailBookingFacts, property: EmailPropertyFacts): 
       property.bankAccounts.length === 0
         ? 'We cannot show the bank details here. Please call us and we will give them to you.'
         : null,
-    instruction: `Put ${booking.reference} as the transfer reference so we can match it to your booking. ${HOLD_SENTENCE}`,
+    // The slip goes to the booking page, and only once the guest has told us
+    // they transferred: before that the page has no box for it (Jeff,
+    // 8 October 2026). Without a link there is no page to point at.
+    instruction: link.hasLink
+      ? `Put ${booking.reference} as the transfer reference so we can match it to your booking. Then ${BUTTON_BELOW}, tell us you have transferred, and send us your slip from there. ${HOLD_SENTENCE}`
+      : `Put ${booking.reference} as the transfer reference so we can match it to your booking. ${HOLD_SENTENCE}`,
   }
 }
 
@@ -574,6 +639,7 @@ function arrivalFor(
   property: EmailPropertyFacts,
   isDayPass: boolean,
   hasEntryCode: boolean,
+  context: { hasLink: boolean; today: StayDate; pendingStayTransfer: boolean },
 ): readonly string[] {
   // The code first, and the reference as the way in when a phone is flat or a
   // screen is cracked (prd.md §12 requirement 7).
@@ -593,19 +659,57 @@ function arrivalFor(
     )
   }
 
-  const balance = balanceOf(booking.total, booking.paid)
-
-  sentences.push(
-    balance.outstanding > 0
-      ? `BND ${formatCents(balance.outstanding)} for the stay is settled when you arrive.`
-      : 'Everything is settled — there is nothing to pay on arrival.',
-  )
+  sentences.push(stayMoneySentence(booking, context))
 
   sentences.push(
     `Check in from ${property.checkInTime}, and check out by ${property.checkOutTime}.`,
   )
 
   return sentences
+}
+
+/**
+ * What the confirmation says about the stay's money (capability A12).
+ *
+ * The same rule as the page (lib/domain/rest-transfer.ts): a transfer for the
+ * stay already waiting is said as such, never as money due on arrival; a guest
+ * who sent only the deposit, arriving after today, is told the rest can go
+ * ahead, from the page the button below opens. Otherwise what is owed on
+ * arrival, or that nothing is.
+ */
+function stayMoneySentence(
+  booking: EmailBookingFacts,
+  context: { hasLink: boolean; today: StayDate; pendingStayTransfer: boolean },
+): string {
+  const offer = restTransferOfferOf(
+    {
+      stream: booking.stream,
+      status: booking.status,
+      // The quote stands in for the deposit row the page and the database
+      // ask about: a confirmed stay quoting one has had it secured, which is
+      // what confirmed it (`booking_deposit_is_secured`).
+      hasDeposit: booking.securityDeposit > 0,
+      total: booking.total,
+      paid: booking.paid,
+      checkIn: booking.stay?.range.start ?? null,
+      hasPendingStayTransfer: context.pendingStayTransfer,
+    },
+    context.today,
+  )
+
+  if (offer.kind === 'pending') {
+    return 'We are still checking your transfer for the stay.'
+  }
+
+  if (offer.kind === 'offer' && context.hasLink) {
+    return `BND ${formatCents(offer.amount)} for the stay is settled when you arrive — or transfer it before then from your booking page (the button below), and send us the slip there too.`
+  }
+
+  const balance = balanceOf(booking.total, booking.paid)
+
+  return balance.outstanding > 0
+    ? `BND ${formatCents(balance.outstanding)} for the stay is settled when you arrive.`
+    : 'Everything is settled — there is nothing to pay on arrival.'
 }
 
 /**

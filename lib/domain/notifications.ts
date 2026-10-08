@@ -34,6 +34,9 @@ export type NotificationKind = 'booking' | 'payment' | 'email' | 'guests'
 export const NOTIFICATION_KINDS = [
   { action: 'booking.created_public', kind: 'booking', permission: 'booking.view' },
   { action: 'booking.submit_payment', kind: 'payment', permission: 'payment.verify' },
+  // The guest sending the rest of the stay ahead (capability A12): the same
+  // "Payment to verify", since it is the same work in the same queue.
+  { action: 'booking.balance_submitted', kind: 'payment', permission: 'payment.verify' },
   { action: 'email.failed', kind: 'email', permission: 'booking.view' },
   { action: 'booking.extra_guests_reported', kind: 'guests', permission: 'booking.amend' },
 ] as const satisfies readonly {

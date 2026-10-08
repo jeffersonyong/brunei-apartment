@@ -40,6 +40,15 @@ describe('describeAuditEvent', () => {
     }
   })
 
+  test('says the guest sent the rest of the stay, with the figure they were told', () => {
+    expect(
+      describeAuditEvent(event('booking.balance_submitted', { after: { amount_cents: bnd(750) } })),
+    ).toBe('Customer says they transferred the rest — BND 750.00')
+    expect(describeAuditEvent(event('booking.balance_submitted'))).toBe(
+      'Customer says they transferred the rest',
+    )
+  })
+
   test('still renders a verb nobody has labelled', () => {
     expect(describeAuditEvent(event('booking.teleported'))).toBe('teleported')
   })

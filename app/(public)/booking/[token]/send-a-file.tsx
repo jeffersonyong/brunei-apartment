@@ -12,6 +12,7 @@ import {
   oversizedFiles,
   type CustomerAttachableKind,
 } from '@/lib/domain/document'
+import type { SlipBoxKey } from '@/lib/domain/slip-boxes'
 
 import { uploadDocumentAction, type UploadState } from './actions'
 
@@ -76,7 +77,8 @@ interface SendAFileProps {
   token: string
   kind: CustomerAttachableKind
   /**
-   * Which of the two uploads this is — "A" or "B".
+   * Which of the uploads this is — "A", "B", and "C" when the guest has sent
+   * the rest of the stay as a transfer of its own.
    *
    * Lettered, because two upload sections look alike and a guest who has done
    * one has no way to tell whether the other is the same thing again or a
@@ -94,6 +96,12 @@ interface SendAFileProps {
   /** When this kind is already on file, the instant it arrived. */
   onFileSince: string | null
   /**
+   * For a slip, which transfer it is evidence of (lib/domain/slip-boxes.ts):
+   * the first one, or the rest of the stay sent later. Each has a box of its
+   * own, so a slip for one never replaces the other's.
+   */
+  target?: SlipBoxKey
+  /**
    * Points the guest at the privacy policy beside the promise about their file
    * (capability F10). Given for the IC only — the one upload that is identity
    * data handed over with no member of staff present — and only once a policy
@@ -109,6 +117,7 @@ export function SendAFile({
   title,
   description,
   onFileSince,
+  target,
   linksPrivacyPolicy = false,
 }: SendAFileProps) {
   const [state, action, pending] = useActionState<UploadState, FormData>(uploadDocumentAction, {
@@ -117,7 +126,9 @@ export function SendAFile({
   const [refused, setRefused] = useState<File | null>(null)
   const [seen, setSeen] = useState(state)
   const formRef = useRef<HTMLFormElement>(null)
-  const inputId = `send-${kind}`
+  // One per box: a page can carry two slip boxes, and a label pointing at the
+  // other box's input would send the file to the wrong transfer.
+  const inputId = target ? `send-${kind}-${target}` : `send-${kind}`
 
   // A completed send forgets the file that was refused before it, so the
   // section returns to its resting state. React 19 resets the `<input>` itself
@@ -168,6 +179,7 @@ export function SendAFile({
       <form ref={formRef} action={action} className="mt-md grid gap-md">
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="kind" value={kind} />
+        {target ? <input type="hidden" name="target" value={target} /> : null}
 
         <div className="flex flex-wrap items-center gap-md">
           <label

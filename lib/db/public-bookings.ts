@@ -8,6 +8,7 @@ import type { BookingLine } from '@/lib/domain/lines'
 import type { Cents } from '@/lib/domain/money'
 import { phonesMatch } from '@/lib/domain/phone'
 import type { CustomerAttachableKind } from '@/lib/domain/document'
+import { slipBoxesOf, type SlipBoxKey, type SlipTarget } from '@/lib/domain/slip-boxes'
 import {
   isAccessToken,
   PUBLIC_LIMITS,
@@ -22,7 +23,7 @@ import {
   type Booking,
 } from './bookings'
 import { getDepositByBookingId } from './deposits'
-import { attachDocument, purge } from './documents'
+import { attachDocument, listDocumentsForBooking, purge } from './documents'
 import { listPaymentsForBooking } from './payments'
 import { extraUnavailableMessage } from './booking-extras'
 import { currentPropertyId } from './property'
@@ -67,6 +68,14 @@ export type PublicWriteErrorCode =
   | 'upload_refused'
   /** One of the chosen extras was taken while the form was open (F13). */
   | 'extra_unavailable'
+  // Paying the rest ahead (capability A12).
+  | 'not_offered'
+  | 'arrival_day'
+  | 'already_pending'
+  | 'nothing_outstanding'
+  | 'changed'
+  /** A slip for a transfer somebody has already checked against the bank. */
+  | 'transfer_checked'
 
 export interface PublicWriteError {
   code: PublicWriteErrorCode
@@ -102,6 +111,15 @@ const MESSAGES: Readonly<Record<PublicWriteErrorCode, string>> = {
   // Replaced by the sentence the trigger raised, which names the extra and how
   // many are left. This is the fallback for a message that could not be read.
   extra_unavailable: 'One of the extras you chose has just been taken for those nights.',
+  not_offered:
+    'Paying the rest ahead is not offered on this booking. Refresh the page to see where it stands, or call us.',
+  arrival_day: 'Your stay starts today, so the rest is paid when you arrive.',
+  already_pending:
+    'We have already been told about a transfer for this stay, and will check it against the bank.',
+  nothing_outstanding: 'There is nothing left to pay on this booking.',
+  changed:
+    'What is owed on this booking has changed since this page was opened. Refresh to see the new amount.',
+  transfer_checked: 'We have already checked that transfer, so there is nothing to add to it.',
 }
 
 function refuse(
@@ -422,6 +440,47 @@ export async function submitPublicTransfer(
   }
 }
 
+export interface PublicRestSubmitted {
+  reference: string
+  amount: Cents
+}
+
+/**
+ * "I have transferred the rest" (capability A12): a guest who sent only the
+ * deposit tells us the stay is on its way too.
+ *
+ * `expected` is the figure their page showed. The database refuses with
+ * `changed` when what is owed has moved since — the desk repriced or settled
+ * the booking — so a row is never raised for an amount the guest was not told.
+ * Every other rule (a stay with a deposit, before the day of arrival, nothing
+ * already waiting) is decided under the booking's lock in
+ * `submit_public_balance_transfer()`, not here.
+ */
+export async function submitPublicBalanceTransfer(
+  token: string,
+  expected: Cents,
+): Promise<PublicWriteResult<PublicRestSubmitted>> {
+  const propertyId = await currentPropertyId()
+
+  const { data, error } = await dataClient().rpc('submit_public_balance_transfer', {
+    p_property_id: propertyId,
+    p_access_token: token,
+    p_expected_cents: expected,
+  })
+
+  if (error) {
+    throw new Error(`Could not record the transfer for the rest: ${error.message}`)
+  }
+
+  const result = data as
+    | { ok: true; reference: string; amount_cents: number }
+    | { ok: false; error: PublicWriteErrorCode }
+
+  return result.ok
+    ? { ok: true, data: { reference: result.reference, amount: result.amount_cents } }
+    : refuse(result.error)
+}
+
 export interface PublicBookingLink {
   /** The token that opens `/booking/{token}` — existing, or minted just now. */
   token: string
@@ -581,6 +640,12 @@ export async function attachPublicDocument(input: {
   kind: CustomerAttachableKind
   bytes: Uint8Array
   filename: string
+  /**
+   * Which transfer a slip is for (lib/domain/slip-boxes.ts). The page sends
+   * one per box; absent means the first, the one "I have made the transfer"
+   * announced. Ignored for an identity document.
+   */
+  target?: SlipBoxKey
 }): Promise<PublicWriteResult<{ documentId: string; kind: CustomerAttachableKind }>> {
   const booking = await getBookingByAccessToken(input.token)
 
@@ -592,16 +657,16 @@ export async function attachPublicDocument(input: {
     return refuse('booking_closed')
   }
 
-  const targets = await slipTargets(booking, input.kind)
+  const targets = await slipTargets(booking, input.kind, input.target ?? 'first')
 
-  if (targets === null) {
-    return refuse('nothing_to_evidence')
+  if (!targets.ok) {
+    return refuse(targets.refusal)
   }
 
   const attached: string[] = []
   let lastError: string | null = null
 
-  for (const target of targets) {
+  for (const target of targets.rows) {
     const result = await attachDocument({
       kind: input.kind,
       bookingId: booking.id,
@@ -641,40 +706,47 @@ export async function attachPublicDocument(input: {
 /**
  * The rows one uploaded file should be filed against.
  *
- * `null` where a slip has arrived before the transfer it evidences — the guest
- * has not pressed "I have made the transfer" yet, so no deposit and no payment
- * row exists. That is a sequence to explain rather than an error to log.
+ * An identity document points at neither a deposit nor a payment, which is one
+ * target carrying two nulls rather than a second code path.
  *
- * An identity document points at neither, which is one target carrying two
- * nulls rather than a second code path.
+ * A slip goes to the money still waiting to be checked in the box the guest
+ * sent it from — the deposit (and the stay, when they chose "everything now"),
+ * or a later transfer for the rest — and never to a row somebody has already
+ * matched against the bank (lib/domain/slip-boxes.ts). Before the guest has
+ * told us about any transfer there is nothing to evidence, which is a sequence
+ * to explain rather than an error to log.
  */
 async function slipTargets(
   booking: Booking,
   kind: CustomerAttachableKind,
-): Promise<readonly { paymentId: string | null; depositId: string | null }[] | null> {
+  key: SlipBoxKey,
+): Promise<
+  | { ok: true; rows: readonly SlipTarget[] }
+  | { ok: false; refusal: 'nothing_to_evidence' | 'transfer_checked' }
+> {
   if (kind === 'identity') {
-    return [{ paymentId: null, depositId: null }]
+    return { ok: true, rows: [{ paymentId: null, depositId: null }] }
   }
 
-  const [deposit, payments] = await Promise.all([
+  const [deposit, payments, slips] = await Promise.all([
     getDepositByBookingId(booking.id),
     listPaymentsForBooking(booking.id),
+    listDocumentsForBooking(booking.id, ['payment_slip']),
   ])
 
-  const targets: { paymentId: string | null; depositId: string | null }[] = []
+  const box = slipBoxesOf({
+    deposit,
+    payments,
+    slips: slips.map((slip) => ({
+      depositId: slip.depositId,
+      paymentId: slip.paymentId,
+      uploadedAt: slip.uploadedAt,
+    })),
+  }).find((candidate) => candidate.key === key)
 
-  // A deposit paid in cash at the desk has no slip to send, and neither has a
-  // cash payment — `attach_document` refuses both with `not_a_transfer`, so
-  // they are filtered here rather than attempted and reported as a failure.
-  if (deposit && deposit.method === 'bank_transfer') {
-    targets.push({ paymentId: null, depositId: deposit.id })
+  if (!box) {
+    return { ok: false, refusal: 'nothing_to_evidence' }
   }
 
-  for (const payment of payments) {
-    if (payment.method === 'bank_transfer') {
-      targets.push({ paymentId: payment.id, depositId: null })
-    }
-  }
-
-  return targets.length === 0 ? null : targets
+  return box.open ? { ok: true, rows: box.targets } : { ok: false, refusal: 'transfer_checked' }
 }

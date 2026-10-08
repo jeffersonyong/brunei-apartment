@@ -104,11 +104,20 @@ const build = (
     findBookingUrl: 'https://palmvilla.bn/find-booking',
     hasEntryCode: false,
     food: FOOD,
+    // The stay's own first day unless a test says otherwise: on the day of
+    // arrival nothing is offered ahead, so every other test reads the
+    // sentences it always has.
+    today: '2026-09-14',
+    pendingStayTransfer: false,
     ...overrides,
   })
 
-const built = (kind: BookingEmailKind, booking: EmailBookingFacts) => {
-  const result = build(kind, booking)
+const built = (
+  kind: BookingEmailKind,
+  booking: EmailBookingFacts,
+  overrides: Partial<BuildBookingEmailInput> = {},
+) => {
+  const result = build(kind, booking, overrides)
 
   if (!result.ok) {
     throw new Error(`Expected an email, got a refusal: ${result.reason}`)
@@ -456,10 +465,79 @@ describe('what the emails never say', () => {
     }
   })
 
-  test('promises only this one email, as the booking form does', () => {
+  test('promises no email beyond the two the booking form names', () => {
+    // The first says one more is coming; the second that it was the last.
+    // "The only email" was untrue of the first, which a confirmation follows.
     for (const model of everyModel) {
-      expect(model.footer.notes).toContain('This is the only email we send about this booking.')
+      expect(model.footer.notes).toEqual([
+        model.kind === 'booking_created'
+          ? 'We will email you once more, when your booking is confirmed, and about nothing else.'
+          : 'This is the last email we send about this booking.',
+      ])
       expect(model.footer.phones).toEqual(['+673 0000001', '+673 0000002'])
     }
+  })
+})
+
+/**
+ * Where the slip goes, and paying the rest ahead (Jeff and Jason's team,
+ * 8 October 2026; capability A12). Every sentence names the "Open your
+ * booking" button, because it sits at the foot of the email, after the
+ * panel that asks for the transfer — and none promises an upload box before
+ * the guest has said they transferred, because there is none until then.
+ */
+describe('the slip, and the rest of the stay', () => {
+  const BEFORE_ARRIVAL = '2026-09-10'
+  const ARRIVAL_DAY = '2026-09-14'
+
+  test('the created email says to send the slip from the booking page, once they have told us', () => {
+    const model = built('booking_created', stay(), { today: BEFORE_ARRIVAL })
+
+    expect(model.transfer?.instruction).toContain(
+      'Then open your booking (the button below), tell us you have transferred, and send us your slip from there.',
+    )
+  })
+
+  test('the deposit-only choice says the rest can be transferred ahead', () => {
+    const model = built('booking_created', stay(), { today: BEFORE_ARRIVAL })
+
+    expect(model.transfer?.options[0]?.detail).toBe(
+      'Secures your unit. The BND 400.00 for the stay is paid when you arrive, or you can transfer it before then from your booking page.',
+    )
+  })
+
+  test('a booking with no link is told neither, since there is no page to send them to', () => {
+    const model = built('booking_created', stay({ accessToken: null }), { today: BEFORE_ARRIVAL })
+
+    expect(model.transfer?.instruction).not.toContain('slip')
+    expect(model.transfer?.options[0]?.detail).toBe(
+      'Secures your unit. The BND 400.00 for the stay is paid when you arrive.',
+    )
+  })
+
+  test('the confirmation offers the rest ahead to a guest who sent only the deposit', () => {
+    const model = built('booking_confirmed', stay({ status: 'confirmed' }), {
+      today: BEFORE_ARRIVAL,
+    })
+
+    expect(model.arrival).toContain(
+      'BND 400.00 for the stay is settled when you arrive — or transfer it before then from your booking page (the button below), and send us the slip there too.',
+    )
+  })
+
+  test('a confirmation sent on the day of arrival does not invite a transfer', () => {
+    const model = built('booking_confirmed', stay({ status: 'confirmed' }), { today: ARRIVAL_DAY })
+
+    expect(model.arrival).toContain('BND 400.00 for the stay is settled when you arrive.')
+  })
+
+  test('a transfer for the stay already waiting is not called due on arrival', () => {
+    const model = built('booking_confirmed', stay({ status: 'confirmed' }), {
+      today: BEFORE_ARRIVAL,
+      pendingStayTransfer: true,
+    })
+
+    expect(model.arrival).toContain('We are still checking your transfer for the stay.')
+    expect(model.arrival.join(' ')).not.toContain('settled when you arrive')
   })
 })
