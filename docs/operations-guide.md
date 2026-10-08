@@ -1,6 +1,6 @@
 # Palm Villa operations guide
 
-**Current as of 29 September 2026.** This guide describes the Palm Villa booking and operations system exactly as it works on that date. If a screen looks different from what is described here, the system has changed since, and the person who looks after the system (Jefferson) should be asked.
+**Current as of 8 October 2026.** This guide describes the Palm Villa booking and operations system exactly as it works on that date. If a screen looks different from what is described here, the system has changed since, and the person who looks after the system (Jefferson) should be asked.
 
 ## How this guide is organised
 
@@ -3516,7 +3516,7 @@ A: No, never. The pack records that the IC was collected, when and by whom; the 
 The field screens are the phone screens for the people who work on their feet rather than at a desk:
 
 - **The Gate**: for the security guard, who is also the front desk. He hands over keys, takes them back, lets day-pass visitors in, counts every group in against its booking, takes the cash a guest still owes, and tells the office when more people come than booked. It replaces the paper list and the WhatsApp messages to the office asking "is this car booked?".
-- **Departures**: for housekeeping. It lists every unit where a guest is leaving, a unit is waiting to be inspected, or a unit is being cleaned, with the next thing to do for each one. It replaces telling the office by message that a room is done.
+- **Departures**: for housekeeping. It lists every unit where a guest is leaving, a unit is waiting to be inspected, or a unit is being cleaned, with the next thing to do for each one, and underneath, the guests arriving over the next few days so units can be got ready ahead. It replaces telling the office by message that a room is done.
 - **The entry code page**: the page that opens when anyone scans a guest's entry QR code with a phone camera.
 
 All of them are at **portal.bruneiapartment.com** and need a staff sign-in (except the entry code page, which anyone can open, but which only shows a staff member's actions to signed-in staff). They are web pages. There is nothing to install. They are built for a phone held in one hand, with large buttons, on a weak signal.
@@ -3649,9 +3649,9 @@ Only one button is the dark main one: the move (e.g. **Check in**) if there is o
 
 **Top of the screen:** title **Departures**, today's date, and the refresh line ("Updated 14:02" · **Refresh**). Like the Gate, it does not update by itself.
 
-When there is nothing to do: "Nothing to turn over right now. A unit appears here when its guest is due out."
+When there is nothing to turn over: "Nothing to turn over right now. A unit appears here when its guest is due out." When there is nothing to turn over **and** nobody arriving either: "Nothing to turn over, and nobody arriving by Sun 11 Oct." (the last day the Arriving section covers).
 
-**Three sections**, each shown only when it has units, with a count:
+**Three sections of work**, each shown only when it has units, with a count:
 1. **Leaving today**: a guest still checked in whose check-out day is today or has passed.
 2. **To inspect**: the guest has checked out and nobody has recorded an inspection yet.
 3. **Being cleaned**: inspected, not yet marked ready.
@@ -3683,7 +3683,27 @@ If the person may not take that step, they see a sentence instead of a button:
 - "Somebody who records inspections looks at this unit next."
 - "Somebody who manages units marks it ready."
 
-**What Departures never shows:** phone numbers, emails, prices, deposits, or internal notes.
+**Arriving (the guests on their way).** Below the three sections, **Arriving** with a count lists the short stays starting **today and over the next three days**, so a cleaner can get a unit ready before its guest arrives. It is a heads-up only: **no card in it has a button**, and nothing here changes anything.
+- **Which bookings:** **Confirmed** stays, and stays whose transfer the office is still checking (**Awaiting payment**). An unpaid booking (**Held**) never appears: nothing cancels an unpaid booking on its own, so it could sit there for weeks with nobody coming. Day passes and long-term leases do not appear.
+- They are grouped by day under a small heading — **Today**, **Tomorrow**, then the date (e.g. **Sat 10 Oct**) — soonest first, then in unit order.
+- **Each card** shows:
+  - the **unit** in large text, and the **booking reference** under it (no guest name);
+  - the **unit status badge**, the same words as the Units board. For a guest arriving on a later day it is labelled **Now**, because it says what the unit is doing today, which is often the stay before;
+  - "**2 nights · 4 guests**" (everyone on the booking, of any age);
+  - in bold, what to set up, when there is anything: the extras the guest booked (e.g. "Sofa bed × 1") and any early check-in ("Early check-in, 2 hours");
+  - one sentence on whether the unit will be ready:
+    - "Ready for them." (arriving today; nothing is waiting to be done to the unit — its last guest has left and it was marked ready);
+    - "Ready now, and nobody is booked in before them." (a later day);
+    - "Another guest is in it until tomorrow." / "…until today." / "Another guest is still in it — they were due out Tue 6 Oct." (a guest is checked in);
+    - "Being turned over — not marked ready yet." (the last guest left; the unit is waiting for inspection or cleaning);
+    - "Another booking has it until tomorrow." (someone else's booking covers today);
+    - "Another stay starts tomorrow, before this one." (someone else's stay starts first);
+    - "Out of service — ask the office.";
+  - "Not confirmed yet — the office is still checking the payment." for a booking whose transfer is not yet confirmed.
+- The "another booking" or "another stay" in those sentences can be one **not paid for yet**: an unpaid booking still holds its unit, so it is named on a card even though it never appears on this list itself. Ask the office if it matters.
+- "Ready" for a later day is **as far as today can tell**: the unit is ready now and nobody else is booked in first. A booking made, moved or cancelled after the screen was loaded shows after **Refresh**. Whether a unit is ready never stops a check-in.
+
+**What Departures never shows:** guest names on the Arriving cards, phone numbers, emails, prices, deposits, or internal notes.
 
 ### Inspection page
 

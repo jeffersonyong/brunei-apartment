@@ -141,6 +141,7 @@ Everyone works from the same live data, so availability, payments, and booking s
 | C1 | See today's check-outs on a single phone screen |
 | C2 | Record a unit inspection: outcome, notes, and photographs as evidence |
 | C3 | Mark a unit as ready once it is clean, so the units board and the office can see it. A unit is never taken out of availability for cleaning, so marking it ready changes what the board says, not what can be sold. Whether it should hold back the next guest's check-in is a question for you (N53). |
+| C4 | See the guests arriving today and over the next three days on the same phone screen, so a unit can be got ready ahead of its guest: which unit, which day, for how many nights and guests, what to set up — a sofa bed, an early check-in — and whether the unit will be ready for them. A heads-up only, with nothing to press. **(added to the original scope at your team's request)** |
 
 > **C1–C3 as delivered.** A cleaner signs in on their phone straight to today's departures: the guests due out, the units waiting to be inspected and the units being cleaned, with any unit somebody arrives in today at the top. Four things worth saying plainly:
 >
@@ -150,6 +151,12 @@ Everyone works from the same live data, so availability, payments, and booking s
 > - **Photographs taken on the phone go up.** Each is made smaller on the phone first, so a camera photograph is not refused for its size. The smaller copy carries no location and no camera timestamp; the system records when it arrived and who sent it.
 >
 > **Decided on your behalf, for you to confirm:** on the day one guest leaves and the next arrives, the board shows the unit as awaiting inspection or cleaning rather than booked; and a unit marked ready cannot be un-marked.
+
+> **C4 as delivered.** Under the day's departures, the cleaner's screen lists the guests arriving today and over the next three days, a day at a time. Three things worth saying plainly:
+>
+> - **Only bookings somebody is really coming for.** Confirmed stays, and stays whose transfer is still being checked, which say *not confirmed yet*. A booking nobody has paid for never appears: nothing cancels an unpaid booking on its own, so it could sit on the list for weeks.
+> - **"Ready" is as far as today can tell.** For a guest arriving today it is the board's own answer. For one arriving later it means the unit is ready now and nobody else is booked in before them; otherwise the card says who is in the way and until when. It never holds back a check-in.
+> - **The card carries no name, no phone number and no money**, like the rest of the cleaner's screen. The booking reference is there so the cleaner can ask the office about it.
 
 ---
 
