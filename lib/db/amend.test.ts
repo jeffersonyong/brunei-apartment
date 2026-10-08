@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { line, totalOf } from '@/lib/domain/lines'
+import { extrasFromLines, line, totalOf } from '@/lib/domain/lines'
 import { bnd } from '@/lib/domain/money'
 
+import { listBookingExtras } from './booking-extras'
 import { amendBooking, getBookingById, listBookings, transitionBooking } from './bookings'
 import { cancelBooking } from './close-booking'
 import { givenBooking, unitIdByRef } from './test/factory'
@@ -268,6 +269,68 @@ describe('amendBooking', () => {
 
     expect(result.ok).toBe(false)
     expect(!result.ok && result.error.code).toBe('not_found')
+  })
+})
+
+/**
+ * A booking read back names the extras it sold (20261008000100).
+ *
+ * `booking_summary` once built its lines without the extra's id, so the edit
+ * screen prefilled no extras and a save dropped them, and a write that handed
+ * the lines straight back was refused outright. What matters is the round
+ * trip: what the database hands a screen is what it will take back.
+ */
+describe('an extra on the booking', () => {
+  async function sofaBed() {
+    const found = (await listBookingExtras()).find((extra) => extra.slug === 'sofa-bed')
+
+    if (!found) {
+      throw new Error('The seeded sofa-bed extra is missing.')
+    }
+
+    return found
+  }
+
+  test('is read back with the id of the extra it sold, and only its line carries one', async () => {
+    const extra = await sofaBed()
+    const booking = await givenBooking({
+      unitRef: '3B-01',
+      checkIn: CHECK_IN,
+      checkOut: CHECK_OUT,
+      extras: [{ extraId: extra.id, name: extra.name, quantity: 2 }],
+    })
+
+    const read = await getBookingById(booking.id)
+    const extraLine = read?.lines.find((entry) => entry.type === 'extra')
+    const accommodation = read?.lines.find((entry) => entry.type === 'accommodation')
+
+    expect(extraLine?.extraId).toBe(extra.id)
+    expect(accommodation).toBeDefined()
+    expect(accommodation && 'extraId' in accommodation).toBe(false)
+    // What the edit screen prefills from.
+    expect(extrasFromLines(read?.lines ?? []).extras).toEqual({ [extra.id]: 2 })
+  })
+
+  test('survives an amendment that hands its lines straight back', async () => {
+    const extra = await sofaBed()
+    const booking = await givenBooking({
+      unitRef: '3B-01',
+      checkIn: CHECK_IN,
+      checkOut: CHECK_OUT,
+      extras: [{ extraId: extra.id, name: extra.name, quantity: 1 }],
+    })
+
+    const result = await amendBooking({
+      ...(await unchangedAmendment(booking.id)),
+      guestName: 'Renamed Guest',
+    })
+
+    expect(result.ok).toBe(true)
+
+    const after = await getBookingById(booking.id)
+    const extraLine = after?.lines.find((entry) => entry.type === 'extra')
+
+    expect(extraLine).toMatchObject({ extraId: extra.id, quantity: 1 })
   })
 })
 

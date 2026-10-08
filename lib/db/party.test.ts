@@ -2,8 +2,10 @@ import { afterEach, describe, expect, test } from 'vitest'
 
 import { line, totalOf } from '@/lib/domain/lines'
 import { bnd } from '@/lib/domain/money'
+import { repriceStayParty } from '@/lib/domain/pricing/party-change'
 import { dataClient } from '@/lib/supabase/data'
 
+import { listBookingExtras } from './booking-extras'
 import { getBookingById } from './bookings'
 import { cancelBooking } from './close-booking'
 import { listBookingNotes } from './notes'
@@ -180,6 +182,60 @@ describe('changeBookingParty — a stay', () => {
     })
 
     expect(!result.ok && result.error.code).toBe('booking_closed')
+  })
+
+  test('keeps an extra the stay bought, repriced the way the office screen does it', async () => {
+    // The lines go through the same pure function the action calls, from the
+    // booking as the database hands it back — which is where the extra's id
+    // was once lost, and the write refused (20261008000100).
+    const extra = (await listBookingExtras()).find((entry) => entry.slug === 'sofa-bed')
+
+    if (!extra) {
+      throw new Error('The seeded sofa-bed extra is missing.')
+    }
+
+    const sold = await givenBooking({
+      unitRef: '3B-01',
+      checkIn: '2026-10-01',
+      checkOut: '2026-10-04',
+      extras: [{ extraId: extra.id, name: extra.name, quantity: 1 }],
+    })
+    const booking = (await getBookingById(sold.id))!
+    const repriced = repriceStayParty(
+      {
+        lines: booking.lines,
+        unitType: { name: 'Studio', maxPax: 4 },
+        nights: 3,
+        party: { chargeableGuests: 3, exemptGuests: 0 },
+        discount: booking.discount,
+      },
+      { paxPolicy: 'surcharge_threshold', extraPersonPerNight: bnd(7) },
+    )
+
+    if (!repriced.ok) {
+      throw new Error(`Test setup could not reprice the party: ${repriced.error.message}`)
+    }
+
+    const result = await changeBookingParty({
+      bookingId: booking.id,
+      expectedUpdatedAt: booking.updatedAt,
+      party: { chargeableGuests: 3, exemptGuests: 0 },
+      lines: repriced.lines,
+      total: repriced.total,
+      pass: null,
+      reason: null,
+      actorId: null,
+    })
+
+    expect(result).toEqual({ ok: true })
+
+    const after = await getBookingById(booking.id)
+
+    expect(after?.chargeableGuests).toBe(3)
+    expect(after?.lines.find((entry) => entry.type === 'extra')).toMatchObject({
+      extraId: extra.id,
+      quantity: 1,
+    })
   })
 })
 
