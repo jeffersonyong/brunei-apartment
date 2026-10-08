@@ -31,6 +31,7 @@ import {
   givenDepartedBooking,
   givenInspectedDeposit,
   unitIdByRef,
+  TEST_IDENTITY,
 } from './test/factory'
 import { createWalkInBooking, getBookingById } from './bookings'
 import { createPublicStayBooking, submitPublicTransfer } from './public-bookings'
@@ -789,6 +790,7 @@ describe('a unit reference that is not seeded', () => {
 /** A public stay whose customer has said they transferred the deposit. */
 async function givenPromisedDeposit(): Promise<{ bookingId: string; depositId: string }> {
   const created = await createPublicStayBooking({
+    identity: TEST_IDENTITY,
     unitTypeSlug: 'three-bedroom',
     range: { start: '2026-10-20', end: '2026-10-23' },
     guestName: 'Promised Guest',

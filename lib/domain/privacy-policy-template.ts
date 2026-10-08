@@ -32,7 +32,7 @@ This policy explains what personal data we collect when you book a day pass or a
 - Your name and phone number, so we can hold your booking and contact you about it.
 - Your email address, if you give us one, to send your booking confirmation.
 - The registration of each vehicle you arrive in, so our security team can admit you.
-- A copy of the lead guest's identity card (IC), to register a stay.
+- A copy of the front of the lead guest's identity card (IC) or passport, to register a booking.
 - Your bank transfer slip, if you send us one, as a record of your payment.
 - The details of your booking: the dates, the unit, who is coming and what you paid.
 [Fill in: anything else you collect, such as CCTV recordings — or delete this line.]
@@ -52,13 +52,13 @@ By making a booking and giving us your details, you consent to our using them fo
 You may withdraw your consent at any time by contacting us (see "Contact us" below). If you do, we may not be able to go ahead with your booking, and we may still need to keep some records where the law requires us to.
 
 ## Who we share it with
-Our staff see your personal data only where their work needs it. Your identity card can be opened only by staff who are permitted to, and every time it is opened is recorded.
+Our staff see your personal data only where their work needs it. Your IC or passport can be opened only by staff who are permitted to, and every time it is opened is recorded.
 We use service providers to run our booking system — for hosting, storing data and sending email. Some of them store or process personal data outside Brunei Darussalam, including in Singapore. We choose providers that protect personal data to a standard comparable to the protection it has in Brunei Darussalam.
 [Fill in: anyone else you share personal data with, such as your accountant, or the authorities when the law requires it.]
 
 ## How long we keep it
 We keep personal data only for as long as we need it for the purposes above, or for as long as the law requires.
-Copies of identity cards are deleted automatically when their retention period ends after your stay. Payment and accounting records are kept for longer, because accounting records must be.
+Copies of ICs and passports are deleted automatically when their retention period ends after your booking. Payment and accounting records are kept for longer, because accounting records must be.
 
 ## How we protect it
 Your personal data is kept in private storage that only our booking system and permitted staff can reach. It is never published.

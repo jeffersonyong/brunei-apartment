@@ -14,6 +14,7 @@ import {
   givenCheckedInBooking,
   givenDepartedBooking,
   givenStaffAccount,
+  TEST_IDENTITY,
 } from './test/factory'
 import { auditEventsFor } from './test/inspect'
 
@@ -44,6 +45,7 @@ const STAY = {
 /** A BND 20 pass for two, sold online and paid in cash at the desk, for today. */
 async function paidPassToday(guestPhone: string): Promise<string> {
   const created = await createPublicDayPassBooking({
+    identity: TEST_IDENTITY,
     date: TODAY,
     party: [{ bandId: 'adult', label: 'Adult', count: 2 }],
     headcount: 2,

@@ -13,6 +13,7 @@ import {
   verifyDeposit,
 } from './deposits'
 import { currentPropertyId } from './property'
+import { TEST_IDENTITY } from './test/factory'
 import {
   createPublicStayBooking,
   submitPublicTransfer,
@@ -57,6 +58,7 @@ const STAY_TOTAL = bnd(600)
 
 function stayInput(overrides: Partial<CreatePublicStayInput> = {}): CreatePublicStayInput {
   return {
+    identity: TEST_IDENTITY,
     unitTypeSlug: 'three-bedroom',
     range: { start: CHECK_IN, end: CHECK_OUT },
     guestName: 'Short Deposit',

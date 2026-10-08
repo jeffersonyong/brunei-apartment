@@ -26,6 +26,11 @@ import {
   MAX_VEHICLES_PER_BOOKING,
   MAX_VEHICLE_REGISTRATION_LENGTH,
 } from '@/lib/domain/vehicle'
+import {
+  echoedDetails,
+  honeypotFilled,
+  readIdentityFile,
+} from '../_components/booking/identity-file'
 
 /**
  * Selling a day pass (capability A3).
@@ -73,6 +78,17 @@ export async function createPublicDayPassAction(
     vehicles: formData.getAll('vehicles').map(String),
   })
 
+  const submitted = echoedDetails(formData)
+
+  // Silently, as below, and before the file is read.
+  if (honeypotFilled(formData)) {
+    return { status: 'error', message: 'Something went wrong. Please try again.', submitted }
+  }
+
+  // Read with the rest of the form, so a missing ID is flagged beside the
+  // other fields rather than after they are put right (capability A7).
+  const identity = await readIdentityFile(formData)
+
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {}
 
@@ -84,19 +100,28 @@ export async function createPublicDayPassAction(
       }
     }
 
-    return { status: 'error', message: 'Check the highlighted fields.', fieldErrors }
+    if (!identity.ok) {
+      fieldErrors.identity = identity.message
+    }
+
+    return { status: 'error', message: 'Check the highlighted fields.', fieldErrors, submitted }
   }
 
   const input = parsed.data
-  const submitted = {
-    guestName: input.guestName,
-    guestPhone: input.guestPhone,
-    guestEmail: input.guestEmail,
-    vehicles: input.vehicles[0] ?? '',
-  }
 
   if (input.website.trim() !== '') {
     return { status: 'error', message: 'Something went wrong. Please try again.', submitted }
+  }
+
+  // Before the counters: a file that will be refused should not spend one of
+  // the guest's attempts.
+  if (!identity.ok) {
+    return {
+      status: 'error',
+      message: 'Check the highlighted fields.',
+      fieldErrors: { identity: identity.message },
+      submitted,
+    }
   }
 
   const refusal = await checkPublicLimits(input.guestPhone, input.guestEmail)
@@ -187,6 +212,7 @@ export async function createPublicDayPassAction(
     noVehicle,
     total: quote.total,
     lines: quote.lines,
+    identity: identity.file,
   })
 
   if (!created.ok) {

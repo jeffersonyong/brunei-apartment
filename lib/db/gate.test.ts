@@ -34,6 +34,7 @@ import {
   givenDepartedBooking,
   givenStaffAccount,
   givenTransferBooking,
+  TEST_IDENTITY,
 } from './test/factory'
 import { markUnitReady } from './units'
 
@@ -80,6 +81,7 @@ function everyone(list: Awaited<ReturnType<typeof listGateBookings>>): string[] 
 
 function dayPassOn(date: string, overrides: Partial<CreatePublicDayPassInput> = {}) {
   return createPublicDayPassBooking({
+    identity: TEST_IDENTITY,
     date,
     party: [{ bandId: 'adult', label: 'Adult', count: 2 }],
     headcount: 2,

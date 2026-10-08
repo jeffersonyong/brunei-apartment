@@ -21,6 +21,8 @@ import {
   PublicField,
   PublicPhoneField,
 } from '../_components/booking/booking-fields'
+import { IdentityField } from '../_components/booking/identity-field'
+import { IDENTITY_FIELD } from '../_components/booking/identity-file'
 import { createPublicDayPassAction, type PublicDayPassState } from './actions'
 
 /**
@@ -47,6 +49,7 @@ export function DayPassBooking({
   lastDay,
   placesLeft,
   included,
+  linksPrivacyPolicy,
 }: {
   config: PropertyConfig
   today: StayDate
@@ -55,6 +58,8 @@ export function DayPassBooking({
   placesLeft: Readonly<Record<string, number>>
   /** What the pass admits, from settings rather than from copy. */
   included: readonly string[]
+  /** Whether a privacy policy is published to link beside the ID. */
+  linksPrivacyPolicy: boolean
 }) {
   const [state, formAction, isPending] = useActionState(createPublicDayPassAction, initialState)
 
@@ -68,6 +73,7 @@ export function DayPassBooking({
   })
   const [vehicles, setVehicles] = useState<readonly string[]>([''])
   const [noVehicle, setNoVehicle] = useState(false)
+  const [identity, setIdentity] = useState<File | null>(null)
 
   const party = Object.fromEntries(Object.entries(counts).filter(([, count]) => count > 0))
   const headcount = Object.values(counts).reduce((total, count) => total + count, 0)
@@ -94,7 +100,18 @@ export function DayPassBooking({
         </div>
       </section>
 
-      <form action={formAction} className="border-t border-divider bg-card px-xl pt-xl pb-3xl">
+      <form
+        // The prepared ID is added here: its input has no name, because a file
+        // input is emptied when the form resets and the file must survive that.
+        action={(formData) => {
+          if (identity) {
+            formData.set(IDENTITY_FIELD, identity)
+          }
+
+          formAction(formData)
+        }}
+        className="border-t border-divider bg-card px-xl pt-xl pb-3xl"
+      >
         <div className="mx-auto grid w-full max-w-[1120px] gap-xl lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">
             <Card>
@@ -213,6 +230,19 @@ export function DayPassBooking({
                   />
                 </div>
 
+                {/* The lead guest's IC or passport, compulsory online since
+                    8 October 2026 (capability A7). Kept in state rather than in
+                    the input, so a refusal does not lose it. */}
+                <div className="mt-lg">
+                  <IdentityField
+                    file={identity}
+                    onChange={setIdentity}
+                    error={state.fieldErrors?.identity}
+                    attempt={state}
+                    linksPrivacyPolicy={linksPrivacyPolicy}
+                  />
+                </div>
+
                 {/* One row per car. A family arriving in two is the ordinary
                     case, and prd.md §12.5 makes the plate the guard's primary
                     lookup — so a second car with nowhere to go is a car nobody
@@ -273,10 +303,16 @@ export function DayPassBooking({
               <Button
                 type="submit"
                 className="mt-lg w-full"
-                disabled={isPending || !quote?.ok || !date || full}
+                disabled={isPending || !quote?.ok || !date || full || identity === null}
               >
                 {isPending ? 'Booking…' : 'Book day pass'}
               </Button>
+
+              {identity === null ? (
+                <p className="mt-sm text-caption text-muted-foreground">
+                  Add the front of your IC or passport to continue.
+                </p>
+              ) : null}
 
               <p className="mt-sm text-caption text-muted-foreground">
                 Nothing is charged now. You transfer the amount above and we confirm your pass.
