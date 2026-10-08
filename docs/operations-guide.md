@@ -32,7 +32,7 @@ The system replaces WhatsApp and the Excel sheet as the one place bookings, paym
 
 | Part | Who uses it | Web address |
 |---|---|---|
-| **The public website** | Customers. They check what is free, book a stay or a day pass, send their IC and transfer slip, and find their booking again. | **bruneiapartment.com** |
+| **The public website** | Customers. They check what is free, book a stay or a day pass (giving their IC or passport as they book), send their transfer slip, and find their booking again. | **bruneiapartment.com** |
 | **The portal** | Office staff, on a computer (it also works on a phone). Every booking, payment, deposit, unit, report and setting. | **portal.bruneiapartment.com** |
 | **The field screens** | The guard at the gate, on a phone: the **Gate** screen. Housekeeping, on a phone: the **Departures** screen. | **portal.bruneiapartment.com/field** |
 
@@ -1052,7 +1052,7 @@ The same entries, for every booking at once, are in **Admin → Audit log** (see
 
 ## Identity documents
 
-The guest's IC (or passport) is required for registration. It is kept on the booking in the **Identity** panel at the bottom of the **Guest & stay** card, in private storage that nothing on the internet can reach.
+The guest's IC (or passport) is required for registration. It is kept on the booking in the **Identity** panel at the bottom of the **Guest & stay** card, in private storage that nothing on the internet can reach. **A booking made online arrives with one**: since 8 October 2026 the customer gives the front of their IC or passport on the booking form, and it shows here as sent by the guest. Bookings made at the desk have none until you attach it.
 
 ### What the Identity panel shows
 
@@ -6308,7 +6308,10 @@ The form, top to bottom:
 - **Extras** — one number box per extra staff have made bookable (for example sofa beds), with "BND __ each", the extra's description, and once dates are chosen "_ free for those nights" or "None free for those nights". Then **Late check-out (hours)** (0 to 12), hint "Check-out is __:__. BND __ an hour after that." Then the line "Arriving before __:__? Ask us when you get here — it depends on whether the unit is ready." Early check-in cannot be booked online.
 - **Your booking** panel (right-hand side on a computer, below on a phone): the unit type, the dates and nights, the price lines and total. If a deposit applies: "The total amount above excludes a **BND ___** security deposit, which is refundable subject to the condition of the property upon check-out." Button **Proceed to bank transfer** (greyed until there is a valid price). Under it: "Nothing is charged now. We hold the unit while you transfer the deposit."
 
-**No ID is asked for at booking.** The IC is asked for later on the customer's booking page, after they say they have transferred.
+**The IC or passport is compulsory at booking** (since 8 October 2026), on both the stay and the day-pass form. In **Your details**, under the email, a section **IC or passport**: "A photo or PDF of the front of the lead guest's IC or passport. We need it to register your booking." Button **Choose a file** (then **Choose a different file**); while a photo is being made smaller: "Getting it ready…"; then a tick, the file name and size. Under it: "JPEG, PNG, WebP or PDF. Kept privately and used only to register your booking." and, once a privacy policy is published, the link "How we handle your personal data". The booking button stays greyed out until a file is chosen, with "Add the front of your IC or passport to continue." under it.
+- A photo is made smaller on the customer's phone before it is sent, so a camera photo is never too large. A PDF is sent as it is and must be under 4 MB.
+- If the form is refused for anything else (for example the dates have just been taken), the chosen file **stays chosen** — they do not have to pick it again.
+- The booking and the ID are saved together: if the ID cannot be saved, **nothing is booked**.
 
 ### The day pass booking page ("Spend the day with us")
 
@@ -6341,7 +6344,7 @@ Every stage shows "Reference PV-____", a **What you booked** card and a footnote
 **What you booked** card: **Unit** (the actual unit reference assigned, for example the door) or **Day pass** (the date); **Dates** (with nights) or **Guests** ("_ people"); **Name**; **Car** (plates, or "Arriving without a car"); the price lines and total; and for a stay with a deposit, "Plus a refundable BND ___ security deposit, which comes back to you after your stay."
 
 **Stage 1 — Waiting for your transfer (status Held).**
-- "What happens next": **1 Make the transfer** (current), **2 Send us your IC**.
+- "What happens next": **1 Make the transfer** (current), **2 We confirm your booking** — or, for a booking without an ID on file (one made at the desk and found again by its reference), **2 Send us your IC or passport**.
 - A **How to pay** card:
   - For a stay with a deposit, two choices (the first is pre-selected):
     - **Everything now — BND ___** — "The BND ___ deposit and the BND ___ for the stay together, so there is nothing to settle on arrival."
@@ -6353,9 +6356,9 @@ Every stage shows "Reference PV-____", a **What you booked** card and a footnote
 - There is **no countdown or deadline** anywhere.
 
 **Stage 2 — Checking for your transfer (status Awaiting payment).**
-- "What happens next": **Make the transfer** (ticked), **Send us your IC** (current until an IC is received, then ticked).
-- **A. Send us your IC** — "We need a copy of the lead guest's IC to register the stay." Button **Choose a file** (or **Choose a different file** once one is held). "JPEG, PNG, WebP or PDF, up to 4 MB. Held privately, used only internally for verification." plus, once a privacy policy is published, a link "How we handle your personal data". After sending: "Received, thank you." or "Received [date]." and "Sending another replaces the one we have."
-- **B. Send us your transfer slip** — "Your bank transfer slip will help us verify your transfer faster." Same file rules. It is filed against the transfer they told us about — the deposit, and the stay too if they chose **Everything now** — and it disappears once staff have checked that money.
+- "What happens next": **Make the transfer** (ticked), **We confirm your booking** (current) — or **Send us your IC or passport** (current) for a booking without an ID on file. The heading is **Thank you**, or **One more thing** while an ID is still wanted.
+- **Send us your IC or passport** — for a booking with **no ID on file** (one made at the desk and found again): "We need a copy of the front of the lead guest's IC or passport to register the booking." For an **online booking**, which always has one, the same box reads **Your IC or passport** — "We have it. If the photo is hard to read, send a clearer one — it replaces the one we have." Button **Choose a file** (or **Choose a different file** once one is held). "JPEG, PNG, WebP or PDF, up to 4 MB. Held privately, used only internally for verification." plus, once a privacy policy is published, a link "How we handle your personal data". After sending: "Received, thank you." or "Received [date]." and "Sending another replaces the one we have."
+- **Send us your transfer slip** — "Your bank transfer slip will help us verify your transfer faster." Same file rules. (Upload sections are lettered A, B, C in the order they appear, so this is **A** when no IC or passport box is shown.) It is filed against the transfer they told us about — the deposit, and the stay too if they chose **Everything now** — and it disappears once staff have checked that money.
 - **Pay the rest now** — for a stay where they sent **just the deposit**, arriving after today: see *Pay the rest now* below. Not shown while a short-deposit red box is showing.
 - If a deposit has been checked and found short: a red box "We have received BND __ of the BND ___ security deposit, so BND __ is still outstanding. Your unit is held, and the booking is confirmed once the rest arrives — send it to the same account, quoting PV-____, or call us if something has gone wrong."
 - Otherwise: "We have your booking and are checking for the transfer. Once we verify it, we will email your confirmation and a QR code for entry, which will be on this page too." For a **stay** the sentence also promises the check-in instructions: "…we will email your confirmation, a QR code for entry and your check-in instructions, which will all be on this page too." (A guest who gave no email address is told these "will be on this page" instead.)
@@ -6364,10 +6367,10 @@ Every stage shows "Reference PV-____", a **What you booked** card and a footnote
 - Green box: "Your booking is confirmed." For a stay it adds one of: "The BND ___ for the stay is settled when you arrive, or you can transfer it before then — below." (they sent just the deposit and arrive after today); "We are checking your transfer for the stay." (a transfer for the stay is waiting to be checked — they chose **Everything now**, or sent the rest); "The BND ___ for the stay is settled when you arrive." (from the day of arrival); or "Everything is settled — there is nothing to pay on arrival." Then "Show the code below at the gate." For a day pass just "Show the code below at the gate."
 - On a **Completed** booking (a stay checked out, or a day pass already admitted) the page still says **You are booked** and "Show the code below at the gate", but no code is shown below it.
 - **Your entry code** card (only while the booking is Confirmed or Checked in): the QR code, the reference underneath, "Show this at the gate. Save it to your phone, or send it to whoever is driving." and a **Save the image** button that downloads the picture.
-- **Check-in instructions** card — **stays only**, not day passes. Five numbered steps: "Please go to the Security Counter.", "Fill in and sign the Registration Form.", "Show the IC of the person who made the booking.", "Security will hand you the apartment key and tell you where to park your car.", "The Wi-Fi password is on a sticker attached to the TV board in the living room." Then "Have a pleasant stay and enjoy your time with us!"
+- **Check-in instructions** card — **stays only**, not day passes. Five numbered steps: "Please go to the Security Counter.", "Fill in and sign the Registration Form.", "Show the IC or passport of the person who made the booking.", "Security will hand you the apartment key and tell you where to park your car.", "The Wi-Fi password is on a sticker attached to the TV board in the living room." Then "Have a pleasant stay and enjoy your time with us!"
 - **Getting here** card — every confirmed booking, stay or day pass: the address, an **Open in Google Maps** button, and the aerial map.
 - **Food** card — every confirmed booking, stay or day pass, while there is a food notice (Website settings → Food): the notice text, a **Call [number]** button that dials the food provider, and **See the food menu**, which opens the food page — only if a menu flyer has been uploaded.
-- **A. Send us your IC** stays available. A slip box shows only for a transfer still waiting to be checked — **Send us the slip for the stay** ("The slip for the BND ___ you transferred for the stay.") after they used **Pay the rest now**, or **B. Send us your transfer slip** for the stay half of **Everything now** when the deposit was checked first.
+- The IC or passport box stays (as **Your IC or passport** when one is on file). A slip box shows only for a transfer still waiting to be checked — **Send us the slip for the stay** ("The slip for the BND ___ you transferred for the stay.") after they used **Pay the rest now**, or **Send us your transfer slip** for the stay half of **Everything now** when the deposit was checked first.
 
 **Pay the rest now** (stages 2 and 3). A card for a stay where the customer sent **just the deposit**, from the moment they press **I have made the transfer** until **the day before arrival**, while no transfer for the stay is already waiting. It sits after the entry code (stage 3) or after the uploads (stage 2). Eyebrow **Pay the rest now**, the amount still owed in large type ("BND ___"), "What is left to pay for the stay. You can pay it when you arrive, or transfer it now so there is nothing to settle at the gate.", the bank accounts as in stage 1, "Send **BND ___** in one transfer with **PV-____** as the transfer reference, then confirm below. You can send us the slip for it from this page after that.", and the button **I have transferred the rest** ("Telling the team…" while working). See *How a customer pays the rest ahead*.
 
@@ -6432,12 +6435,12 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 1. Choose a unit type under **Which unit**.
 2. Click the arrival night, then the departure day, on the calendar.
 3. Set **Over age __** and **Age __ and under**.
-4. Fill in name, mobile number, email, and car registration(s), up to the parking spaces the unit type includes — or tick **Arriving without a vehicle**. For another car they message the office on WhatsApp first.
+4. Fill in name, mobile number, email, **a photo or PDF of the front of the lead guest's IC or passport** (compulsory), and car registration(s), up to the parking spaces the unit type includes — or tick **Arriving without a vehicle**. For another car they message the office on WhatsApp first.
 5. Optionally choose extras and **Late check-out (hours)**.
 6. Check the price in **Your booking** and press **Proceed to bank transfer**.
 7. They land on their booking page at **Almost done**, with the bank details.
 8. They make the transfer in their banking app with the reference, choose **Everything now** or **Just the deposit**, and press **I have made the transfer**.
-9. The page moves to **Checking for your transfer** and asks for their IC and (optionally) the transfer slip.
+9. The page moves to **Checking for your transfer** and offers the (optional) transfer slip upload.
 
 **What happens next:**
 - On pressing **Proceed to bank transfer**, the price is worked out again by the system from what they chose (a price sent from the browser is never trusted). The system picks a free unit of that type for them (the lowest-numbered free unit) and the booking is created with status **Held**. The unit is blocked from that moment.
@@ -6462,7 +6465,8 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 - Vehicles: no more than the parking spaces the chosen unit type includes (Property settings → Rates → **Car parks**), each up to 20 characters. A customer who wants to bring another car is told to message the office on WhatsApp at +673 8959798 first. If the office agrees, staff add the plate with **Edit → Vehicles**, where there is no cap.
 
 **If you see an error** (the customer sees these and may read them to you):
-- "Check the highlighted fields." — something on the form is missing or wrong; the field says what: "Choose a unit.", "Choose your dates.", "A booking needs at least one guest.", "Tell us your name.", "We need a number to confirm your booking.", "We send your confirmation and entry QR code here." (email left blank), "Check the email address.", "Enter your car registration, or tick that you are not bringing one.", "The ___ includes _ parking spaces. To bring another car, message us on WhatsApp at +673 8959798 first." (more plates than the unit's parking spaces).
+- "Check the highlighted fields." — something on the form is missing or wrong; the field says what: "Choose a unit.", "Choose your dates.", "A booking needs at least one guest.", "Tell us your name.", "We need a number to confirm your booking.", "We send your confirmation and entry QR code here." (email left blank), "Check the email address.", "Enter your car registration, or tick that you are not bringing one.", "The ___ includes _ parking spaces. To bring another car, message us on WhatsApp at +673 8959798 first." (more plates than the unit's parking spaces). Under **IC or passport**: "Add a photo or PDF of the front of your IC or passport.", "That file is larger than 4 MB. A photograph taken on a phone is usually well under it, or send a smaller PDF.", or the file-type message ("That is not a JPEG, PNG, WebP or PDF…").
+- "We could not save your IC or passport just now, so nothing was booked. Please try again, or message us on WhatsApp." — the ID could not be stored, so the booking was not made. Book them at the desk if it repeats, and tell Jefferson.
 - "Those dates have just been taken. Please pick other dates, or another type of unit." — no single unit of that type is free for every night chosen. Either someone booked it a moment ago, the chosen range crosses a night marked **FULL**, or free nights are spread across different units. Offer other dates or another type, or book it at the desk.
 - "There are already several unpaid bookings against this number. Please complete or cancel one first, or call us." — the phone number already has 3 unpaid online bookings. The customer cannot cancel online; staff need to look up their bookings, take payment or cancel the ones they no longer want.
 - "That is a lot of bookings in a short time. Please wait a little, or call us and we will book you in." — the hourly device limit. Book them at the desk, or they wait for the next hour.
@@ -6482,7 +6486,7 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 **Steps (as the customer does them):**
 1. Pick the day under **Which day**.
 2. Enter how many people in each age group.
-3. Fill in name, mobile, email, and car registration(s) or tick **Arriving without a vehicle**.
+3. Fill in name, mobile, email, **a photo or PDF of the front of their IC or passport** (compulsory), and car registration(s) or tick **Arriving without a vehicle**.
 4. Check the price and press **Book day pass**.
 5. On their booking page (**Almost done**) they see the full amount, "The full price of your day pass.", and the bank details. They transfer the full amount with the reference and press **I have made the transfer**.
 
@@ -6524,7 +6528,7 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
   - Stay, **Everything now**: two items from one transfer — the deposit and the stay payment. They are checked separately because one is refundable and one is income.
   - Day pass (or a stay quoting no deposit): one item — the full price.
 - The booking is **not** confirmed yet and no email is sent. The waiting time in the queue starts from this moment.
-- The page now asks for the IC and offers the slip upload.
+- The page now offers the slip upload (the IC or passport came with the booking).
 
 **Edge cases and limits:**
 - The button is only offered while the booking is **Held**. Pressing it twice does nothing extra.
@@ -6571,25 +6575,25 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 
 **Can it be undone?** Not by the customer. A raised transfer stays in the queue until someone confirms it (see *Payments*).
 
-### How a customer sends their IC or transfer slip
+### How a customer sends their transfer slip (or an IC or passport later)
 
 **Who can do this:** anyone with the booking's private link.
-**Where:** their booking page → **A. Send us your IC** / **B. Send us your transfer slip** → **Choose a file**.
+**Where:** their booking page → **Send us your transfer slip**, or the IC or passport box (**Your IC or passport** when one came with the booking — to send a clearer one; **Send us your IC or passport** when none is on file, in practice a desk booking found again by its reference) → **Choose a file**.
 **Steps:**
 1. Tap **Choose a file** and pick a photo or PDF. It sends as soon as it is picked.
 
 **What happens next:**
 - The file is stored privately against the booking. An IC appears in the booking's identity documents; a slip is attached to the deposit and/or payment it evidences (both, if they chose **Everything now**). Staff see them on the booking and in the Verification queue (see *The booking's own page → Identity documents* and *Payments*).
-- **One slip box per transfer** the customer told us about: **B. Send us your transfer slip** for the first (the deposit, plus the stay if they chose **Everything now**), and **Send us the slip for the stay** for a later transfer for the stay. Each slip is filed against that transfer only, so the slip for the stay never replaces the deposit's. (A deposit that was checked and found short keeps its box open for the slip of the top-up; that slip replaces the customer's own first one on the deposit.)
-- Sending another file in the same box replaces the one before (the IC likewise).
+- **One slip box per transfer** the customer told us about: **Send us your transfer slip** for the first (the deposit, plus the stay if they chose **Everything now**), and **Send us the slip for the stay** for a later transfer for the stay. Each slip is filed against that transfer only, so the slip for the stay never replaces the deposit's. (A deposit that was checked and found short keeps its box open for the slip of the top-up; that slip replaces the customer's own first one on the deposit.)
+- Sending another file in the same box replaces the one before (the IC or passport likewise).
 - No email, no bell notification.
 
 **Edge cases and limits:**
-- The IC box appears only once the customer has pressed **I have made the transfer** (stage **Checking for your transfer**) and stays while the booking is Confirmed, Checked in or Completed. It is offered for day passes too.
+- The IC or passport box appears once the customer has pressed **I have made the transfer** (stage **Checking for your transfer**) and stays while the booking is Confirmed, Checked in or Completed — asking for one when none is on file, or offering to replace a hard-to-read one.
 - A slip box appears once the customer has pressed **I have made the transfer** (or **I have transferred the rest**), and only while that transfer is still waiting to be checked. A slip is filed only against a bank-transfer deposit or payment, never against cash.
 - JPEG, PNG, WebP or PDF, up to 4 MB. The file's real contents are checked, not just its name.
 - 20 files an hour from one device; 10 files a day per booking.
-- Neither upload is required. A guest who sends nothing is registered at the desk as usual.
+- **Online bookings already have the IC or passport** — it is compulsory on the booking form. The slip is optional. A desk booking without an ID is registered at the counter as usual, and staff can attach it (see *The booking's own page → Identity documents*).
 
 **If you see an error:**
 - "Choose a file to send." — nothing was picked.
@@ -6831,8 +6835,8 @@ Staff cannot see the private link in the portal. Tell them to use **Find booking
 **Q: Does Find your booking send an email or a text?**
 No. It opens the booking page straight away in their browser, and sends nothing.
 
-**Q: The customer wants to send their IC but there's no upload box.**
-The IC box only appears after they press **I have made the transfer**. Before that the page is only about paying. It also does not appear on a cancelled or no-show booking.
+**Q: The customer wants to send a better photo of their IC or passport, but there's no upload box.**
+Bookings made online already have one — it was compulsory on the booking form. The box on their page appears once they have pressed **I have made the transfer**, as **Your IC or passport**, and sending a clearer photo there replaces theirs. Before that point, ask them to send it on WhatsApp and attach it yourself on the booking's **Identity** panel.
 
 **Q: The customer sent the wrong photo. Can they fix it?**
 Yes — sending another file of the same kind replaces the previous one. They cannot delete it themselves.
@@ -6904,7 +6908,7 @@ Each journey below follows one real situation from start to finish, naming who d
 
 1. **The customer books** on bruneiapartment.com → **Book → Stay**: they choose the unit type, dates, guests, contact details and car registration (no more cars than the unit type's parking spaces; for another car they message the office on WhatsApp first), and press **Proceed to bank transfer**. The system picks a free unit of that type and the booking is created as **Held**. The unit is blocked from that moment. *(The customer side)*
 2. **The customer gets the Booking email** ("Almost done") with the price, the bank details and the booking reference (PV-…), plus a link to their private booking page. Staff see a **New online booking** notification on the bell. *(The customer side)*
-3. **The customer transfers the money** in their banking app, using the reference, then on their booking page chooses **Just the deposit** or **Everything now** and presses **I have made the transfer**. The booking becomes **Awaiting payment**, and the deposit (and, with Everything now, the stay payment) appears in the **Verification queue**. The customer is asked for their IC and can upload the transfer slip. *(The customer side, Payments)*
+3. **The customer transfers the money** in their banking app, using the reference, then on their booking page chooses **Just the deposit** or **Everything now** and presses **I have made the transfer**. The booking becomes **Awaiting payment**, and the deposit (and, with Everything now, the stay payment) appears in the **Verification queue**. They can upload the transfer slip (the IC or passport came with the booking form). *(The customer side, Payments)*
 4. **The office checks the bank.** Someone with Verify payments (Front Office, Finance or Admin) opens **Payments → Verification queue**, finds the transfer in the bank app, and confirms it. Once the security deposit is confirmed in full, the booking becomes **Confirmed**, the entry QR code is issued, and the customer gets the **Confirmation email** ("You are booked") with the QR code. *(Payments)*
    - If the transfer never arrives, nothing happens on its own: the booking stays blocked until the office cancels it. *(The booking's own page)*
    - If less than the deposit arrives, it is recorded as a short deposit: the booking stays unconfirmed and cannot be checked in until topped up. *(Payments)*
