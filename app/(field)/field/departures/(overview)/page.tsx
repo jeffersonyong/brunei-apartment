@@ -3,10 +3,12 @@ import type { Metadata } from 'next'
 import { RefreshLine } from '@/components/field/refresh-line'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
-import { listTurnovers } from '@/lib/db/housekeeping'
-import { formatClockTime, formatStayDate, todayInBrunei } from '@/lib/domain/dates'
+import { listDeparturesBoard, type ArrivalAhead } from '@/lib/db/housekeeping'
+import { arrivalDayLabel, arrivalWindowOf } from '@/lib/domain/arrivals-ahead'
+import { formatClockTime, formatStayDate, todayInBrunei, type StayDate } from '@/lib/domain/dates'
 import { TURNOVER_STEP_PERMISSION, type TurnoverStep } from '@/lib/domain/turnover'
 
+import { ArrivalCard } from '../arrival-card'
 import { TurnoverCard } from '../turnover-card'
 
 export const metadata: Metadata = {
@@ -33,6 +35,11 @@ export const dynamic = 'force-dynamic'
  *
  * Gated on `inspection.record`, the permission of the one step only
  * housekeeping takes (lib/auth/field-jobs.ts). Each card checks its own step.
+ *
+ * Under the work, the guests on their way (capability C4, Jason's team,
+ * 8 October 2026): stays arriving from today to three days ahead, grouped by
+ * day, so a unit can be got ready before its guest rather than after the gate
+ * rings. A heads-up with no buttons — lib/domain/arrivals-ahead.ts.
  */
 
 const SECTIONS: readonly { step: TurnoverStep; id: string; title: string }[] = [
@@ -57,7 +64,7 @@ export default async function DeparturesPage() {
   }
 
   const today = todayInBrunei()
-  const turnovers = await listTurnovers(today)
+  const { turnovers, arrivals } = await listDeparturesBoard(today)
   const mayTake = (step: TurnoverStep) =>
     hasPermission(actor.permissions, TURNOVER_STEP_PERMISSION[step])
 
@@ -72,7 +79,9 @@ export default async function DeparturesPage() {
 
       {turnovers.length === 0 ? (
         <p className="mt-lg text-body-md text-foreground">
-          Nothing to turn over right now. A unit appears here when its guest is due out.
+          {arrivals.length === 0
+            ? `Nothing to turn over, and nobody arriving by ${formatStayDate(arrivalWindowOf(today).to)}.`
+            : 'Nothing to turn over right now. A unit appears here when its guest is due out.'}
         </p>
       ) : null}
 
@@ -106,6 +115,46 @@ export default async function DeparturesPage() {
           </section>
         )
       })}
+
+      {arrivals.length > 0 ? <ArrivingSection arrivals={arrivals} today={today} /> : null}
     </>
+  )
+}
+
+/**
+ * The guests on their way, under one heading and grouped by the day they
+ * arrive — the cleaner's question is "what is coming tomorrow", and a date on
+ * every card would make them read each one to find out.
+ */
+function ArrivingSection({
+  arrivals,
+  today,
+}: {
+  arrivals: readonly ArrivalAhead[]
+  today: StayDate
+}) {
+  const days = [...new Set(arrivals.map((arrival) => arrival.arrival))]
+
+  return (
+    <section aria-labelledby="departures-arriving" className="mt-2xl">
+      <h2 id="departures-arriving" className="text-display-xs text-foreground">
+        Arriving <span className="text-muted-foreground tabular-nums">{arrivals.length}</span>
+      </h2>
+
+      {days.map((day) => (
+        <div key={day} className="mt-lg">
+          <h3 className="micro-label text-muted-foreground">{arrivalDayLabel(day, today)}</h3>
+          <ul className="mt-sm grid gap-md">
+            {arrivals
+              .filter((arrival) => arrival.arrival === day)
+              .map((arrival) => (
+                <li key={arrival.reference}>
+                  <ArrivalCard arrival={arrival} today={today} />
+                </li>
+              ))}
+          </ul>
+        </div>
+      ))}
+    </section>
   )
 }
