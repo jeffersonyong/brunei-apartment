@@ -176,6 +176,10 @@ function modelFor(preview: BookingPreviewCase) {
       phone: '+673 333 5410',
       menuUrl: 'https://palmvilla.bn/food',
     },
+    // Days before the fixture's arrival, so the preview shows the rest of the
+    // stay offered ahead (capability A12) — what most guests will read.
+    today: '2026-09-10',
+    pendingStayTransfer: false,
   })
 
   if (!built.ok) {

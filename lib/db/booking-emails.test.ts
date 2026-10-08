@@ -11,6 +11,7 @@ import { currentPropertyId } from './property'
 import {
   createPublicDayPassBooking,
   createPublicStayBooking,
+  submitPublicBalanceTransfer,
   submitPublicTransfer,
   type CreatePublicDayPassInput,
   type CreatePublicStayInput,
@@ -335,8 +336,26 @@ describe('what a confirmed booking is told it owes', () => {
     const { created } = await givenDepositSecuredBooking()
     const built = await message('booking_confirmed', created.bookingId)
 
-    expect(built.text).toContain('BND 750.00 for the stay is settled when you arrive.')
+    // Arriving in November, so the rest can still be sent ahead (capability
+    // A12), from the page the button opens.
+    expect(built.text).toContain(
+      'BND 750.00 for the stay is settled when you arrive — or transfer it before then from your booking page (the button below), and send us the slip there too.',
+    )
     expect(built.text).toContain('BND 100.00 security deposit is with us')
+  })
+
+  test('a transfer for the rest already waiting is not called due on arrival', async () => {
+    const { created } = await givenDepositSecuredBooking()
+    const sent = await submitPublicBalanceTransfer(created.accessToken, STAY_TOTAL)
+
+    if (!sent.ok) {
+      throw new Error(`Test setup could not send the rest: ${sent.error.message}`)
+    }
+
+    const built = await message('booking_confirmed', created.bookingId)
+
+    expect(built.text).toContain('We are still checking your transfer for the stay.')
+    expect(built.text).not.toContain('settled when you arrive')
   })
 
   test('once the stay is paid, nothing is owed on arrival', async () => {

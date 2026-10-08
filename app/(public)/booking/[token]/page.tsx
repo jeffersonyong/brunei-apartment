@@ -10,10 +10,11 @@ import { QuoteLines } from '@/components/quote-lines'
 import { getDepositByBookingId } from '@/lib/db/deposits'
 import { listDocumentsForBooking } from '@/lib/db/documents'
 import { readFoodMenuImage, readFoodNotice } from '@/lib/db/food-notice'
+import { listPaymentsForBooking } from '@/lib/db/payments'
 import { getBookingByAccessToken } from '@/lib/db/public-bookings'
 import { readPropertySettings } from '@/lib/db/settings'
 import { balanceOf } from '@/lib/domain/balance'
-import { formatStayDate, formatStayRange, nightsBetween } from '@/lib/domain/dates'
+import { formatStayDate, formatStayRange, nightsBetween, todayInBrunei } from '@/lib/domain/dates'
 import { isFoodNoticeShown } from '@/lib/domain/food-notice'
 import { formatCents, type Cents } from '@/lib/domain/money'
 import {
@@ -22,11 +23,14 @@ import {
   transferPlanFor,
   type PublicStage,
 } from '@/lib/domain/public-booking'
+import { restTransferOfferOf, type RestTransferOffer } from '@/lib/domain/rest-transfer'
+import { slipBoxesOf, type SlipBox } from '@/lib/domain/slip-boxes'
 
 import { readPrivacyPolicyPublished } from '../../_components/privacy-policy-link'
 
 import { CheckInCard, FoodCard, GettingHereCard } from './arrival-cards'
 import { EntryCodeCard } from './entry-code-card'
+import { PayTheRest } from './pay-the-rest'
 import { SendAFile } from './send-a-file'
 import { TransferInstructions } from './transfer-instructions'
 
@@ -69,9 +73,10 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   const stage = publicStageOf(booking.status)
   const plan = transferPlanFor(booking)
   // Both kinds in one read: they were two requests differing in one filter.
-  const [settings, deposit, documents, hasPrivacyPolicy, food] = await Promise.all([
+  const [settings, deposit, payments, documents, hasPrivacyPolicy, food] = await Promise.all([
     readPropertySettings(),
     getDepositByBookingId(booking.id),
+    listPaymentsForBooking(booking.id),
     listDocumentsForBooking(booking.id, ['payment_slip', 'identity']),
     readPrivacyPolicyPublished(),
     // Only a confirmed booking is told about food, so only it reads the notice.
@@ -107,10 +112,50 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   // `listDocumentsForBooking` excludes what has expired as well as what was
   // removed, so a file past its retention date stops being reported as held —
   // which is the honest answer, because it is gone.
-  const slipOnFileSince = slips[0]?.uploadedAt ?? null
   const identityOnFileSince = identityDocuments[0]?.uploadedAt ?? null
-  const maySendSlip = stage === 'checking'
   const maySendIdentity = stage === 'checking' || stage === 'confirmed'
+
+  // One slip box per transfer the guest told us about, each filed against that
+  // transfer alone and open until somebody has checked it against the bank
+  // (lib/domain/slip-boxes.ts). The first is the one "I have made the
+  // transfer" announced; a later one is the rest of the stay (capability A12).
+  // Before the guest has said they transferred there is nothing to evidence,
+  // and once everything is checked there is nothing left to send.
+  const slipBoxes =
+    stage === 'checking' || stage === 'confirmed'
+      ? slipBoxesOf({
+          deposit,
+          payments,
+          slips: slips.map((slip) => ({
+            depositId: slip.depositId,
+            paymentId: slip.paymentId,
+            uploadedAt: slip.uploadedAt,
+          })),
+        }).filter((box) => box.open)
+      : []
+
+  // The rest of the stay, for a guest who sent only the deposit (capability
+  // A12): offered from the moment they told us about the deposit until the
+  // day before they arrive. The database decides again when they press it.
+  const restOffer = restTransferOfferOf(
+    {
+      stream: booking.stream,
+      status: booking.status,
+      hasDeposit: deposit !== null,
+      total: booking.total,
+      paid: booking.paid,
+      checkIn: booking.stay?.range.start ?? null,
+      hasPendingStayTransfer: payments.some((payment) => payment.status === 'pending_verification'),
+    },
+    todayInBrunei(),
+  )
+  // One thing at a time: a deposit that arrived short is the guest's to put
+  // right first, and the callout saying so is already on the page.
+  const offersTheRest = restOffer.kind === 'offer' && !(stage === 'checking' && shortfall > 0)
+
+  // The upload sections are lettered in the order they appear.
+  const identityMarker = maySendIdentity ? 'A' : null
+  const slipMarker = (index: number) => 'ABCDEF'.charAt((maySendIdentity ? 1 : 0) + index)
 
   /**
    * The two steps, and which one the customer is on.
@@ -218,11 +263,11 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             convenience — the bank app is the check either way (prd.md §10.4) —
             while the IC is the thing that saves the guest a wait at the desk
             and the desk a chase. The one being asked for goes at the top. */}
-        {maySendIdentity ? (
+        {identityMarker ? (
           <SendAFile
             token={token}
             kind="identity"
-            marker="A"
+            marker={identityMarker}
             title="Send us your IC"
             description="We need a copy of the lead guest's IC to register the stay."
             onFileSince={identityOnFileSince}
@@ -230,16 +275,17 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
           />
         ) : null}
 
-        {maySendSlip ? (
+        {slipBoxes.map((box, index) => (
           <SendAFile
+            key={box.key}
             token={token}
             kind="payment_slip"
-            marker="B"
-            title="Send us your transfer slip"
-            description="Your bank transfer slip will help us verify your transfer faster."
-            onFileSince={slipOnFileSince}
+            target={box.key}
+            marker={slipMarker(index)}
+            {...slipBoxCopy(box, payments)}
+            onFileSince={box.onFileSince}
           />
-        ) : null}
+        ))}
 
         {/* Demoted, and moved below the asks. It is reassurance rather than an
             instruction — a positive callout above the uploads announced the
@@ -260,13 +306,26 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
           <Callout tone="positive" className="mt-xl">
             Your booking is confirmed.{' '}
             {booking.stream === 'short_stay'
-              ? `${arrivalSentence(booking)} Show the code below at the gate.`
+              ? `${stayBalanceSentence(booking, restOffer)} Show the code below at the gate.`
               : 'Show the code below at the gate.'}
           </Callout>
         ) : null}
 
         {stage === 'confirmed' ? (
           <EntryCodeCard token={token} booking={booking} className="mt-xl" />
+        ) : null}
+
+        {/* After the entry code, which is what a confirmed guest came back
+            for: paying the rest ahead is something they may do, not something
+            they must. While the deposit is still being checked there is no
+            code, and this follows the uploads. */}
+        {offersTheRest && restOffer.kind === 'offer' ? (
+          <PayTheRest
+            token={token}
+            reference={booking.reference}
+            amount={restOffer.amount}
+            accounts={settings.bankAccounts}
+          />
         ) : null}
 
         {/* After the code, because the code is what gets them through the gate
@@ -411,6 +470,51 @@ function arrivalSentence(booking: { total: Cents; paid: Cents }): string {
   return outstanding > 0
     ? `The BND ${formatCents(outstanding)} for the stay is settled when you arrive.`
     : 'Everything is settled — there is nothing to pay on arrival.'
+}
+
+/**
+ * The confirmed callout's sentence about the stay's money, once paying it
+ * ahead is possible (capability A12). A transfer for the stay already waiting
+ * to be checked is said as such — the guest who chose "everything now", or
+ * who sent the rest, must not be told it is due on arrival.
+ */
+function stayBalanceSentence(
+  booking: { total: Cents; paid: Cents },
+  offer: RestTransferOffer,
+): string {
+  switch (offer.kind) {
+    case 'pending':
+      return 'We are checking your transfer for the stay.'
+    case 'offer':
+      return `The BND ${formatCents(offer.amount)} for the stay is settled when you arrive, or you can transfer it before then — below.`
+    default:
+      return arrivalSentence(booking)
+  }
+}
+
+/** What each slip box asks for: the first transfer, or the rest sent later. */
+function slipBoxCopy(
+  box: SlipBox,
+  payments: readonly { id: string; expected: Cents }[],
+): { title: string; description: string } {
+  if (box.kind === 'first') {
+    return {
+      title: 'Send us your transfer slip',
+      description: 'Your bank transfer slip will help us verify your transfer faster.',
+    }
+  }
+
+  const payment = payments.find((candidate) => `payment:${candidate.id}` === box.key)
+
+  // Named for what it is rather than "the rest": a desk booking can carry a
+  // transfer for the stay made before its deposit, which is not the rest of
+  // anything (lib/domain/slip-boxes.ts).
+  return {
+    title: 'Send us the slip for the stay',
+    description: payment
+      ? `The slip for the BND ${formatCents(payment.expected)} you transferred for the stay.`
+      : 'The slip for the transfer you made for the stay.',
+  }
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

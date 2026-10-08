@@ -6,6 +6,7 @@ import {
   type EmailFoodFacts,
 } from '@/lib/domain/booking-email'
 import { contact } from '@/lib/domain/contact'
+import { todayInBrunei } from '@/lib/domain/dates'
 import { entryCodeShownFor, entryUrl } from '@/lib/domain/entry-qr'
 import { bookingUrl, findBookingUrl, foodPageUrl } from '@/lib/domain/origin'
 import { DAY_IN_SECONDS, PUBLIC_LIMITS } from '@/lib/domain/public-booking'
@@ -18,6 +19,7 @@ import { recordAuditEvent } from './audit'
 import { getBookingById } from './bookings'
 import { getEntryToken } from './entry-qr'
 import { readFoodMenuImage, readFoodNotice } from './food-notice'
+import { listPaymentsForBooking } from './payments'
 import { notePublicAttempt } from './public-bookings'
 import { readPropertySettings } from './settings'
 
@@ -128,10 +130,13 @@ export async function buildBookingEmailMessage(input: {
       ? entryUrl(input.staffOrigin, await getEntryToken(booking.id))
       : null
 
-  // The food notice rides on the confirmation only, so only it is read.
-  const [settings, food] = await Promise.all([
+  // The food notice rides on the confirmation only, so only it is read — and
+  // so does a transfer for the stay still waiting to be checked, which the
+  // confirmation must not call due on arrival (capability A12).
+  const [settings, food, payments] = await Promise.all([
     readPropertySettings(),
     input.kind === 'booking_confirmed' ? readFoodFacts(input.origin) : NO_FOOD,
+    input.kind === 'booking_confirmed' ? listPaymentsForBooking(booking.id) : [],
   ])
   const unitTypeName =
     booking.stay === null
@@ -153,6 +158,8 @@ export async function buildBookingEmailMessage(input: {
     findBookingUrl: findBookingUrl(input.origin),
     hasEntryCode: codeUrl !== null,
     food,
+    today: todayInBrunei(),
+    pendingStayTransfer: payments.some((payment) => payment.status === 'pending_verification'),
   })
 
   if (!built.ok) {

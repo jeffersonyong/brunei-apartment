@@ -55,6 +55,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'booking.arrivals_recorded',
   'booking.hold',
   'booking.submit_payment',
+  'booking.balance_submitted',
   'booking.verify_payment',
   'booking.pay_in_full',
   'booking.secure_with_deposit',
@@ -414,6 +415,17 @@ function describeBooking(event: AuditEventLike): string | null {
 
   if (event.action === 'booking.discounted') {
     return discountLabel(event)
+  }
+
+  if (event.action === 'booking.balance_submitted') {
+    // The guest's own words, as near as the trail can put them: they say they
+    // sent it, and the queue is where somebody finds out (capability A12).
+    const amount =
+      typeof event.after?.amount_cents === 'number'
+        ? ` — BND ${formatCents(event.after.amount_cents)}`
+        : ''
+
+    return `Customer says they transferred the rest${amount}`
   }
 
   if (event.action === 'booking.party_changed') {

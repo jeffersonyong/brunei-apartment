@@ -106,7 +106,7 @@ export const bookingSteps: BookingStep[] = [
   {
     title: 'Pay your way',
     description:
-      'Transfer to BIBD or Baiduri with your booking reference, and upload the slip as you book. No card needed.',
+      'Transfer to BIBD or Baiduri with your booking reference, then tell us on your booking page and send the slip from there. No card needed.',
   },
   {
     title: 'You’re confirmed',

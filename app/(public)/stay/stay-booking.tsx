@@ -135,7 +135,7 @@ export function StayBooking({
           <p className="mt-md max-w-[52ch] text-body-lg text-copy">
             Prices are per night and include everything but the extras you choose below. Nothing is
             charged online — you transfer the {formatCents(config.securityDeposit)} deposit to
-            secure the unit, and settle the stay when you arrive.
+            secure the unit, and settle the stay when you arrive or by transfer before then.
           </p>
         </div>
       </section>

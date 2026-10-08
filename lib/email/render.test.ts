@@ -110,6 +110,10 @@ function model(
     bookingUrl: URL,
     findBookingUrl: LOOKUP_URL,
     hasEntryCode: overrides.hasEntryCode ?? false,
+    // The fixture's arrival day: nothing is offered ahead, which this file
+    // does not test (lib/domain/booking-email.test.ts does).
+    today: '2026-09-14',
+    pendingStayTransfer: false,
     food: {
       body: 'No restaurant <here>.\nMenu at the pool.',
       phone: '+673 333 5410',

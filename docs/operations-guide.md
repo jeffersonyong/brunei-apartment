@@ -1620,7 +1620,7 @@ Rules:
 | Notification title | When it appears | Who is told | Clicking it opens |
 |---|---|---|---|
 | **New online booking — short stay** / **New online booking — day pass** | A customer made a booking themselves on the public website. | Holders of **View bookings** (all roles by default) | The booking's page |
-| **Payment to verify** | A booking was sent for payment verification — a customer pressed "I have made the transfer" on the website, or a staff member used **Record the deposit → Bank transfer — verify later** on a booking that was still **Held**. A booking created on New booking with bank transfer, and a stay transfer raised with **Record a payment**, do **not** raise this notification — tell a colleague who verifies payments, or check the queue yourself. The line shows the amount when there is one. | Holders of **Verify payments** (Front Office, Finance, Admin by default) | The **Verification queue** (not the booking) |
+| **Payment to verify** | A booking was sent for payment verification — a customer pressed "I have made the transfer" or "I have transferred the rest" on the website, or a staff member used **Record the deposit → Bank transfer — verify later** on a booking that was still **Held**. A booking created on New booking with bank transfer, and a stay transfer raised with **Record a payment**, do **not** raise this notification — tell a colleague who verifies payments, or check the queue yourself. The line shows the amount when there is one. | Holders of **Verify payments** (Front Office, Finance, Admin by default) | The **Verification queue** (not the booking) |
 | **Booking email could not be sent** / **Confirmation email could not be sent** / **Email could not be sent** | The system tried to email a guest about their booking and the email failed. The reason is in the booking's history. | Holders of **View bookings** | The booking's page |
 | **Extra guests at the gate** / **Visitors added at the gate** | The guard counted more people in at the Gate than the booking is for — as he checked them in or admitted them, or with **Record arrivals** later. **Extra guests at the gate** means the office is told — change the booking's party (**Change** on the Party line) if an extra charge is due. **Visitors added at the gate** means he added them to a day pass as he admitted it and took the difference in cash himself, so it is only for your information. (If the note on the booking says *"The cash was not recorded, and the pass owes it"*, the pass shows the difference as owing, and the guard takes it with **Take** before admitting.) The line shows how many, e.g. "PV-1001 · Guest name · 2 more". The guard's note is in the booking's **Notes**. | Holders of **Edit bookings** (Front Office and Admin by default) | The booking's page |
 
@@ -6267,7 +6267,7 @@ Address: bruneiapartment.com. Anyone can open it. Sections from top to bottom:
 2. **Day pass** section — heading "A full pool day, from BND ___", the line "One pass covers everything below — pay per person, or take a family bundle.", then one card per facility (photograph, name, and a short description for the pool, water park and indoor children's playground). The row of cards scrolls sideways on tablets and computers and stacks on phones. Below it a card **Day pass** with the price line (for example "From BND 5 per person · family bundles from BND 20") and the button **Book a day pass**.
 3. **Short stays** section — heading "Whole units, from BND ___ a night", "The whole place to yourselves — apartments and a semi-detached house.", one card per unit type (photograph, name, a short line, and "from BND ___ / night"). Every card links to the stay booking page. Button **Book a short stay**. Fine print: "BND ___ refundable security deposit · bookings open up to __ days ahead."
 4. **Long term** — a dark card "Make Palm Villa home": "Longer tenancies are arranged directly with us and priced per tenancy. Tell us what you need and we'll come back with a proposal." Button **Start an enquiry** opens WhatsApp. There is no online booking for long-term tenancies.
-5. **How it works — "Booking is simple"** — three steps: "Pick your day or dates", "Pay your way" ("Transfer to BIBD or Baiduri with your booking reference, and upload the slip as you book. No card needed."), "You're confirmed" ("Your confirmation arrives by email, with a link back to your booking. Quote your reference on arrival."). Fine print repeats the deposit and booking-window line and adds "Pay by bank transfer (BIBD / Baiduri) or cash." Then "Already booked? **Find your booking.**"
+5. **How it works — "Booking is simple"** — three steps: "Pick your day or dates", "Pay your way" ("Transfer to BIBD or Baiduri with your booking reference, then tell us on your booking page and send the slip from there. No card needed."), "You're confirmed" ("Your confirmation arrives by email, with a link back to your booking. Quote your reference on arrival."). Fine print repeats the deposit and booking-window line and adds "Pay by bank transfer (BIBD / Baiduri) or cash." Then "Already booked? **Find your booking.**"
 6. **Follow along** — four square photo tiles and **Instagram** / **TikTok** buttons (@palmvilla.bn).
 7. **Getting here** — "Kuala Belait, Brunei", the full address (Lot 9163, Spg 84-92-52-33, Jln Setia Diraja, Kpg Mumong A, Mukim Kuala Belait, KA1531), a button **Open in Google Maps**, and an aerial map with the building marked "We are here!". Tapping the map also opens Google Maps. The footer's **Getting here** link scrolls here.
 8. **FAQs** — only if staff have put any FAQs on the front page (at most 6). "The questions guests ask most. Everything else is on the FAQs page." Button **See all FAQs**. Each question opens when tapped.
@@ -6297,7 +6297,7 @@ Address: bruneiapartment.com. Anyone can open it. Sections from top to bottom:
 
 Address: bruneiapartment.com/stay. Reached from **Book → Stay**, **Book a short stay**, **Check availability**, or any unit-type card. It is always live — prices and availability are read fresh every time the page opens.
 
-Intro: "Prices are per night and include everything but the extras you choose below. Nothing is charged online — you transfer the ___ deposit to secure the unit, and settle the stay when you arrive."
+Intro: "Prices are per night and include everything but the extras you choose below. Nothing is charged online — you transfer the ___ deposit to secure the unit, and settle the stay when you arrive or by transfer before then."
 
 The form, top to bottom:
 
@@ -6345,28 +6345,31 @@ Every stage shows "Reference PV-____", a **What you booked** card and a footnote
 - A **How to pay** card:
   - For a stay with a deposit, two choices (the first is pre-selected):
     - **Everything now — BND ___** — "The BND ___ deposit and the BND ___ for the stay together, so there is nothing to settle on arrival."
-    - **Just the deposit — BND ___** — "Secures your unit. The BND ___ for the stay is paid when you arrive."
+    - **Just the deposit — BND ___** — "Secures your unit. The BND ___ for the stay is paid when you arrive — or transfer it before then, from this page."
   - For a day pass: the amount and "The full price of your day pass."
   - The bank accounts from Property settings → Bank accounts: "Send it to this account:" (one) or "Send it to either of these accounts:" (two or more), each as bank name and account number, separated by "or". If no bank account is set up: "We cannot show the bank details right now. Please call us and we will give them to you."
-  - "Send **BND ___** in one transfer with **PV-____** as the transfer reference so we can match it to your booking, then confirm below. Once we verify the transfer, we will email your booking confirmation and QR code for entry."
+  - "Send **BND ___** in one transfer with **PV-____** as the transfer reference so we can match it to your booking, then confirm below — you can send us your transfer slip from here after that. Once we verify the transfer, we will email your booking confirmation and QR code for entry."
   - Button **I have made the transfer** (shows "Telling the team…" while working).
 - There is **no countdown or deadline** anywhere.
 
 **Stage 2 — Checking for your transfer (status Awaiting payment).**
 - "What happens next": **Make the transfer** (ticked), **Send us your IC** (current until an IC is received, then ticked).
 - **A. Send us your IC** — "We need a copy of the lead guest's IC to register the stay." Button **Choose a file** (or **Choose a different file** once one is held). "JPEG, PNG, WebP or PDF, up to 4 MB. Held privately, used only internally for verification." plus, once a privacy policy is published, a link "How we handle your personal data". After sending: "Received, thank you." or "Received [date]." and "Sending another replaces the one we have."
-- **B. Send us your transfer slip** — "Your bank transfer slip will help us verify your transfer faster." Same file rules.
+- **B. Send us your transfer slip** — "Your bank transfer slip will help us verify your transfer faster." Same file rules. It is filed against the transfer they told us about — the deposit, and the stay too if they chose **Everything now** — and it disappears once staff have checked that money.
+- **Pay the rest now** — for a stay where they sent **just the deposit**, arriving after today: see *Pay the rest now* below. Not shown while a short-deposit red box is showing.
 - If a deposit has been checked and found short: a red box "We have received BND __ of the BND ___ security deposit, so BND __ is still outstanding. Your unit is held, and the booking is confirmed once the rest arrives — send it to the same account, quoting PV-____, or call us if something has gone wrong."
 - Otherwise: "We have your booking and are checking for the transfer. Once we verify it, we will email your confirmation and a QR code for entry, which will be on this page too." For a **stay** the sentence also promises the check-in instructions: "…we will email your confirmation, a QR code for entry and your check-in instructions, which will all be on this page too." (A guest who gave no email address is told these "will be on this page" instead.)
 
 **Stage 3 — Confirmed (status Confirmed, Checked in or Completed).**
-- Green box: "Your booking is confirmed." For a stay it adds either "The BND ___ for the stay is settled when you arrive." or "Everything is settled — there is nothing to pay on arrival.", then "Show the code below at the gate." For a day pass just "Show the code below at the gate."
+- Green box: "Your booking is confirmed." For a stay it adds one of: "The BND ___ for the stay is settled when you arrive, or you can transfer it before then — below." (they sent just the deposit and arrive after today); "We are checking your transfer for the stay." (a transfer for the stay is waiting to be checked — they chose **Everything now**, or sent the rest); "The BND ___ for the stay is settled when you arrive." (from the day of arrival); or "Everything is settled — there is nothing to pay on arrival." Then "Show the code below at the gate." For a day pass just "Show the code below at the gate."
 - On a **Completed** booking (a stay checked out, or a day pass already admitted) the page still says **You are booked** and "Show the code below at the gate", but no code is shown below it.
 - **Your entry code** card (only while the booking is Confirmed or Checked in): the QR code, the reference underneath, "Show this at the gate. Save it to your phone, or send it to whoever is driving." and a **Save the image** button that downloads the picture.
 - **Check-in instructions** card — **stays only**, not day passes. Five numbered steps: "Please go to the Security Counter.", "Fill in and sign the Registration Form.", "Show the IC of the person who made the booking.", "Security will hand you the apartment key and tell you where to park your car.", "The Wi-Fi password is on a sticker attached to the TV board in the living room." Then "Have a pleasant stay and enjoy your time with us!"
 - **Getting here** card — every confirmed booking, stay or day pass: the address, an **Open in Google Maps** button, and the aerial map.
 - **Food** card — every confirmed booking, stay or day pass, while there is a food notice (Website settings → Food): the notice text, a **Call [number]** button that dials the food provider, and **See the food menu**, which opens the food page — only if a menu flyer has been uploaded.
-- **A. Send us your IC** stays available (no slip box).
+- **A. Send us your IC** stays available. A slip box shows only for a transfer still waiting to be checked — **Send us the slip for the stay** ("The slip for the BND ___ you transferred for the stay.") after they used **Pay the rest now**, or **B. Send us your transfer slip** for the stay half of **Everything now** when the deposit was checked first.
+
+**Pay the rest now** (stages 2 and 3). A card for a stay where the customer sent **just the deposit**, from the moment they press **I have made the transfer** until **the day before arrival**, while no transfer for the stay is already waiting. It sits after the entry code (stage 3) or after the uploads (stage 2). Eyebrow **Pay the rest now**, the amount still owed in large type ("BND ___"), "What is left to pay for the stay. You can pay it when you arrive, or transfer it now so there is nothing to settle at the gate.", the bank accounts as in stage 1, "Send **BND ___** in one transfer with **PV-____** as the transfer reference, then confirm below. You can send us the slip for it from this page after that.", and the button **I have transferred the rest** ("Telling the team…" while working). See *How a customer pays the rest ahead*.
 
 **Stage 4 — Closed (Cancelled, No show, Expired).**
 - Red box with the reason and "If that is not what you expected, please call us.":
@@ -6537,6 +6540,37 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 
 **Can it be undone?** Not by the customer. If they pressed it by mistake, staff deal with it from the Verification queue (see *Payments*).
 
+### How a customer pays the rest ahead ("I have transferred the rest")
+
+**Who can do this:** anyone with the booking's private link — a customer whose stay was secured with **Just the deposit**.
+**Where:** their booking page → **Pay the rest now** card → **I have transferred the rest**.
+**Steps:**
+1. Transfer the amount shown, with the booking reference.
+2. Press **I have transferred the rest**.
+3. Optionally send the slip in the new **Send us the slip for the stay** box.
+
+**What happens next:**
+- A stay transfer for **the whole amount still owed** waits in the **Verification queue**, exactly like one raised with **Record a payment → Bank transfer — verify later** on the booking page. Staff with **Verify payments** get the bell notification **"Payment to verify"**. The booking's history shows **"Customer says they transferred the rest — BND ___"** by **System**, and **Bank transfer awaited**.
+- The booking's status does not change. The card disappears; the confirmed box says "We are checking your transfer for the stay."
+- When staff verify it in the queue, the stay is paid. **No email is sent** (a guest gets two emails per booking and never a third); the booking page then says "Everything is settled — there is nothing to pay on arrival."
+- **If it is still waiting on the arrival day**, the guard's card is red ("A transfer for the stay is waiting to be checked") and he cannot take cash for the same money — he calls the office, who check the bank and verify it.
+
+**Edge cases and limits:**
+- Offered only on a **short stay with a deposit**, once the customer has pressed **I have made the transfer** (status **Awaiting payment** or **Confirmed**), and only **until the day before arrival**. On the day itself the stay is paid at the gate.
+- Not offered while a transfer for the stay is already waiting (**Everything now**, or the rest already sent), when nothing is owed, or on a day pass.
+- It is always the whole amount owed — never part of it.
+- 30 presses an hour from one device (shared with **I have made the transfer**).
+
+**If you see an error** (the customer sees these):
+- "Your stay starts today, so the rest is paid when you arrive."
+- "We have already been told about a transfer for this stay, and will check it against the bank."
+- "What is owed on this booking has changed since this page was opened. Refresh to see the new amount." — staff changed the booking (amended it, or recorded money) after the page was loaded.
+- "There is nothing left to pay on this booking."
+- "Paying the rest ahead is not offered on this booking. Refresh the page to see where it stands, or call us."
+- "This booking is closed, so there is nothing to add to it."
+
+**Can it be undone?** Not by the customer. A raised transfer stays in the queue until someone confirms it (see *Payments*).
+
 ### How a customer sends their IC or transfer slip
 
 **Who can do this:** anyone with the booking's private link.
@@ -6546,12 +6580,13 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 
 **What happens next:**
 - The file is stored privately against the booking. An IC appears in the booking's identity documents; a slip is attached to the deposit and/or payment it evidences (both, if they chose **Everything now**). Staff see them on the booking and in the Verification queue (see *The booking's own page → Identity documents* and *Payments*).
-- Sending another file of the same kind replaces the one before.
+- **One slip box per transfer** the customer told us about: **B. Send us your transfer slip** for the first (the deposit, plus the stay if they chose **Everything now**), and **Send us the slip for the stay** for a later transfer for the stay. Each slip is filed against that transfer only, so the slip for the stay never replaces the deposit's. (A deposit that was checked and found short keeps its box open for the slip of the top-up; that slip replaces the customer's own first one on the deposit.)
+- Sending another file in the same box replaces the one before (the IC likewise).
 - No email, no bell notification.
 
 **Edge cases and limits:**
 - The IC box appears only once the customer has pressed **I have made the transfer** (stage **Checking for your transfer**) and stays while the booking is Confirmed, Checked in or Completed. It is offered for day passes too.
-- The slip box appears only at **Checking for your transfer**. A slip is filed only against a bank-transfer deposit or payment, never against cash.
+- A slip box appears once the customer has pressed **I have made the transfer** (or **I have transferred the rest**), and only while that transfer is still waiting to be checked. A slip is filed only against a bank-transfer deposit or payment, never against cash.
 - JPEG, PNG, WebP or PDF, up to 4 MB. The file's real contents are checked, not just its name.
 - 20 files an hour from one device; 10 files a day per booking.
 - Neither upload is required. A guest who sends nothing is registered at the desk as usual.
@@ -6561,6 +6596,7 @@ The customer sees **"This page didn't load"** — "Something went wrong on our s
 - "[file name] is __ MB, which is larger than 4 MB. A photograph taken on a phone is usually well under it." / "That file is too large. A photograph taken on a phone is usually well under it."
 - "That is not a JPEG, PNG, WebP or PDF. Attach a photograph or a PDF." / "That file is empty. Choose the file again."
 - "There is no transfer on this booking yet. Tell us you have made it first, then send the slip."
+- "We have already checked that transfer, so there is nothing to add to it." — staff verified that money while the page was open; the box has gone.
 - "This booking is closed, so there is nothing to add to it."
 - "That file could not be saved. Try again, or send it to us on WhatsApp."
 - "That is a lot of files in a short time. Please wait a little, or send it to us on WhatsApp."
@@ -6640,12 +6676,12 @@ All emails come from a no-reply address on bruneiapartment.com. They carry **no 
   - **Price**: each price line and the **Total** "BND ___".
   - Stay with a deposit: "Plus a refundable BND ___ security deposit, which comes back to you after your stay."
   - **How to pay** (amber panel):
-    - Stay with a deposit — both options, because they have not chosen yet: **"Just the deposit — BND ___"** ("Secures your unit. The BND ___ for the stay is paid when you arrive.") and **"Everything now — BND ___"** ("The BND ___ deposit and the BND ___ for the stay together, so there is nothing to settle on arrival.").
+    - Stay with a deposit — both options, because they have not chosen yet: **"Just the deposit — BND ___"** ("Secures your unit. The BND ___ for the stay is paid when you arrive." — and when the stay starts after the email is sent: "…paid when you arrive, or you can transfer it before then from your booking page.") and **"Everything now — BND ___"** ("The BND ___ deposit and the BND ___ for the stay together, so there is nothing to settle on arrival.").
     - Day pass — one option "BND ___", "The full price of your day pass." (a stay with no deposit: "The full price of your booking.").
     - "Send it to this account:" / "Send it to either of these accounts:" and each bank name and account number from Property settings, with "or" between. If none is set up: "We cannot show the bank details here. Please call us and we will give them to you."
-    - "Put PV-____ as the transfer reference so we can match it to your booking. Your unit is held for you in the meantime — once we confirm the transfer, your booking is confirmed and we will let you know."
+    - "Put PV-____ as the transfer reference so we can match it to your booking. Then open your booking (the button below), tell us you have transferred, and send us your slip from there. Your unit is held for you in the meantime — once we confirm the transfer, your booking is confirmed and we will let you know."
   - Button **Open your booking**, the full link written out underneath (so it survives being forwarded into WhatsApp), and "Anyone with this link can see this booking, so do not post it publicly."
-  - Footer: "Palm Villa · Call or WhatsApp us on +673 8959798 · +673 8837118 · +673 8986733", "Lost this email? Open your booking with your reference and phone number — **Find your booking**" (link to the Find your booking page), and "This is the only email we send about this booking."
+  - Footer: "Palm Villa · Call or WhatsApp us on +673 8959798 · +673 8837118 · +673 8986733", "Lost this email? Open your booking with your reference and phone number — **Find your booking**" (link to the Find your booking page), and "We will email you once more, when your booking is confirmed, and about nothing else."
 - **Links in it:** the customer's private booking page; the Find your booking page.
 - **Attachments:** none.
 - **Plain-text version:** every figure is also in a plain-text version for mail apps that do not show designed emails.
@@ -6676,14 +6712,14 @@ All emails come from a no-reply address on bruneiapartment.com. They carry **no 
   - **When you arrive**:
     - "Show the QR code in this email at the gate, or quote reference PV-____."
     - Stay with a deposit: "Your refundable BND ___ security deposit is with us, and comes back to you after your stay."
-    - Stay: "BND ___ for the stay is settled when you arrive." or "Everything is settled — there is nothing to pay on arrival." (worked out from what has actually been paid, not the total).
+    - Stay, one of (worked out from what has actually been verified, not the total): "BND ___ for the stay is settled when you arrive — or transfer it before then from your booking page (the button below), and send us the slip there too." (just the deposit, arriving after today); "We are still checking your transfer for the stay." (a transfer for the stay is waiting); "BND ___ for the stay is settled when you arrive." (sent on the arrival day, or a booking with no private link); "Everything is settled — there is nothing to pay on arrival."
     - Stay: "Check in from __:__, and check out by __:__." (from Property settings).
     - A day pass has only the first sentence.
   - **Check-in instructions** — **stays only**: the same five numbered steps and closing line as the booking page's Check-in instructions card.
   - **Getting here** — every confirmed email: the address and an **Open in Google Maps** link. (No map picture — many email apps block pictures.)
   - **Food** — every confirmed email, stay or day pass, while there is a food notice: the notice text, **Call [number]**, and **See the food menu** (a link to the food page, only if a flyer has been uploaded). The flyer itself is not in the email; the link means a flyer changed later is what the guest sees.
   - **Open your booking** button with the link and the "Anyone with this link…" note — **only if the booking has a private link**. A desk booking that has never been looked up has none, so this part is missing; the Find your booking link in the footer is the way in.
-  - Footer: the same as the Booking email, including "This is the only email we send about this booking."
+  - Footer: the same as the Booking email, except the last line: "This is the last email we send about this booking."
 - **Links in it:** the customer's booking page (if it has one); Find your booking.
 - **Attachment:** the entry QR code as a picture file named "PV-____-entry-qr.png", shown inside the email and also attached so it can be forwarded.
 - **What the QR code does:** it holds a link to the staff portal's entry-code page. A guard signed in to the field screens who scans it gets that booking's gate card. Anyone else who scans it (including the guest) sees only a masked summary — first name and initial, reference, dates and status. See *Field screens → Entry code page (what a scanned QR code opens)*.
@@ -6768,8 +6804,8 @@ A desk booking paid in cash on the spot is confirmed straight away and no email 
 **Q: We booked a guest at the desk by transfer. Will they get an email?**
 Not when you create it. They get the **Confirmation email** (with the QR code) when the transfer is verified. They never get a Booking email with bank details, so give them the bank details and reference yourself.
 
-**Q: The confirmation email says "This is the only email we send about this booking" — but they got two.**
-Both emails carry that sentence. A customer who booked online gets the Booking email and later the Confirmation email. That is normal; reassure them.
+**Q: Will the customer get any more emails?**
+No. The Booking email says one more will come — the confirmation — and the Confirmation email says it is the last. Nothing else is emailed: no reminder, and no receipt when the rest of the stay or a top-up is verified. Their booking page always shows where things stand.
 
 **Q: The customer's email says "3-Bedroom" but their booking page shows a unit number. Which is right?**
 Both. The email names only the unit type. The booking page shows the unit the system assigned at the moment they look, which staff can change by amending. If you moved them, the page shows the new unit.
@@ -6828,8 +6864,8 @@ That is the wording for an Expired booking. Nothing in the app currently expires
 **Q: Can a customer book a long stay online?**
 No. The Long term section only offers **Start an enquiry**, which opens WhatsApp. Long-term tenancies are arranged by staff (see *Units and property settings → How to record a long-term lease on a unit*).
 
-**Q: The website's "How it works" says to upload the slip as you book.**
-In practice the slip upload appears on the booking page after the customer presses **I have made the transfer**, not on the booking form. The slip is optional; the bank is the real check.
+**Q: Where does a customer send their transfer slip?**
+From their booking page, after they press **I have made the transfer** — and for the rest of a stay, after **I have transferred the rest**. The Booking email and the website's "How it works" say so, and so does the Confirmation email when it offers the rest ahead. Each transfer has its own box, so a slip for the stay does not replace the deposit's. The slip is optional; the bank is the real check.
 
 **Q: The customer scanned their own QR code and got a page asking staff to sign in / showing only their first name.**
 That is expected. The code is for the guard's scanner. Anyone not signed in sees only a short summary. It still works at the gate.

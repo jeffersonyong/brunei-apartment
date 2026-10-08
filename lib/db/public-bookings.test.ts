@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { hashPublicKey } from '@/lib/auth/access-token'
+import { addDays, todayInBrunei } from '@/lib/domain/dates'
 import { bnd } from '@/lib/domain/money'
 import { PUBLIC_LIMITS } from '@/lib/domain/public-booking'
 import { dataClient } from '@/lib/supabase/data'
 
 import { createWalkInBooking, getBookingById } from './bookings'
 import { listDayPassHeadroom } from './day-passes'
-import { listPendingDeposits } from './deposits'
+import { listPendingDeposits, verifyDeposit } from './deposits'
 import { currentPropertyId } from './property'
 import { listDocumentsForBooking } from './documents'
 import {
@@ -16,11 +17,14 @@ import {
   createPublicStayBooking,
   getBookingByAccessToken,
   notePublicAttempt,
+  submitPublicBalanceTransfer,
   submitPublicTransfer,
   type CreatePublicDayPassInput,
   type CreatePublicStayInput,
 } from './public-bookings'
+import { listPaymentsForBooking } from './payments'
 import { TEST_PNG, bookingInput } from './test/factory'
+import { auditEventsFor } from './test/inspect'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -877,5 +881,221 @@ describe('a file the customer sends through their own link', () => {
 
     expect(held).toHaveLength(1)
     expect(held[0]?.filename).toBe('better.png')
+  })
+})
+
+/**
+ * A guest who sent only the deposit transferring the rest ahead (capability
+ * A12, supabase/migrations/20261008000300), and the slip for each transfer
+ * landing on that transfer alone.
+ *
+ * Dated from today, because the rule that matters most is a date: the rest is
+ * offered until the day before arrival, and paid at the gate on the day.
+ */
+describe('paying the rest ahead', () => {
+  const ARRIVAL = addDays(todayInBrunei(), 10)
+  const STAY_TOTAL = bnd(750)
+
+  async function givenDepositOnlyStay(
+    overrides: Partial<CreatePublicStayInput> = {},
+  ): Promise<{ token: string; bookingId: string }> {
+    const created = await createPublicStayBooking(
+      stayInput({
+        unitTypeSlug: 'three-bedroom',
+        range: { start: ARRIVAL, end: addDays(ARRIVAL, 3) },
+        ...overrides,
+      }),
+    )
+
+    if (!created.ok) {
+      throw new Error(`Test setup could not book: ${created.error.message}`)
+    }
+
+    const submitted = await submitPublicTransfer(created.data.accessToken, 'deposit_only')
+
+    if (!submitted.ok) {
+      throw new Error(`Test setup could not submit the deposit: ${submitted.error.message}`)
+    }
+
+    return { token: created.data.accessToken, bookingId: created.data.bookingId }
+  }
+
+  async function verifyTheDeposit(bookingId: string): Promise<void> {
+    const deposit = (await listPendingDeposits()).find((row) => row.bookingId === bookingId)
+
+    if (!deposit) {
+      throw new Error('Test setup expected a promised deposit.')
+    }
+
+    const verified = await verifyDeposit({
+      depositId: deposit.id,
+      observedAmount: bnd(100),
+      match: 'reference',
+      actorId: null,
+    })
+
+    if (!verified.ok) {
+      throw new Error(`Test setup could not verify the deposit: ${verified.error.message}`)
+    }
+  }
+
+  test('raises the whole stay as a transfer to check, and tells the office', async () => {
+    const { token, bookingId } = await givenDepositOnlyStay()
+
+    const result = await submitPublicBalanceTransfer(token, STAY_TOTAL)
+
+    expect(result.ok && result.data.amount).toBe(STAY_TOTAL)
+
+    const payments = await listPaymentsForBooking(bookingId)
+
+    expect(payments).toHaveLength(1)
+    expect(payments[0]).toMatchObject({
+      method: 'bank_transfer',
+      status: 'pending_verification',
+      expected: STAY_TOTAL,
+    })
+
+    const events = await auditEventsFor(bookingId)
+
+    expect(
+      events.find((event) => event.action === 'booking.balance_submitted')?.after,
+    ).toMatchObject({ amount_cents: STAY_TOTAL })
+    // The booking's status is the deposit's business, not this transfer's.
+    expect((await getBookingById(bookingId))?.status).toBe('awaiting_payment_verification')
+  })
+
+  test('is offered once the deposit has confirmed the booking too', async () => {
+    const { token, bookingId } = await givenDepositOnlyStay()
+    await verifyTheDeposit(bookingId)
+
+    expect((await submitPublicBalanceTransfer(token, STAY_TOTAL)).ok).toBe(true)
+  })
+
+  test('refuses a second press while the first is waiting to be checked', async () => {
+    const { token } = await givenDepositOnlyStay()
+    await submitPublicBalanceTransfer(token, STAY_TOTAL)
+
+    const again = await submitPublicBalanceTransfer(token, STAY_TOTAL)
+
+    expect(!again.ok && again.error.code).toBe('already_pending')
+  })
+
+  test('refuses a figure that is no longer what is owed', async () => {
+    const { token, bookingId } = await givenDepositOnlyStay()
+
+    const result = await submitPublicBalanceTransfer(token, bnd(500))
+
+    expect(!result.ok && result.error.code).toBe('changed')
+    expect(await listPaymentsForBooking(bookingId)).toHaveLength(0)
+  })
+
+  test('on the day of arrival it is paid at the gate instead', async () => {
+    const today = todayInBrunei()
+    const { token } = await givenDepositOnlyStay({
+      range: { start: today, end: addDays(today, 3) },
+    })
+
+    const result = await submitPublicBalanceTransfer(token, STAY_TOTAL)
+
+    expect(!result.ok && result.error.code).toBe('arrival_day')
+  })
+
+  test('is not offered before the deposit is announced, or for a guest who sent everything', async () => {
+    const held = await createPublicStayBooking(
+      stayInput({
+        unitTypeSlug: 'three-bedroom',
+        range: { start: ARRIVAL, end: addDays(ARRIVAL, 3) },
+      }),
+    )
+
+    if (!held.ok) throw new Error(held.error.message)
+
+    const early = await submitPublicBalanceTransfer(held.data.accessToken, STAY_TOTAL)
+
+    expect(!early.ok && early.error.code).toBe('not_offered')
+
+    await submitPublicTransfer(held.data.accessToken, 'everything')
+
+    const already = await submitPublicBalanceTransfer(held.data.accessToken, STAY_TOTAL)
+
+    expect(!already.ok && already.error.code).toBe('already_pending')
+  })
+
+  test('is not offered on a day pass, which is paid in one transfer', async () => {
+    const pass = await createPublicDayPassBooking(
+      dayPassInput({ date: addDays(todayInBrunei(), 5) }),
+    )
+
+    if (!pass.ok) throw new Error(pass.error.message)
+
+    await submitPublicTransfer(pass.data.accessToken)
+
+    const result = await submitPublicBalanceTransfer(pass.data.accessToken, bnd(10))
+
+    expect(!result.ok && result.error.code).toBe('not_offered')
+  })
+
+  test('the slip for the rest lands on the rest alone, and the deposit keeps its own', async () => {
+    const { token, bookingId } = await givenDepositOnlyStay()
+
+    await attachPublicDocument({
+      token,
+      kind: 'payment_slip',
+      bytes: TEST_PNG,
+      filename: 'deposit.png',
+      target: 'first',
+    })
+    await submitPublicBalanceTransfer(token, STAY_TOTAL)
+
+    const [rest] = await listPaymentsForBooking(bookingId)
+
+    if (!rest) throw new Error('Test setup expected the transfer for the rest.')
+
+    const sent = await attachPublicDocument({
+      token,
+      kind: 'payment_slip',
+      bytes: TEST_PNG,
+      filename: 'rest.png',
+      target: `payment:${rest.id}`,
+    })
+
+    expect(sent.ok).toBe(true)
+
+    const slips = await listDocumentsForBooking(bookingId, 'payment_slip')
+
+    expect(slips).toHaveLength(2)
+    expect(slips.filter((slip) => slip.depositId !== null)).toHaveLength(1)
+    expect(slips.filter((slip) => slip.paymentId === rest.id)).toHaveLength(1)
+
+    // A better photograph of the rest replaces that one, and only that one.
+    const depositSlip = slips.find((slip) => slip.depositId !== null)
+
+    await attachPublicDocument({
+      token,
+      kind: 'payment_slip',
+      bytes: TEST_PNG,
+      filename: 'rest-again.png',
+      target: `payment:${rest.id}`,
+    })
+
+    const after = await listDocumentsForBooking(bookingId, 'payment_slip')
+
+    expect(after).toHaveLength(2)
+    expect(after.find((slip) => slip.depositId !== null)?.id).toBe(depositSlip?.id)
+  })
+
+  test('takes no slip for a transfer already checked against the bank', async () => {
+    const { token, bookingId } = await givenDepositOnlyStay()
+    await verifyTheDeposit(bookingId)
+
+    const result = await attachPublicDocument({
+      token,
+      kind: 'payment_slip',
+      bytes: TEST_PNG,
+      filename: 'late.png',
+      target: 'first',
+    })
+
+    expect(!result.ok && result.error.code).toBe('transfer_checked')
   })
 })

@@ -48,6 +48,7 @@ describe('which events are notifications', () => {
     ])
     expect(notificationActionsFor(new Set<Permission>(['payment.verify']))).toEqual([
       'booking.submit_payment',
+      'booking.balance_submitted',
     ])
     expect(notificationActionsFor(new Set<Permission>())).toEqual([])
   })

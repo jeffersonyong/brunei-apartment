@@ -8,6 +8,7 @@ import { clientIpFrom, hashPublicKey } from '@/lib/auth/access-token'
 import {
   attachPublicDocument,
   notePublicAttempt,
+  submitPublicBalanceTransfer,
   submitPublicTransfer,
 } from '@/lib/db/public-bookings'
 import {
@@ -22,6 +23,7 @@ import {
   isTransferChoice,
   PUBLIC_LIMITS,
 } from '@/lib/domain/public-booking'
+import { parseSlipBoxKey } from '@/lib/domain/slip-boxes'
 
 /**
  * "I have made the transfer" (prd.md §10.3, step 3).
@@ -110,6 +112,70 @@ export async function submitTransferAction(
 }
 
 /**
+ * "I have transferred the rest" (capability A12): a guest who sent only the
+ * deposit tells us the stay is on its way too.
+ *
+ * Gated like its sibling above — the link is the credential, and the same
+ * loose per-address counter, which this shares rather than adding a second:
+ * both are one person telling us about one transfer. `expected` is the figure
+ * the page showed; the database refuses with a sentence if what is owed has
+ * moved since, and decides every other rule under the booking's lock
+ * (`submit_public_balance_transfer()`).
+ */
+
+const restSchema = z.object({
+  token: z.string().refine(isAccessToken, 'That link is not valid.'),
+  // Bounded by the database column's integer, so a hand-made figure is refused
+  // here as unreadable rather than failing the cast in the query.
+  expected: z.coerce.number().int().positive().max(2_147_483_647),
+})
+
+export async function submitBalanceTransferAction(
+  _previous: SubmitTransferState,
+  formData: FormData,
+): Promise<SubmitTransferState> {
+  const parsed = restSchema.safeParse(Object.fromEntries(formData))
+
+  if (!parsed.success) {
+    return {
+      status: 'error',
+      message: 'That link is not valid. Please open it again from the top.',
+    }
+  }
+
+  const ip = clientIpFrom(await headers())
+
+  if (ip) {
+    const allowed = await notePublicAttempt({
+      kind: 'submit:ip',
+      keyHash: hashPublicKey(ip),
+      windowSeconds: HOUR_IN_SECONDS,
+      limit: PUBLIC_LIMITS.submitsPerIpPerHour,
+    })
+
+    if (!allowed) {
+      return {
+        status: 'error',
+        message: 'Please wait a moment and try again, or call us and we will sort it out.',
+      }
+    }
+  }
+
+  const submitted = await submitPublicBalanceTransfer(parsed.data.token, parsed.data.expected)
+
+  if (!submitted.ok) {
+    return { status: 'error', message: submitted.error.message }
+  }
+
+  revalidatePath('/payments')
+  revalidatePath('/bookings')
+  revalidatePath('/dashboard')
+  revalidatePath(`/booking/${parsed.data.token}`)
+
+  return { status: 'idle' }
+}
+
+/**
  * The guest sends us their slip or their IC (capabilities A6, A7).
  *
  * The fifth unauthenticated server action, and the first that stores a file.
@@ -153,6 +219,12 @@ const uploadSchema = z.object({
   kind: z
     .string()
     .refine((value) => isDocumentKind(value) && mayCustomerAttach(value), 'Unknown file.'),
+  // Which transfer a slip is for (lib/domain/slip-boxes.ts). Absent is the
+  // first, which is all a page before capability A12 ever sent.
+  target: z
+    .string()
+    .optional()
+    .refine((value) => value === undefined || parseSlipBoxKey(value) !== null, 'Unknown file.'),
 })
 
 export async function uploadDocumentAction(
@@ -162,6 +234,7 @@ export async function uploadDocumentAction(
   const parsed = uploadSchema.safeParse({
     token: formData.get('token'),
     kind: formData.get('kind'),
+    target: formData.get('target') ?? undefined,
   })
 
   if (!parsed.success) {
@@ -172,6 +245,7 @@ export async function uploadDocumentAction(
   }
 
   const { token, kind } = parsed.data
+  const target = parsed.data.target === undefined ? undefined : parseSlipBoxKey(parsed.data.target)
 
   if (!isDocumentKind(kind) || !mayCustomerAttach(kind)) {
     // Unreachable past the schema, and narrows the type for the call below —
@@ -230,6 +304,7 @@ export async function uploadDocumentAction(
     kind,
     bytes: new Uint8Array(await file.arrayBuffer()),
     filename: file.name,
+    target: target ?? undefined,
   })
 
   if (!attached.ok) {
