@@ -79,12 +79,7 @@ export function DeleteViewDialog({ viewId, name }: { viewId: string; name: strin
           {error ? <FieldError message={error} /> : null}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="tertiary"
-              onClick={close}
-              disabled={isPending}
-            >
+            <Button type="button" variant="tertiary" onClick={close} disabled={isPending}>
               Keep it
             </Button>
             <Button type="button" variant="destructive" onClick={remove} disabled={isPending}>

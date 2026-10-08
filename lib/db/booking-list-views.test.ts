@@ -40,10 +40,7 @@ afterEach(async () => {
 })
 
 async function forgetTestViews(): Promise<void> {
-  const { error } = await dataClient()
-    .from('booking_list_view')
-    .delete()
-    .like('name', `${PREFIX}%`)
+  const { error } = await dataClient().from('booking_list_view').delete().like('name', `${PREFIX}%`)
 
   if (error) {
     throw new Error(`Could not clear the test views: ${error.message}`)

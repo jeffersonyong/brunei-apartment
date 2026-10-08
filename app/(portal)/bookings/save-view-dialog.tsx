@@ -16,11 +16,7 @@ import { FieldError } from '@/components/ui/field-error'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast-store'
-import {
-  MAX_VIEW_NAME_LENGTH,
-  tidyViewName,
-  type ViewFilter,
-} from '@/lib/domain/booking-list-view'
+import { MAX_VIEW_NAME_LENGTH, tidyViewName, type ViewFilter } from '@/lib/domain/booking-list-view'
 
 import { saveBookingViewAction } from './view-actions'
 
@@ -90,7 +86,8 @@ export function SaveViewDialog({ filter, hasDates }: { filter: ViewFilter; hasDa
             <DialogHeader>
               <DialogTitle>Save this view</DialogTitle>
               <DialogDescription>
-                It appears above the list for everyone who uses it, with the filters you have on now.
+                It appears above the list for everyone who uses it, with the filters you have on
+                now.
                 {hasDates ? ' The dates are not saved — a view shows every date.' : null}
               </DialogDescription>
             </DialogHeader>
@@ -111,12 +108,7 @@ export function SaveViewDialog({ filter, hasDates }: { filter: ViewFilter; hasDa
             </div>
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="tertiary"
-                onClick={close}
-                disabled={isPending}
-              >
+              <Button type="button" variant="tertiary" onClick={close} disabled={isPending}>
                 Not now
               </Button>
               <Button type="submit" disabled={isPending || name.trim() === ''}>

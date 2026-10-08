@@ -48,9 +48,9 @@ describe('restTransferOfferOf', () => {
   })
 
   test('a transfer for the stay already waiting to be checked is not offered again', () => {
-    expect(
-      restTransferOfferOf(depositOnlyStay({ hasPendingStayTransfer: true }), TODAY),
-    ).toEqual({ kind: 'pending' })
+    expect(restTransferOfferOf(depositOnlyStay({ hasPendingStayTransfer: true }), TODAY)).toEqual({
+      kind: 'pending',
+    })
   })
 
   test('on the day of arrival it is paid at the gate instead', () => {

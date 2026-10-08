@@ -55,7 +55,11 @@ export interface UnitFactsForArrival {
    * The occupancy covering today, if any — on a changeover day, the arriving
    * guest's own.
    */
-  covering: { bookingReference: string | null; status: OccupancyStatus; end: StayDate | null } | null
+  covering: {
+    bookingReference: string | null
+    status: OccupancyStatus
+    end: StayDate | null
+  } | null
   /** The next stay to start after today, whoever's it is. */
   nextStart: StayDate | null
 }

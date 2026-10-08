@@ -133,9 +133,9 @@ export function TransferInstructions({
         </strong>{' '}
         in one transfer with{' '}
         <strong className="font-mono text-body-sm-strong text-foreground">{reference}</strong> as
-        the transfer reference so we can match it to your booking, then confirm below — you can
-        send us your transfer slip from here after that. Once we verify the transfer, we will email
-        your booking confirmation and QR code for entry.
+        the transfer reference so we can match it to your booking, then confirm below — you can send
+        us your transfer slip from here after that. Once we verify the transfer, we will email your
+        booking confirmation and QR code for entry.
       </p>
 
       {state.status === 'error' && state.message ? (

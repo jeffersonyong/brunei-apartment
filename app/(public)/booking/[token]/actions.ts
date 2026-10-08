@@ -11,11 +11,7 @@ import {
   submitPublicBalanceTransfer,
   submitPublicTransfer,
 } from '@/lib/db/public-bookings'
-import {
-  isDocumentKind,
-  mayCustomerAttach,
-  MAX_DOCUMENT_BYTES,
-} from '@/lib/domain/document'
+import { isDocumentKind, mayCustomerAttach, MAX_DOCUMENT_BYTES } from '@/lib/domain/document'
 import {
   DAY_IN_SECONDS,
   HOUR_IN_SECONDS,
@@ -210,9 +206,7 @@ export async function submitBalanceTransferAction(
  * to read. And it returns nothing that could be used to read a file back.
  */
 export type UploadState =
-  | { status: 'idle' }
-  | { status: 'done'; kind: string }
-  | { status: 'error'; message: string }
+  { status: 'idle' } | { status: 'done'; kind: string } | { status: 'error'; message: string }
 
 const uploadSchema = z.object({
   token: z.string().refine(isAccessToken, 'That link is not valid.'),
