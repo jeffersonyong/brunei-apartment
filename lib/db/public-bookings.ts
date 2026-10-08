@@ -23,7 +23,15 @@ import {
   type Booking,
 } from './bookings'
 import { getDepositByBookingId } from './deposits'
-import { attachDocument, listDocumentsForBooking, purge } from './documents'
+import {
+  attachDocument,
+  discardStaged,
+  documentRecorded,
+  listDocumentsForBooking,
+  purge,
+  stageDocument,
+  type StagedDocument,
+} from './documents'
 import { listPaymentsForBooking } from './payments'
 import { extraUnavailableMessage } from './booking-extras'
 import { currentPropertyId } from './property'
@@ -76,6 +84,9 @@ export type PublicWriteErrorCode =
   | 'changed'
   /** A slip for a transfer somebody has already checked against the bank. */
   | 'transfer_checked'
+  // The guest's IC or passport, which a public booking now carries (A7).
+  | 'identity_unreadable'
+  | 'identity_refused'
 
 export interface PublicWriteError {
   code: PublicWriteErrorCode
@@ -120,6 +131,12 @@ const MESSAGES: Readonly<Record<PublicWriteErrorCode, string>> = {
   changed:
     'What is owed on this booking has changed since this page was opened. Refresh to see the new amount.',
   transfer_checked: 'We have already checked that transfer, so there is nothing to add to it.',
+  // Replaced by checkUpload's own sentence, which says what was wrong with the
+  // file. This is the fallback.
+  identity_unreadable:
+    'That file could not be read. Attach a photograph or a PDF of your IC or passport.',
+  identity_refused:
+    'We could not save your IC or passport just now, so nothing was booked. Please try again, or message us on WhatsApp.',
 }
 
 function refuse(
@@ -170,6 +187,93 @@ export async function notePublicAttempt(input: {
   return data as boolean
 }
 
+/**
+ * Checks the guest's ID and puts it in Storage, before anything is booked.
+ *
+ * A file the checks refuse never reaches Storage and books nothing — the
+ * refusal carries `checkUpload`'s own sentence, which says what was wrong.
+ */
+async function stageIdentity(
+  identity: PublicIdentityFile,
+): Promise<
+  | { ok: true; staged: StagedDocument }
+  | { ok: false; refusal: { ok: false; error: PublicWriteError } }
+> {
+  const staging = await stageDocument({
+    kind: 'identity',
+    bytes: identity.bytes,
+    filename: identity.filename,
+  })
+
+  if (!staging.ok) {
+    return {
+      ok: false,
+      refusal: {
+        ok: false,
+        error: {
+          code: 'identity_unreadable',
+          message: staging.error.message || MESSAGES.identity_unreadable,
+        },
+      },
+    }
+  }
+
+  return { ok: true, staged: staging.staged }
+}
+
+/** The staged ID, as the `*_with_identity` functions take it. */
+function identityParams(staged: StagedDocument) {
+  return {
+    p_identity_document_id: staged.documentId,
+    p_identity_storage_key: staged.storageKey,
+    p_identity_filename: staged.filename,
+    p_identity_mime_type: staged.mimeType,
+    p_identity_byte_size: staged.byteSize,
+  }
+}
+
+/**
+ * After a failed call, removes the staged file unless its row exists after
+ * all — a dropped connection after the commit looks like a failure from here.
+ */
+async function forgetUnrecorded(staged: StagedDocument): Promise<void> {
+  if (!(await documentRecorded(staged.documentId))) {
+    await discardStaged(staged)
+  }
+}
+
+/**
+ * A refused booking wrote nothing, so its staged ID goes too. An ID the
+ * database itself turned down is logged with the reason: the likeliest cause
+ * is a deleted retention period, which would refuse every online booking until
+ * somebody puts it back, and the guest's sentence cannot say that.
+ */
+async function refusedWithIdentity(
+  result: { error: PublicWriteErrorCode; remaining?: number; reason?: string },
+  staged: StagedDocument,
+): Promise<{ ok: false; error: PublicWriteError }> {
+  await discardStaged(staged)
+
+  if (result.error === 'identity_refused') {
+    console.error(
+      'A public booking was refused because its ID could not be recorded',
+      result.reason,
+    )
+  }
+
+  return refuse(result.error, result.remaining)
+}
+
+/**
+ * The guest's IC or passport, as the form sent it (capability A7). Compulsory
+ * on a public booking since 8 October 2026: the booking and the document are
+ * written together or not at all (20261008000400).
+ */
+export interface PublicIdentityFile {
+  bytes: Uint8Array
+  filename: string
+}
+
 export interface CreatePublicStayInput {
   unitTypeSlug: string
   range: DateRange
@@ -183,6 +287,8 @@ export interface CreatePublicStayInput {
   total: Cents
   securityDeposit: Cents
   lines: readonly BookingLine[]
+  /** The front of the guest's IC or passport. */
+  identity: PublicIdentityFile
 }
 
 /**
@@ -209,9 +315,16 @@ export async function createPublicStayBooking(
     throw new Error(`Public hold transition rejected: ${created.error.message}`)
   }
 
+  const staging = await stageIdentity(input.identity)
+
+  if (!staging.ok) {
+    return staging.refusal
+  }
+
+  const { staged } = staging
   const accessToken = newAccessToken()
 
-  const { data, error } = await dataClient().rpc('create_public_stay_booking', {
+  const { data, error } = await dataClient().rpc('create_public_stay_booking_with_identity', {
     p_property_id: propertyId,
     p_unit_type_slug: input.unitTypeSlug,
     p_status: created.status,
@@ -229,9 +342,12 @@ export async function createPublicStayBooking(
     p_lines: input.lines,
     p_access_token: accessToken,
     p_max_open_per_phone: PUBLIC_LIMITS.openBookingsPerPhone,
+    ...identityParams(staged),
   })
 
   if (error) {
+    await forgetUnrecorded(staged)
+
     // The stock trigger (capability F13) is deferred, so it fires at commit —
     // after the function has returned — and reaches us as a Postgres error
     // rather than as a refusal. A customer losing the race is an ordinary
@@ -247,10 +363,10 @@ export async function createPublicStayBooking(
 
   const result = data as
     | { ok: true; booking_id: string; reference: string; unit_ref: string; access_token: string }
-    | { ok: false; error: PublicWriteErrorCode }
+    | { ok: false; error: PublicWriteErrorCode; reason?: string }
 
   if (!result.ok) {
-    return refuse(result.error)
+    return refusedWithIdentity(result, staged)
   }
 
   return {
@@ -277,6 +393,8 @@ export interface CreatePublicDayPassInput {
   noVehicle: boolean
   total: Cents
   lines: readonly BookingLine[]
+  /** The front of the guest's IC or passport. */
+  identity: PublicIdentityFile
 }
 
 /**
@@ -298,9 +416,16 @@ export async function createPublicDayPassBooking(
     throw new Error(`Public hold transition rejected: ${created.error.message}`)
   }
 
+  const staging = await stageIdentity(input.identity)
+
+  if (!staging.ok) {
+    return staging.refusal
+  }
+
+  const { staged } = staging
   const accessToken = newAccessToken()
 
-  const { data, error } = await dataClient().rpc('create_public_day_pass_booking', {
+  const { data, error } = await dataClient().rpc('create_public_day_pass_booking_with_identity', {
     p_property_id: propertyId,
     p_status: created.status,
     p_pass_date: input.date,
@@ -317,18 +442,21 @@ export async function createPublicDayPassBooking(
     p_lines: input.lines,
     p_access_token: accessToken,
     p_max_open_per_phone: PUBLIC_LIMITS.openBookingsPerPhone,
+    ...identityParams(staged),
   })
 
   if (error) {
+    await forgetUnrecorded(staged)
+
     throw new Error(`Could not create the day pass: ${error.message}`)
   }
 
   const result = data as
     | { ok: true; booking_id: string; reference: string; access_token: string }
-    | { ok: false; error: PublicWriteErrorCode; remaining?: number }
+    | { ok: false; error: PublicWriteErrorCode; remaining?: number; reason?: string }
 
   if (!result.ok) {
-    return refuse(result.error, result.remaining)
+    return refusedWithIdentity(result, staged)
   }
 
   return {

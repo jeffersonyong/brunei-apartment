@@ -42,7 +42,7 @@ export function PublishPrivacyPolicyDialog({
           </DialogTitle>
           <DialogDescription>
             {isFirst
-              ? 'It goes on the website straight away, and the Privacy policy link at the foot of every page starts working. Guests sending us their IC are pointed to it too.'
+              ? 'It goes on the website straight away, and the Privacy policy link at the foot of every page starts working. Guests booking online, who send us their IC or passport, are pointed to it too.'
               : 'It replaces the version the website shows now, straight away. The earlier version is kept in the list of published versions.'}
           </DialogDescription>
         </DialogHeader>

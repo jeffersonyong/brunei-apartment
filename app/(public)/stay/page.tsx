@@ -12,6 +12,7 @@ import {
 import { todayInBrunei, type StayDate } from '@/lib/domain/dates'
 
 import { StayBooking } from './stay-booking'
+import { readPrivacyPolicyPublished } from '../_components/privacy-policy-link'
 
 export const metadata: Metadata = {
   title: 'Book a stay — Palm Villa',
@@ -45,10 +46,11 @@ export default async function StayPage() {
   const config = await getPropertyConfig()
   const window = publicBookingWindow(today, config.maxAdvanceBookingDays)
 
-  const [units, occupancies, extraHoldings] = await Promise.all([
+  const [units, occupancies, extraHoldings, hasPrivacyPolicy] = await Promise.all([
     getUnits(),
     listOccupanciesInWindow(window),
     listExtraHoldingsInWindow(window),
+    readPrivacyPolicyPublished(),
   ])
 
   const calendarUnits: CalendarUnit[] = units.map((unit) => ({
@@ -105,6 +107,7 @@ export default async function StayPage() {
       nightsFree={nightsFree}
       extras={config.extras}
       extrasUsed={extrasUsed}
+      linksPrivacyPolicy={hasPrivacyPolicy}
     />
   )
 }

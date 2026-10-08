@@ -16,7 +16,7 @@ import {
   type CreatePublicDayPassInput,
   type CreatePublicStayInput,
 } from './public-bookings'
-import { bookingInput } from './test/factory'
+import { bookingInput, TEST_IDENTITY } from './test/factory'
 
 /**
  * The email a real booking produces (capability A8).
@@ -44,6 +44,7 @@ const DEPOSIT = bnd(100)
 
 function stayInput(overrides: Partial<CreatePublicStayInput> = {}): CreatePublicStayInput {
   return {
+    identity: TEST_IDENTITY,
     unitTypeSlug: 'four-bedroom',
     range: { start: CHECK_IN, end: CHECK_OUT },
     guestName: 'Email Guest',
@@ -70,6 +71,7 @@ function stayInput(overrides: Partial<CreatePublicStayInput> = {}): CreatePublic
 
 function dayPassInput(overrides: Partial<CreatePublicDayPassInput> = {}): CreatePublicDayPassInput {
   return {
+    identity: TEST_IDENTITY,
     date: PASS_DATE,
     party: [{ bandId: 'adult', label: 'Adult', count: 1 }],
     headcount: 1,

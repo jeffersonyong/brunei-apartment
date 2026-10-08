@@ -13,7 +13,7 @@ import {
 } from './deposits'
 import { currentPropertyId } from './property'
 import { createPublicStayBooking, type CreatePublicStayInput } from './public-bookings'
-import { givenBooking, givenBookingInState } from './test/factory'
+import { givenBooking, givenBookingInState, TEST_IDENTITY } from './test/factory'
 
 /**
  * The security deposit taken at the desk (capability B16, staff half).
@@ -49,6 +49,7 @@ const STAY_TOTAL = bnd(750)
 
 function heldStayInput(overrides: Partial<CreatePublicStayInput> = {}): CreatePublicStayInput {
   return {
+    identity: TEST_IDENTITY,
     unitTypeSlug: 'four-bedroom',
     range: { start: CHECK_IN, end: CHECK_OUT },
     guestName: 'Desk Deposit',

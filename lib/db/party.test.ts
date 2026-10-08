@@ -12,7 +12,7 @@ import { listBookingNotes } from './notes'
 import { changeBookingParty, listDayPassParties, reportExtraGuests } from './party'
 import { currentPropertyId } from './property'
 import { createPublicDayPassBooking, type CreatePublicDayPassInput } from './public-bookings'
-import { givenBooking, givenCheckedInBooking } from './test/factory'
+import { givenBooking, givenCheckedInBooking, TEST_IDENTITY } from './test/factory'
 import { auditEventsFor } from './test/inspect'
 
 /**
@@ -53,6 +53,7 @@ afterEach(async () => {
 
 function passInput(overrides: Partial<CreatePublicDayPassInput> = {}): CreatePublicDayPassInput {
   return {
+    identity: TEST_IDENTITY,
     date: PASS_DATE,
     party: [{ bandId: 'adult', label: 'Adult', count: 2 }],
     headcount: 2,

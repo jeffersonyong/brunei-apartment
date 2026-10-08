@@ -15,7 +15,7 @@
 export const CHECK_IN_STEPS: readonly string[] = [
   'Please go to the Security Counter.',
   'Fill in and sign the Registration Form.',
-  'Show the IC of the person who made the booking.',
+  'Show the IC or passport of the person who made the booking.',
   'Security will hand you the apartment key and tell you where to park your car.',
   'The Wi-Fi password is on a sticker attached to the TV board in the living room.',
 ]

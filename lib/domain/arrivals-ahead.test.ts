@@ -70,7 +70,9 @@ describe('arrivalReadinessOf — arriving today', () => {
   })
 
   test('a unit the last guest has not checked out of says who is in it, and until when', () => {
-    const facts = unit({ lastStay: lastStay({ status: 'checked_in', inspected: false, ready: false }) })
+    const facts = unit({
+      lastStay: lastStay({ status: 'checked_in', inspected: false, ready: false }),
+    })
 
     expect(arrivalReadinessOf(arriving(TODAY), facts, TODAY)).toEqual({
       kind: 'guest_in',

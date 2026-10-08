@@ -50,7 +50,12 @@ describe('slipBoxesOf', () => {
     const boxes = slipBoxesOf(
       facts({
         payments: [
-          { id: 'pay-1', method: 'bank_transfer', status: 'pending_verification', createdAt: PROMISED },
+          {
+            id: 'pay-1',
+            method: 'bank_transfer',
+            status: 'pending_verification',
+            createdAt: PROMISED,
+          },
         ],
       }),
     )
@@ -66,7 +71,12 @@ describe('slipBoxesOf', () => {
     const boxes = slipBoxesOf(
       facts({
         payments: [
-          { id: 'pay-2', method: 'bank_transfer', status: 'pending_verification', createdAt: LATER },
+          {
+            id: 'pay-2',
+            method: 'bank_transfer',
+            status: 'pending_verification',
+            createdAt: LATER,
+          },
         ],
         slips: [{ depositId: 'dep-1', paymentId: null, uploadedAt: '2026-10-08T09:20:00+00:00' }],
       }),
@@ -90,7 +100,12 @@ describe('slipBoxesOf', () => {
       facts({
         deposit: { ...pendingDeposit, collectedAt: '2026-10-08T10:00:00+00:00' },
         payments: [
-          { id: 'pay-2', method: 'bank_transfer', status: 'pending_verification', createdAt: LATER },
+          {
+            id: 'pay-2',
+            method: 'bank_transfer',
+            status: 'pending_verification',
+            createdAt: LATER,
+          },
         ],
       }),
     )
@@ -128,10 +143,21 @@ describe('slipBoxesOf', () => {
   test('cash has no slip: a deposit taken in cash is no box, and nor is a cash payment', () => {
     const boxes = slipBoxesOf(
       facts({
-        deposit: { id: 'dep-1', method: 'cash', promisedAt: null, collectedAt: PROMISED, shortfall: 0 },
+        deposit: {
+          id: 'dep-1',
+          method: 'cash',
+          promisedAt: null,
+          collectedAt: PROMISED,
+          shortfall: 0,
+        },
         payments: [
           { id: 'pay-c', method: 'cash', status: 'verified', createdAt: PROMISED },
-          { id: 'pay-2', method: 'bank_transfer', status: 'pending_verification', createdAt: LATER },
+          {
+            id: 'pay-2',
+            method: 'bank_transfer',
+            status: 'pending_verification',
+            createdAt: LATER,
+          },
         ],
       }),
     )
@@ -145,13 +171,21 @@ describe('slipBoxesOf', () => {
       facts({
         deposit: null,
         payments: [
-          { id: 'pay-1', method: 'bank_transfer', status: 'pending_verification', createdAt: LATER },
+          {
+            id: 'pay-1',
+            method: 'bank_transfer',
+            status: 'pending_verification',
+            createdAt: LATER,
+          },
         ],
       }),
     )
 
     expect(boxes).toHaveLength(1)
-    expect(boxes[0]).toMatchObject({ key: 'first', targets: [{ depositId: null, paymentId: 'pay-1' }] })
+    expect(boxes[0]).toMatchObject({
+      key: 'first',
+      targets: [{ depositId: null, paymentId: 'pay-1' }],
+    })
   })
 
   test('nothing transferred yet is no box at all', () => {
@@ -162,7 +196,12 @@ describe('slipBoxesOf', () => {
     const boxes = slipBoxesOf(
       facts({
         payments: [
-          { id: 'pay-1', method: 'bank_transfer', status: 'pending_verification', createdAt: PROMISED },
+          {
+            id: 'pay-1',
+            method: 'bank_transfer',
+            status: 'pending_verification',
+            createdAt: PROMISED,
+          },
         ],
         slips: [
           { depositId: 'dep-1', paymentId: null, uploadedAt: '2026-10-08T09:20:00+00:00' },

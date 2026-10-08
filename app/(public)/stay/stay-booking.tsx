@@ -27,6 +27,8 @@ import {
   PublicPhoneField,
 } from '../_components/booking/booking-fields'
 import { ExtrasFields, type ExtraQuantities } from '../_components/booking/extras-fields'
+import { IdentityField } from '../_components/booking/identity-field'
+import { IDENTITY_FIELD } from '../_components/booking/identity-file'
 import { createPublicStayAction, type PublicStayState } from './actions'
 
 /**
@@ -58,6 +60,7 @@ export function StayBooking({
   nightsFree,
   extras,
   extrasUsed,
+  linksPrivacyPolicy,
 }: {
   config: PropertyConfig
   /** The types the building actually has units of — see the page. */
@@ -70,6 +73,8 @@ export function StayBooking({
   extras: readonly PropertyExtra[]
   /** How many of each extra are held, per night, across the whole window. */
   extrasUsed: Readonly<Record<string, Readonly<Record<string, number>>>>
+  /** Whether a privacy policy is published to link beside the ID. */
+  linksPrivacyPolicy: boolean
 }) {
   const [state, formAction, isPending] = useActionState(createPublicStayAction, initialState)
 
@@ -81,6 +86,7 @@ export function StayBooking({
   const [lateCheckOutHours, setLateCheckOutHours] = useState(0)
   const [vehicles, setVehicles] = useState<readonly string[]>([''])
   const [noVehicle, setNoVehicle] = useState(false)
+  const [identity, setIdentity] = useState<File | null>(null)
 
   const unitType = unitTypes.find((type) => type.id === unitTypeSlug)
 
@@ -140,7 +146,18 @@ export function StayBooking({
         </div>
       </section>
 
-      <form action={formAction} className="border-t border-divider bg-card px-xl pt-xl pb-3xl">
+      <form
+        // The prepared ID is added here: its input has no name, because a file
+        // input is emptied when the form resets and the file must survive that.
+        action={(formData) => {
+          if (identity) {
+            formData.set(IDENTITY_FIELD, identity)
+          }
+
+          formAction(formData)
+        }}
+        className="border-t border-divider bg-card px-xl pt-xl pb-3xl"
+      >
         <div className="mx-auto grid w-full max-w-[1120px] gap-xl lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">
             <Card>
@@ -257,6 +274,19 @@ export function StayBooking({
                     autoComplete="email"
                     defaultValue={state.submitted?.guestEmail}
                     error={state.fieldErrors?.guestEmail}
+                  />
+                </div>
+
+                {/* The lead guest's IC or passport, compulsory online since
+                    8 October 2026 (capability A7). Kept in state rather than in
+                    the input, so a refusal does not lose it. */}
+                <div className="mt-lg">
+                  <IdentityField
+                    file={identity}
+                    onChange={setIdentity}
+                    error={state.fieldErrors?.identity}
+                    attempt={state}
+                    linksPrivacyPolicy={linksPrivacyPolicy}
                   />
                 </div>
 
@@ -378,9 +408,19 @@ export function StayBooking({
                 </Callout>
               ) : null}
 
-              <Button type="submit" className="mt-lg w-full" disabled={isPending || !quote?.ok}>
+              <Button
+                type="submit"
+                className="mt-lg w-full"
+                disabled={isPending || !quote?.ok || identity === null}
+              >
                 {isPending ? 'Proceeding…' : 'Proceed to bank transfer'}
               </Button>
+
+              {identity === null ? (
+                <p className="mt-sm text-caption text-muted-foreground">
+                  Add the front of your IC or passport to continue.
+                </p>
+              ) : null}
 
               <p className="mt-sm text-caption text-muted-foreground">
                 Nothing is charged now. We hold the unit while you transfer the deposit.

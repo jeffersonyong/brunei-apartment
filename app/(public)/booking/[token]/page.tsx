@@ -113,6 +113,11 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   // removed, so a file past its retention date stops being reported as held —
   // which is the honest answer, because it is gone.
   const identityOnFileSince = identityDocuments[0]?.uploadedAt ?? null
+  // Every booking made online since 8 October 2026 arrived with the guest's
+  // IC or passport (capability A7). The box stays, for two reasons: a booking
+  // the desk made and the guest found again has none to send yet, and a guest
+  // whose photograph came out unreadable sends a better one, which replaces
+  // their own. It only changes what it asks for.
   const maySendIdentity = stage === 'checking' || stage === 'confirmed'
 
   // One slip box per transfer the guest told us about, each filed against that
@@ -175,18 +180,24 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
    * **"Make the transfer" rather than "Transfer the deposit"** because a guest
    * who chose to settle the stay up front is sending both (prd.md §10.3), and a
    * step that names the smaller of the two amounts would be wrong for them.
+   *
+   * **The second step is ours when the ID is already here.** A booking made
+   * online carries it from the form (capability A7), so what is left after the
+   * transfer is us checking it. Only a booking without one — made at the desk,
+   * found again by its reference — still asks for it.
    */
   const identityHeld = identityOnFileSince !== null
+  const secondStep = identityHeld ? 'We confirm your booking' : 'Send us your IC or passport'
   const steps: readonly Step[] | null =
     stage === 'awaiting_transfer'
       ? [
           { label: 'Make the transfer', state: 'current' },
-          { label: 'Send us your IC', state: 'todo' },
+          { label: secondStep, state: 'todo' },
         ]
       : stage === 'checking'
         ? [
             { label: 'Make the transfer', state: 'done' },
-            { label: 'Send us your IC', state: identityHeld ? 'done' : 'current' },
+            { label: secondStep, state: 'current' },
           ]
         : null
 
@@ -202,7 +213,7 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             ? 'Almost done'
             : stage === 'checking'
               ? // "Thank you" is the right word only once there is nothing left
-                // to ask for. While the IC is still wanted it is the wrong one:
+                // to ask for. While the ID is still wanted it is the wrong one:
                 // it closes the page while the useful thing is still below it.
                 identityHeld
                 ? 'Thank you'
@@ -268,8 +279,12 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             token={token}
             kind="identity"
             marker={identityMarker}
-            title="Send us your IC"
-            description="We need a copy of the lead guest's IC to register the stay."
+            title={identityOnFileSince ? 'Your IC or passport' : 'Send us your IC or passport'}
+            description={
+              identityOnFileSince
+                ? 'We have it. If the photo is hard to read, send a clearer one — it replaces the one we have.'
+                : "We need a copy of the front of the lead guest's IC or passport to register the booking."
+            }
             onFileSince={identityOnFileSince}
             linksPrivacyPolicy={hasPrivacyPolicy}
           />

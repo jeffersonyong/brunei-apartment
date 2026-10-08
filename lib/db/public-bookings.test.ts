@@ -23,7 +23,7 @@ import {
   type CreatePublicStayInput,
 } from './public-bookings'
 import { listPaymentsForBooking } from './payments'
-import { TEST_PNG, bookingInput } from './test/factory'
+import { TEST_PNG, bookingInput, TEST_IDENTITY } from './test/factory'
 import { auditEventsFor } from './test/inspect'
 
 /**
@@ -64,6 +64,7 @@ const PASS_DATE = '2026-10-05'
 
 function stayInput(overrides: Partial<CreatePublicStayInput> = {}): CreatePublicStayInput {
   return {
+    identity: TEST_IDENTITY,
     unitTypeSlug: 'four-bedroom',
     range: { start: CHECK_IN, end: CHECK_OUT },
     guestName: 'Public Guest',
@@ -90,6 +91,7 @@ function stayInput(overrides: Partial<CreatePublicStayInput> = {}): CreatePublic
 
 function dayPassInput(overrides: Partial<CreatePublicDayPassInput> = {}): CreatePublicDayPassInput {
   return {
+    identity: TEST_IDENTITY,
     date: PASS_DATE,
     party: [{ bandId: 'adult', label: 'Adult', count: 1 }],
     headcount: 1,
@@ -1097,5 +1099,142 @@ describe('paying the rest ahead', () => {
     })
 
     expect(!result.ok && result.error.code).toBe('transfer_checked')
+  })
+})
+
+/**
+ * The ID a booking made online now has to carry (capability A7,
+ * supabase/migrations/20261008000400). What matters is that the two arrive
+ * together or not at all: a booking with no ID, or an ID with no booking,
+ * is the one outcome the wrapper exists to make impossible.
+ */
+describe('the ID a public booking arrives with', () => {
+  const ARRIVAL = addDays(todayInBrunei(), 20)
+
+  async function identityObjectCount(): Promise<number> {
+    const { data, error } = await dataClient()
+      .storage.from('identity-docs')
+      .list(await currentPropertyId(), { limit: 1000 })
+
+    if (error) {
+      throw new Error(`Could not list the stored IDs: ${error.message}`)
+    }
+
+    return (data ?? []).length
+  }
+
+  async function guestsWithPhone(phone: string): Promise<number> {
+    const { count, error } = await dataClient()
+      .from('guest')
+      .select('id', { count: 'exact', head: true })
+      .eq('phone', phone)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return count ?? 0
+  }
+
+  test('a stay is filed with one ID, sent by the guest, kept a year past check-out', async () => {
+    const created = await createPublicStayBooking(
+      stayInput({
+        unitTypeSlug: 'three-bedroom',
+        range: { start: ARRIVAL, end: addDays(ARRIVAL, 3) },
+      }),
+    )
+
+    if (!created.ok) throw new Error(created.error.message)
+
+    const held = await listDocumentsForBooking(created.data.bookingId, 'identity')
+
+    expect(held).toHaveLength(1)
+    expect(held[0]?.uploadedBy).toBeNull()
+    // Twelve months after check-out, at midnight in Brunei — the instant, so the
+    // test does not depend on the timezone the database prints it in.
+    const checkOut = addDays(ARRIVAL, 3)
+    const yearOn = `${Number(checkOut.slice(0, 4)) + 1}${checkOut.slice(4)}T00:00:00+08:00`
+
+    expect(new Date(held[0]!.retainUntil).getTime()).toBe(new Date(yearOn).getTime())
+  })
+
+  test('so is a day pass', async () => {
+    const created = await createPublicDayPassBooking(
+      dayPassInput({ date: addDays(todayInBrunei(), 6) }),
+    )
+
+    if (!created.ok) throw new Error(created.error.message)
+
+    expect(await listDocumentsForBooking(created.data.bookingId, 'identity')).toHaveLength(1)
+  })
+
+  test('a file that is not an image or a PDF books nothing and stores nothing', async () => {
+    const before = await identityObjectCount()
+
+    const created = await createPublicStayBooking(
+      stayInput({
+        unitTypeSlug: 'three-bedroom',
+        range: { start: ARRIVAL, end: addDays(ARRIVAL, 3) },
+        guestPhone: '+673 700 0901',
+        identity: { bytes: new TextEncoder().encode('not a picture at all'), filename: 'ic.txt' },
+      }),
+    )
+
+    expect(!created.ok && created.error.code).toBe('identity_unreadable')
+    expect(await guestsWithPhone('+673 700 0901')).toBe(0)
+    expect(await identityObjectCount()).toBe(before)
+  })
+
+  test('an ID the database refuses takes the booking with it, and its file', async () => {
+    // With no retention period for IDs, attach_document refuses every one —
+    // the misconfiguration that would otherwise leave bookings with no ID.
+    const propertyId = await currentPropertyId()
+    const before = await identityObjectCount()
+    const { data: kept } = await dataClient()
+      .from('document_retention')
+      .select('months')
+      .eq('property_id', propertyId)
+      .eq('kind', 'identity')
+      .single()
+
+    await dataClient()
+      .from('document_retention')
+      .delete()
+      .eq('property_id', propertyId)
+      .eq('kind', 'identity')
+
+    try {
+      const created = await createPublicStayBooking(
+        stayInput({
+          unitTypeSlug: 'three-bedroom',
+          range: { start: ARRIVAL, end: addDays(ARRIVAL, 3) },
+          guestPhone: '+673 700 0902',
+        }),
+      )
+
+      expect(!created.ok && created.error.code).toBe('identity_refused')
+      expect(await guestsWithPhone('+673 700 0902')).toBe(0)
+      expect(await identityObjectCount()).toBe(before)
+    } finally {
+      await dataClient()
+        .from('document_retention')
+        .insert({ property_id: propertyId, kind: 'identity', months: kept?.months ?? 12 })
+    }
+  })
+
+  test('a booking refused for its dates leaves no ID behind', async () => {
+    // The seed's two-bedroom has no units, so nothing of that type is ever free.
+    const before = await identityObjectCount()
+    const refused = await createPublicStayBooking(
+      stayInput({
+        unitTypeSlug: 'two-bedroom',
+        range: { start: ARRIVAL, end: addDays(ARRIVAL, 3) },
+        guestPhone: '+673 700 0903',
+      }),
+    )
+
+    expect(!refused.ok && refused.error.code).toBe('unit_unavailable')
+    expect(await guestsWithPhone('+673 700 0903')).toBe(0)
+    expect(await identityObjectCount()).toBe(before)
   })
 })

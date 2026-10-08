@@ -6,6 +6,7 @@ import { addDays, todayInBrunei, type StayDate } from '@/lib/domain/dates'
 import { configFromSettings } from '@/lib/domain/settings'
 
 import { DayPassBooking } from './day-pass-booking'
+import { readPrivacyPolicyPublished } from '../_components/privacy-policy-link'
 
 export const metadata: Metadata = {
   title: 'Day passes — Palm Villa',
@@ -42,7 +43,10 @@ export default async function DayPassPage() {
   const lastDay = addDays(today, config.maxAdvanceBookingDays)
 
   // Genuinely sequential: the window it reads is derived from the settings.
-  const headroom = await listDayPassHeadroom({ from: today, to: lastDay })
+  const [headroom, hasPrivacyPolicy] = await Promise.all([
+    listDayPassHeadroom({ from: today, to: lastDay }),
+    readPrivacyPolicyPublished(),
+  ])
 
   // Serialised as a plain object for the client island: a Map does not cross
   // the boundary, and only the dates with nothing left actually matter to it.
@@ -65,6 +69,7 @@ export default async function DayPassPage() {
       lastDay={lastDay}
       placesLeft={soldOut}
       included={included}
+      linksPrivacyPolicy={hasPrivacyPolicy}
     />
   )
 }

@@ -208,7 +208,11 @@ describe('the guests on their way', () => {
       checkOut: addDays(TODAY, 5),
     })
     // Off the list: a day too far, an unpaid hold, a guest already in.
-    await givenBooking({ unitRef: '3B-05', checkIn: addDays(TODAY, 4), checkOut: addDays(TODAY, 6) })
+    await givenBooking({
+      unitRef: '3B-05',
+      checkIn: addDays(TODAY, 4),
+      checkOut: addDays(TODAY, 6),
+    })
     await givenBookingInState(
       { unitRef: '3B-06', checkIn: addDays(TODAY, 1), checkOut: addDays(TODAY, 3) },
       ['hold'],

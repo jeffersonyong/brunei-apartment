@@ -310,26 +310,15 @@ export interface AttachedDocument {
 export async function attachDocument(
   input: AttachDocumentInput,
 ): Promise<DocumentWriteResult<AttachedDocument>> {
-  const checked = checkUpload(input.kind, input.bytes)
+  const staging = await stageDocument(input)
 
-  if (!checked.ok) {
-    return { ok: false, error: checked.error }
+  if (!staging.ok) {
+    return staging
   }
 
+  const { documentId, bucket, storageKey, filename, mimeType, byteSize } = staging.staged
   const propertyId = await currentPropertyId()
-  const documentId = randomUUID()
-  const bucket = bucketFor(input.kind)
-  const storageKey = storageKeyFor({ propertyId, documentId, extension: checked.extension })
   const db = dataClient()
-
-  const uploaded = await db.storage.from(bucket).upload(storageKey, input.bytes, {
-    contentType: checked.mimeType,
-    upsert: false,
-  })
-
-  if (uploaded.error) {
-    throw new Error(`Could not store the file: ${uploaded.error.message}`)
-  }
 
   const { data, error } = await db.rpc('attach_document', {
     p_property_id: propertyId,
@@ -340,9 +329,9 @@ export async function attachDocument(
     p_inspection_id: input.inspectionId ?? null,
     p_bucket_id: bucket,
     p_storage_key: storageKey,
-    p_original_filename: sanitiseFilename(input.filename, input.kind),
-    p_mime_type: checked.mimeType,
-    p_byte_size: input.bytes.length,
+    p_original_filename: filename,
+    p_mime_type: mimeType,
+    p_byte_size: byteSize,
     p_actor_id: input.actorId,
     p_assembled_from: input.assembledFrom ?? null,
     p_deposit_id: input.depositId ?? null,
@@ -359,9 +348,7 @@ export async function attachDocument(
     // the object is removed only when the database has no record of it. If
     // the re-read fails too, nothing is discarded: an orphaned object is what
     // the nightly sweep exists for, and it is the recoverable side to err on.
-    const landed = await readRow(documentId).catch(() => null)
-
-    if (!landed) {
+    if (!(await documentRecorded(documentId))) {
       await discard(bucket, storageKey)
     }
 
@@ -397,6 +384,88 @@ export async function attachDocument(
 /** Best-effort cleanup of an object no row will ever point at. */
 async function discard(bucket: string, storageKey: string): Promise<void> {
   await dataClient().storage.from(bucket).remove([storageKey])
+}
+
+/** A file in Storage that no row points at yet, and everything needed to record it. */
+export interface StagedDocument {
+  documentId: string
+  bucket: string
+  storageKey: string
+  /** Already sanitised for the kind (lib/domain/document.ts). */
+  filename: string
+  mimeType: string
+  byteSize: number
+}
+
+/**
+ * The first half of attaching a document: check the bytes, mint the id the
+ * key is built from, and put the file in Storage.
+ *
+ * `attachDocument` is this followed by `attach_document()`. It is split out for
+ * the one caller that records the document in a *different* statement — the
+ * public booking forms, which create the booking and record the guest's ID in
+ * one transaction (capability A7, 20261008000400), so neither can exist
+ * without the other. A file the checks refuse never reaches Storage. Throws on
+ * a Storage failure, as `attachDocument` always has.
+ */
+export async function stageDocument(input: {
+  kind: DocumentKind
+  bytes: Uint8Array
+  filename: string
+}): Promise<DocumentWriteResult<{ staged: StagedDocument }>> {
+  const checked = checkUpload(input.kind, input.bytes)
+
+  if (!checked.ok) {
+    return { ok: false, error: checked.error }
+  }
+
+  const propertyId = await currentPropertyId()
+  const documentId = randomUUID()
+  const bucket = bucketFor(input.kind)
+  const storageKey = storageKeyFor({ propertyId, documentId, extension: checked.extension })
+
+  const uploaded = await dataClient().storage.from(bucket).upload(storageKey, input.bytes, {
+    contentType: checked.mimeType,
+    upsert: false,
+  })
+
+  if (uploaded.error) {
+    throw new Error(`Could not store the file: ${uploaded.error.message}`)
+  }
+
+  return {
+    ok: true,
+    staged: {
+      documentId,
+      bucket,
+      storageKey,
+      filename: sanitiseFilename(input.filename, input.kind),
+      mimeType: checked.mimeType,
+      byteSize: input.bytes.length,
+    },
+  }
+}
+
+/** Removes a staged file that will not be recorded. Best effort; the sweep is the backstop. */
+export async function discardStaged(staged: StagedDocument): Promise<void> {
+  await discard(staged.bucket, staged.storageKey).catch((error: unknown) => {
+    // Not thrown: the nightly sweep removes it either way. Logged, so a store
+    // that keeps refusing deletes is noticed before the sweep's queue grows.
+    console.error('A staged document could not be discarded; the sweep will remove it', error)
+  })
+}
+
+/**
+ * Whether a document row exists, for a caller that does not know whether its
+ * write committed (a dropped connection after the commit looks like a failure).
+ * **Answers yes when it cannot tell**, so the caller keeps the file: an orphaned
+ * object is what the nightly sweep is for, and a row pointing at a deleted
+ * file is not recoverable.
+ */
+export async function documentRecorded(documentId: string): Promise<boolean> {
+  const row = await readRow(documentId).catch(() => 'unknown' as const)
+
+  return row !== null
 }
 
 interface RpcRefusal {
