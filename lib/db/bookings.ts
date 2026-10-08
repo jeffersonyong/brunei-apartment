@@ -1,4 +1,5 @@
 import type { DateRange } from '@/lib/domain/availability'
+import { MONEY_OWED_STATUSES } from '@/lib/domain/balance'
 import { transition, type BookingEvent, type BookingStatus } from '@/lib/domain/booking-state'
 import type { PaymentMethod } from '@/lib/domain/payment'
 import { addDays, type StayDate } from '@/lib/domain/dates'
@@ -327,6 +328,13 @@ export interface BookingListFilter {
   overlaps?: DateRange
   /** A term the reference, guest name, phone or unit contains. */
   search?: string
+  /**
+   * Only bookings that still owe money and have not ended (capability B19) —
+   * `owesMoney` in lib/domain/balance.ts, which this mirrors. ANDed with the
+   * status filter like everything else here, so "Cancelled" and "Money owed"
+   * together is an empty list rather than a wider one.
+   */
+  moneyOwed?: boolean
 }
 
 /**
@@ -347,6 +355,12 @@ function applyListFilter<Query extends FilterableQuery<Query>>(
 
   if (filter.streams && filter.streams.length > 0) {
     query.in('stream', [...filter.streams])
+  }
+
+  // A second `in` on status ANDs with the first: the open statuses within
+  // whatever the status filter already chose.
+  if (filter.moneyOwed) {
+    query.gt('outstanding_cents', 0).in('status', [...MONEY_OWED_STATUSES])
   }
 
   // Half-open overlap: a stay ending on the day the filter range starts does

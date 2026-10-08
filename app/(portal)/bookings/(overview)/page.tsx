@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getActor } from '@/lib/auth/require-permission'
+import { listBookingListViews } from '@/lib/db/booking-list-views'
 import { exportGroup } from '@/lib/db/export'
 import {
   countBookingsByStream,
@@ -33,6 +34,7 @@ import {
   type Booking,
   type BookingListFilter,
 } from '@/lib/db/bookings'
+import { activeViewId, MONEY_OWED_PARAM, type ViewFilter } from '@/lib/domain/booking-list-view'
 import { BOOKING_STATUSES, type BookingStatus } from '@/lib/domain/booking-state'
 import { formatStayDate, formatStayDates, nightsBetween } from '@/lib/domain/dates'
 import { formatCents } from '@/lib/domain/money'
@@ -43,6 +45,7 @@ import { clampPage, pageCountFor } from '@/components/ui/pagination-range'
 import { BookingsFilters } from '../bookings-filters'
 import { BookingsPagination } from '../bookings-pagination'
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../page-size'
+import { SavedViews } from '../saved-views'
 import { StreamTiles } from '../stream-tiles'
 
 export const metadata: Metadata = {
@@ -95,6 +98,8 @@ interface PageProps {
     from?: string
     to?: string
     q?: string | string[]
+    /** "Money owed" — `1` when on (capability B19). */
+    owed?: string | string[]
     page?: string
     size?: string
   }>
@@ -167,12 +172,14 @@ export default async function BookingsListPage({ searchParams }: PageProps) {
   const range = window ? overlapRangeOf(window) : undefined
 
   const search = readSearch(params.q)
+  const moneyOwed = (Array.isArray(params.owed) ? params.owed[0] : params.owed) === '1'
 
   const filter: BookingListFilter = {
     statuses,
     streams,
     overlaps: range,
     search: search ?? undefined,
+    moneyOwed,
   }
 
   // Only a size the footer actually offers, so a hand-edited `?size=5000` is
@@ -182,9 +189,15 @@ export default async function BookingsListPage({ searchParams }: PageProps) {
 
   // Read together: the tiles summarise the table, so a round trip apart would
   // let the two describe different moments.
-  const [firstAttempt, streamCounts] = await Promise.all([
+  const [firstAttempt, streamCounts, views] = await Promise.all([
     listBookings(filter, { page: requestedPage, pageSize }),
     countBookingsByStream(filter),
+    // The row of views is secondary to the list: if it cannot be read, the
+    // list still renders, without views, and the reason is logged.
+    listBookingListViews().catch((error: unknown) => {
+      console.error('The saved views could not be read', error)
+      return []
+    }),
   ])
 
   // A bookmarked `?page=7` outlives the rows beneath it — a filter narrows, a
@@ -199,7 +212,12 @@ export default async function BookingsListPage({ searchParams }: PageProps) {
       ? firstAttempt
       : await listBookings(filter, { page: currentPage, pageSize })
 
-  const isFiltered = statuses.length > 0 || streams.length > 0 || Boolean(range) || search !== null
+  const isFiltered =
+    statuses.length > 0 || streams.length > 0 || Boolean(range) || search !== null || moneyOwed
+
+  // The team's saved views (capability B19): which one this list is, if any.
+  const applied: ViewFilter = { statuses, streams, search, moneyOwed }
+  const currentView = activeViewId(views, applied, Boolean(window))
 
   // Two carry-sets, because the two controls carry different things. The
   // tiles *set* `stream`, so theirs must not already contain one; the footer
@@ -219,6 +237,10 @@ export default async function BookingsListPage({ searchParams }: PageProps) {
 
   if (search) {
     tileParams.set('q', search)
+  }
+
+  if (moneyOwed) {
+    tileParams.set(MONEY_OWED_PARAM, '1')
   }
 
   const pageParams = new URLSearchParams(tileParams)
@@ -246,6 +268,15 @@ export default async function BookingsListPage({ searchParams }: PageProps) {
           effect to be read after the control. */}
       <StreamTiles counts={streamCounts} selected={streams} otherParams={tileParams} />
 
+      {/* The team's views, between the figures and the chips they set: a view
+          is a set of those chips with a name. */}
+      <SavedViews
+        views={views}
+        activeId={currentView}
+        applied={applied}
+        hasDates={Boolean(window)}
+      />
+
       {/* The control line, directly above the table it narrows: what is being
           shown on the left, and what can be done about it on the right. The
           chips name their field and report their value, so the state of the
@@ -259,6 +290,7 @@ export default async function BookingsListPage({ searchParams }: PageProps) {
           from={from}
           to={to}
           search={search ?? ''}
+          moneyOwed={moneyOwed}
         />
 
         {/* The count that used to sit here is gone: the table's own footer

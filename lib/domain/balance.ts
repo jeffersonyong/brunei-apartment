@@ -32,6 +32,7 @@
  * the first time something writes a payment without maintaining it.
  */
 
+import { BOOKING_STATUSES, isTerminal, type BookingStatus } from './booking-state'
 import type { Cents } from './money'
 
 /**
@@ -84,4 +85,34 @@ export function describeBalance(outstanding: Cents): BalanceState {
  */
 export function canSettle(balance: BookingBalance): boolean {
   return balance.state === 'outstanding'
+}
+
+/**
+ * The statuses a booking can still be chased for money in: every one that has
+ * not ended. Derived from the state machine, so a state added to it later is
+ * asked about rather than silently left out.
+ */
+export const MONEY_OWED_STATUSES: readonly BookingStatus[] = BOOKING_STATUSES.filter(
+  (status) => !isTerminal(status),
+)
+
+/**
+ * Whether a booking belongs on the list's "Money owed" filter (capability B19).
+ *
+ * Outstanding by `balanceOf`'s rule — verified payments only, so a promised
+ * transfer still owes until somebody checks the bank — **on a booking that has
+ * not ended**. A deposit-only stay is confirmed and owes the stay until the
+ * guest arrives, which is the case a status filter cannot see and this one
+ * exists for. A completed booking is left out even when it owes: nothing can
+ * be recorded against it any more and the office settles it outside the system
+ * (N57), so it would sit on the list with no way off it.
+ *
+ * Mirrored by the list's query (`outstanding_cents > 0` and these statuses),
+ * which is what actually filters; this is its statement and its test.
+ */
+export function owesMoney(booking: { status: BookingStatus; total: Cents; paid: Cents }): boolean {
+  return (
+    MONEY_OWED_STATUSES.includes(booking.status) &&
+    balanceOf(booking.total, booking.paid).state === 'outstanding'
+  )
 }

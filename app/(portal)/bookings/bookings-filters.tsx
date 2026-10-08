@@ -11,7 +11,9 @@ import { StreamDot } from '@/components/portal/stream-dot'
 import { Button } from '@/components/ui/button'
 import type { StayDateRange } from '@/components/ui/calendar'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { FilterChip } from '@/components/ui/filter-chip'
 import { MultiSelectFilter, type MultiSelectOption } from '@/components/ui/multi-select-filter'
+import { MONEY_OWED_PARAM } from '@/lib/domain/booking-list-view'
 import { BOOKING_STATUSES, type BookingStatus } from '@/lib/domain/booking-state'
 import type { StayDate } from '@/lib/domain/dates'
 import { BOOKING_STREAMS, BOOKING_STREAM_LABELS, type BookingStream } from '@/lib/domain/stream'
@@ -45,6 +47,8 @@ interface BookingsFiltersProps {
   to?: StayDate
   /** The search the server applied. Empty means none. */
   search: string
+  /** Only bookings that still owe money (capability B19). */
+  moneyOwed: boolean
 }
 
 /**
@@ -75,12 +79,20 @@ const STREAM_OPTIONS: readonly MultiSelectOption<BookingStream>[] = BOOKING_STRE
   }),
 )
 
-export function BookingsFilters({ statuses, streams, from, to, search }: BookingsFiltersProps) {
+export function BookingsFilters({
+  statuses,
+  streams,
+  from,
+  to,
+  search,
+  moneyOwed,
+}: BookingsFiltersProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const range: StayDateRange | null = from && to ? { start: from, end: to } : null
-  const isFiltered = statuses.length > 0 || streams.length > 0 || range !== null || search !== ''
+  const isFiltered =
+    statuses.length > 0 || streams.length > 0 || range !== null || search !== '' || moneyOwed
 
   /**
    * Writes the whole filter set, not a patch of it.
@@ -95,6 +107,7 @@ export function BookingsFilters({ statuses, streams, from, to, search }: Booking
     nextStreams: readonly BookingStream[],
     nextRange: StayDateRange | null,
     nextSearch: string,
+    nextMoneyOwed: boolean,
   ) {
     const params = new URLSearchParams()
 
@@ -110,6 +123,10 @@ export function BookingsFilters({ statuses, streams, from, to, search }: Booking
 
     for (const stream of nextStreams) {
       params.append('stream', stream)
+    }
+
+    if (nextMoneyOwed) {
+      params.set(MONEY_OWED_PARAM, '1')
     }
 
     if (nextRange) {
@@ -140,7 +157,7 @@ export function BookingsFilters({ statuses, streams, from, to, search }: Booking
       <SearchField
         value={search}
         placeholder="Reference, guest, phone or unit"
-        onChange={(next) => apply(statuses, streams, range, next)}
+        onChange={(next) => apply(statuses, streams, range, next, moneyOwed)}
       />
 
       {/* Several statuses at once, because "confirmed and checked in" — who is
@@ -149,7 +166,7 @@ export function BookingsFilters({ statuses, streams, from, to, search }: Booking
         label="Status"
         options={STATUS_OPTIONS}
         selected={statuses}
-        onChange={(next) => apply(next, streams, range, search)}
+        onChange={(next) => apply(next, streams, range, search, moneyOwed)}
       />
 
       {/* The plural control for the same param the stat tiles set. A tile is
@@ -162,7 +179,7 @@ export function BookingsFilters({ statuses, streams, from, to, search }: Booking
         label="Type"
         options={STREAM_OPTIONS}
         selected={streams}
-        onChange={(next) => apply(statuses, next, range, search)}
+        onChange={(next) => apply(statuses, next, range, search, moneyOwed)}
       />
 
       {/* "Stay date", not "from / to": the filter matches stays that overlap the
@@ -170,11 +187,22 @@ export function BookingsFilters({ statuses, streams, from, to, search }: Booking
       <DateRangePicker
         label="Stay date"
         value={range}
-        onChange={(next) => apply(statuses, streams, next, search)}
+        onChange={(next) => apply(statuses, streams, next, search, moneyOwed)}
+      />
+
+      {/* A toggle rather than a panel: there is one thing to say, on or off.
+          It finds what a status cannot — a confirmed stay secured by its
+          deposit still owes the stay — and ANDs with Status like every other
+          chip here (owesMoney, lib/domain/balance.ts). */}
+      <FilterChip
+        label="Money owed"
+        opens={false}
+        aria-pressed={moneyOwed}
+        onClick={() => apply(statuses, streams, range, search, !moneyOwed)}
       />
 
       {isFiltered ? (
-        <Button variant="ghost" onClick={() => apply([], [], null, '')}>
+        <Button variant="ghost" onClick={() => apply([], [], null, '', false)}>
           {/* A funnel struck through, not a bare cross: this clears the whole
               filter set, where a cross elsewhere in the row clears one field. */}
           <FunnelX aria-hidden />
