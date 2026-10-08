@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
+import { addDays, todayInBrunei } from '@/lib/domain/dates'
 import { planRegistry, type CurrentUnit } from '@/lib/domain/unit-ref'
 
 import { listAuditEvents } from './audit'
@@ -30,7 +31,13 @@ import { currentPropertyId } from './property'
  * building its names.
  */
 
-const RANGE = { start: '2026-10-05', end: '2026-10-08' }
+/**
+ * Three nights a month out. Relative to today rather than fixed: refusing to
+ * take a unit out of service looks only at stays that have not ended, so a
+ * fixed range passes until the day it lies in the past, and then fails.
+ */
+const RANGE_START = addDays(todayInBrunei(), 30)
+const RANGE = { start: RANGE_START, end: addDays(RANGE_START, 3) }
 
 /**
  * The seeded registry, and putting it back.
