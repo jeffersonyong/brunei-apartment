@@ -41,10 +41,27 @@ interface FilterChipProps extends Omit<React.ComponentProps<'button'>, 'value'> 
    * filter is off, and the chip shows only its label.
    */
   value?: React.ReactNode
+  /**
+   * Whether the chip opens something. Off for a filter that is simply on or
+   * off ("Money owed"): a chevron on a toggle promises a panel that never
+   * comes, so the chip says only its name and fills when it is on.
+   */
+  opens?: boolean
 }
 
-function FilterChip({ label, value, className, children, ...props }: FilterChipProps) {
-  const isActive = value !== null && value !== undefined
+function FilterChip({
+  label,
+  value,
+  opens = true,
+  className,
+  children,
+  ...props
+}: FilterChipProps) {
+  const hasValue = value !== null && value !== undefined
+  // A toggle has no value to report; `aria-pressed` is its state, and the name
+  // itself takes the ink a value would otherwise take.
+  const isPressed = !opens && (props['aria-pressed'] === true || props['aria-pressed'] === 'true')
+  const isActive = hasValue || isPressed
 
   return (
     <button
@@ -65,13 +82,17 @@ function FilterChip({ label, value, className, children, ...props }: FilterChipP
       data-slot="filter-chip"
       data-active={isActive || undefined}
     >
-      <span className={cn(isActive && 'text-muted-foreground')}>{label}</span>
-      {isActive ? <span className="font-medium text-foreground">{value}</span> : null}
+      <span className={cn(hasValue && 'text-muted-foreground', isPressed && 'font-medium')}>
+        {label}
+      </span>
+      {hasValue ? <span className="font-medium text-foreground">{value}</span> : null}
       {children}
-      <ChevronDown
-        aria-hidden
-        className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 ease-out group-data-[state=open]:rotate-180 motion-reduce:transition-none"
-      />
+      {opens ? (
+        <ChevronDown
+          aria-hidden
+          className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 ease-out group-data-[state=open]:rotate-180 motion-reduce:transition-none"
+        />
+      ) : null}
     </button>
   )
 }

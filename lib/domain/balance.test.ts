@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { balanceOf, canSettle, describeBalance } from './balance'
+import { balanceOf, canSettle, describeBalance, MONEY_OWED_STATUSES, owesMoney } from './balance'
 import { bnd } from './money'
 
 /**
@@ -76,5 +76,43 @@ describe('canSettle', () => {
 
   test('an overpaid booking cannot — that is a refund, not a payment', () => {
     expect(canSettle(balanceOf(bnd(400), bnd(450)))).toBe(false)
+  })
+})
+
+/**
+ * "Money owed" on the bookings list (capability B19). A filter, so a wrong
+ * answer is a booking the desk should be chasing that the list hides.
+ */
+describe('owesMoney', () => {
+  test('is asked only of bookings still open — never one that has ended', () => {
+    expect([...MONEY_OWED_STATUSES]).toEqual([
+      'draft',
+      'held',
+      'awaiting_payment_verification',
+      'confirmed',
+      'checked_in',
+    ])
+  })
+
+  test('a confirmed stay secured by its deposit still owes the stay', () => {
+    expect(owesMoney({ status: 'confirmed', total: bnd(400), paid: 0 })).toBe(true)
+  })
+
+  test('an unpaid hold owes all of it', () => {
+    expect(owesMoney({ status: 'held', total: bnd(400), paid: 0 })).toBe(true)
+  })
+
+  test('a settled or overpaid booking owes nothing', () => {
+    expect(owesMoney({ status: 'checked_in', total: bnd(400), paid: bnd(400) })).toBe(false)
+    expect(owesMoney({ status: 'confirmed', total: bnd(300), paid: bnd(400) })).toBe(false)
+  })
+
+  test('a booking that has ended is not chased here, whatever its balance says', () => {
+    // A guest who left owing is handled outside the system (N57), and nothing
+    // can be recorded against a closed booking, so it would sit on the list
+    // with no way off it.
+    for (const status of ['completed', 'cancelled', 'expired', 'no_show'] as const) {
+      expect(owesMoney({ status, total: bnd(400), paid: 0 })).toBe(false)
+    }
   })
 })
