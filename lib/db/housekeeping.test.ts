@@ -3,13 +3,16 @@ import { describe, expect, test } from 'vitest'
 import { addDays, todayInBrunei } from '@/lib/domain/dates'
 import { dataClient } from '@/lib/supabase/data'
 
-import { getTurnover, listTurnovers } from './housekeeping'
+import { listBookingExtras } from './booking-extras'
+import { getTurnover, listDeparturesBoard, listTurnovers } from './housekeeping'
 import { recordInspection } from './inspections'
 import { addBookingNote } from './notes'
 import {
   givenBooking,
+  givenBookingInState,
   givenCheckedInBooking,
   givenDepartedBooking,
+  givenTransferBooking,
   unitIdByRef,
 } from './test/factory'
 import { markUnitReady, setUnitNotes } from './units'
@@ -159,6 +162,142 @@ describe("the cleaner's list", () => {
 
     expect(rows.map((row) => row.unitRef)).toEqual(['3B-06', '3B-05'])
     expect(rows.map((row) => row.nextGuestArrivesToday)).toEqual([true, false])
+  })
+})
+
+/**
+ * The guests on their way (capability C4): the list a cleaner reads to get a
+ * unit ready ahead of its guest. The rules for who is on it and what "ready"
+ * means are lib/domain/arrivals-ahead.ts's; what only the database can prove is
+ * that the read finds exactly those bookings and hands the phone nothing more.
+ */
+describe('the guests on their way', () => {
+  async function sofaBed() {
+    const found = (await listBookingExtras()).find((extra) => extra.slug === 'sofa-bed')
+
+    if (!found) {
+      throw new Error('The seeded sofa-bed extra is missing.')
+    }
+
+    return found
+  }
+
+  test('lists stays from today to three days ahead, confirmed or being checked, and nothing else', async () => {
+    const extra = await sofaBed()
+    const arrivingToday = await givenBooking({
+      unitRef: '3B-01',
+      checkIn: TODAY,
+      checkOut: addDays(TODAY, 2),
+    })
+    const { booking: beingChecked } = await givenTransferBooking({
+      unitRef: '3B-02',
+      checkIn: addDays(TODAY, 1),
+      checkOut: addDays(TODAY, 2),
+    })
+    const withSofaBed = await givenBooking({
+      unitRef: '3B-03',
+      checkIn: addDays(TODAY, 2),
+      checkOut: addDays(TODAY, 4),
+      chargeableGuests: 3,
+      exemptGuests: 1,
+      extras: [{ extraId: extra.id, name: extra.name, quantity: 1 }],
+    })
+    const lastDayOfWindow = await givenBooking({
+      unitRef: '3B-04',
+      checkIn: addDays(TODAY, 3),
+      checkOut: addDays(TODAY, 5),
+    })
+    // Off the list: a day too far, an unpaid hold, a guest already in.
+    await givenBooking({ unitRef: '3B-05', checkIn: addDays(TODAY, 4), checkOut: addDays(TODAY, 6) })
+    await givenBookingInState(
+      { unitRef: '3B-06', checkIn: addDays(TODAY, 1), checkOut: addDays(TODAY, 3) },
+      ['hold'],
+    )
+    await givenCheckedInBooking({
+      unitRef: '3B-07',
+      checkIn: addDays(TODAY, -1),
+      checkOut: addDays(TODAY, 1),
+    })
+
+    const { arrivals } = await listDeparturesBoard(TODAY)
+
+    expect(arrivals.map((arrival) => arrival.reference)).toEqual([
+      arrivingToday.reference,
+      beingChecked.reference,
+      withSofaBed.reference,
+      lastDayOfWindow.reference,
+    ])
+    expect(arrivals.find((arrival) => arrival.reference === withSofaBed.reference)).toMatchObject({
+      unitRef: '3B-03',
+      arrival: addDays(TODAY, 2),
+      nights: 2,
+      guests: 4,
+      confirmed: true,
+      needs: { extras: [{ name: extra.name, quantity: 1 }], earlyCheckInHours: 0 },
+    })
+    expect(
+      arrivals.find((arrival) => arrival.reference === beingChecked.reference)?.confirmed,
+    ).toBe(false)
+  })
+
+  test('says when the unit is still somebody else’s, from the same facts the board reads', async () => {
+    await givenCheckedInBooking({
+      unitRef: '3B-01',
+      checkIn: addDays(TODAY, -1),
+      checkOut: addDays(TODAY, 1),
+    })
+    const next = await givenBooking({
+      unitRef: '3B-01',
+      checkIn: addDays(TODAY, 1),
+      checkOut: addDays(TODAY, 3),
+    })
+
+    const { arrivals } = await listDeparturesBoard(TODAY)
+    const arrival = arrivals.find((candidate) => candidate.reference === next.reference)
+
+    expect(arrival?.unitStatus).toBe('occupied')
+    expect(arrival?.readiness).toEqual({ kind: 'guest_in', until: addDays(TODAY, 1) })
+  })
+
+  test('carries nothing a phone left in a unit should not — no name, no number, no price', async () => {
+    const extra = await sofaBed()
+    await givenBooking({
+      unitRef: '3B-01',
+      checkIn: addDays(TODAY, 1),
+      checkOut: addDays(TODAY, 3),
+      guestName: 'Arriving Guest',
+      guestPhone: '+673 798 7654',
+      extras: [{ extraId: extra.id, name: extra.name, quantity: 1 }],
+    })
+
+    const { arrivals } = await listDeparturesBoard(TODAY)
+    const serialised = JSON.stringify(arrivals)
+
+    expect(serialised).not.toContain('Arriving Guest')
+    expect(serialised).not.toContain('798 7654')
+    expect(serialised).not.toMatch(/unitPrice|amount|total|Cents/i)
+    // The card's whole shape, pinned for the reason the departures row's is.
+    expect(Object.keys(arrivals[0] ?? {}).sort()).toEqual(
+      [
+        'arrival',
+        'confirmed',
+        'guests',
+        'needs',
+        'nights',
+        'readiness',
+        'reference',
+        'unitRef',
+        'unitStatus',
+      ].sort(),
+    )
+  })
+
+  test('hands back the same departures the list on its own does', async () => {
+    await givenLeavingGuestWithNotes()
+
+    const board = await listDeparturesBoard(TODAY)
+
+    expect(board.turnovers).toEqual(await listTurnovers(TODAY))
   })
 })
 
