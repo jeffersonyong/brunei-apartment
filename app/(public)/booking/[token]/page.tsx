@@ -24,7 +24,7 @@ import {
   type PublicStage,
 } from '@/lib/domain/public-booking'
 import { restTransferOfferOf, type RestTransferOffer } from '@/lib/domain/rest-transfer'
-import { slipBoxesOf, type SlipBox } from '@/lib/domain/slip-boxes'
+import { slipBoxesOf } from '@/lib/domain/slip-boxes'
 
 import { readPrivacyPolicyPublished } from '../../_components/privacy-policy-link'
 
@@ -33,6 +33,7 @@ import { EntryCodeCard } from './entry-code-card'
 import { PayTheRest } from './pay-the-rest'
 import { SendAFile } from './send-a-file'
 import { TransferInstructions } from './transfer-instructions'
+import { NOTHING_MORE, slipBoxCopy } from './upload-copy'
 
 export const metadata: Metadata = {
   title: 'Your booking — Palm Villa',
@@ -282,7 +283,7 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             title={identityOnFileSince ? 'Your IC or passport' : 'Send us your IC or passport'}
             description={
               identityOnFileSince
-                ? 'We have it. If the photo is hard to read, send a clearer one — it replaces the one we have.'
+                ? NOTHING_MORE
                 : "We need a copy of the front of the lead guest's IC or passport to register the booking."
             }
             onFileSince={identityOnFileSince}
@@ -297,8 +298,12 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
             kind="payment_slip"
             target={box.key}
             marker={slipMarker(index)}
-            {...slipBoxCopy(box, payments)}
-            onFileSince={box.onFileSince}
+            {...slipBoxCopy(box, {
+              stream: booking.stream,
+              shortfall,
+              depositCheckedAt: deposit?.collectedAt ?? null,
+              payments,
+            })}
           />
         ))}
 
@@ -504,31 +509,6 @@ function stayBalanceSentence(
       return `The BND ${formatCents(offer.amount)} for the stay is settled when you arrive, or you can transfer it before then — below.`
     default:
       return arrivalSentence(booking)
-  }
-}
-
-/** What each slip box asks for: the first transfer, or the rest sent later. */
-function slipBoxCopy(
-  box: SlipBox,
-  payments: readonly { id: string; expected: Cents }[],
-): { title: string; description: string } {
-  if (box.kind === 'first') {
-    return {
-      title: 'Send us your transfer slip',
-      description: 'Your bank transfer slip will help us verify your transfer faster.',
-    }
-  }
-
-  const payment = payments.find((candidate) => `payment:${candidate.id}` === box.key)
-
-  // Named for what it is rather than "the rest": a desk booking can carry a
-  // transfer for the stay made before its deposit, which is not the rest of
-  // anything (lib/domain/slip-boxes.ts).
-  return {
-    title: 'Send us the slip for the stay',
-    description: payment
-      ? `The slip for the BND ${formatCents(payment.expected)} you transferred for the stay.`
-      : 'The slip for the transfer you made for the stay.',
   }
 }
 
