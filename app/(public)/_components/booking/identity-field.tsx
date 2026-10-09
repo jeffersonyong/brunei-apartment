@@ -120,22 +120,24 @@ export function IdentityField({
       </p>
 
       <div className="mt-xs flex flex-wrap items-center gap-md">
-        <label
-          htmlFor={INPUT_ID}
-          className="inline-flex h-control cursor-pointer items-center gap-sm rounded-md border border-border bg-card px-lg text-button-md text-foreground transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted"
-        >
-          {file ? 'Choose a different file' : 'Choose a file'}
-        </label>
+        {/* Before the label, so the label can show the input's keyboard focus:
+            the input is what is focused, and `peer` only looks backwards. */}
         <input
           id={INPUT_ID}
           type="file"
           accept={acceptAttributeFor('identity')}
           disabled={preparing}
-          className="sr-only"
+          className="peer sr-only"
           aria-invalid={shown ? true : undefined}
           aria-describedby={[`${INPUT_ID}-hint`, errorId].filter(Boolean).join(' ')}
           onChange={handlePick}
         />
+        <label
+          htmlFor={INPUT_ID}
+          className="inline-flex h-control cursor-pointer items-center gap-sm rounded-md border border-border bg-card px-lg text-button-md text-foreground transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring hover:bg-muted"
+        >
+          {file ? 'Choose a different file' : 'Choose a file'}
+        </label>
 
         <p aria-live="polite" className="min-w-0 text-body-sm break-words text-copy">
           {preparing ? (

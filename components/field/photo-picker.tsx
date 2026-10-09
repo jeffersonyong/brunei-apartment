@@ -62,17 +62,8 @@ export function PhotoPicker({ id, photos, onAdd, onRemove, disabled }: PhotoPick
         Photos (optional)
       </span>
 
-      <label
-        htmlFor={id}
-        className={
-          disabled
-            ? 'flex min-h-touch w-full items-center justify-center gap-sm rounded-md border border-border bg-card px-xl text-button-md text-muted-foreground opacity-60'
-            : 'flex min-h-touch w-full cursor-pointer items-center justify-center gap-sm rounded-md border border-border bg-card px-xl text-button-md text-foreground transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted'
-        }
-      >
-        <Camera aria-hidden className="size-4" />
-        {photos.length === 0 ? 'Add photos' : 'Add more photos'}
-      </label>
+      {/* Before the label, so the label can show the input's keyboard focus:
+          the input is what is focused, and `peer` only looks backwards. */}
       <input
         id={id}
         type="file"
@@ -80,7 +71,7 @@ export function PhotoPicker({ id, photos, onAdd, onRemove, disabled }: PhotoPick
         accept={acceptAttributeFor('inspection_photo')}
         multiple
         disabled={disabled}
-        className="sr-only"
+        className="peer sr-only"
         onChange={(event) => {
           const chosen = Array.from(event.target.files ?? [])
           const tooLarge = chosen.filter((file) => file.size > MAX_PHOTO_ORIGINAL_BYTES)
@@ -92,6 +83,17 @@ export function PhotoPicker({ id, photos, onAdd, onRemove, disabled }: PhotoPick
           event.target.value = ''
         }}
       />
+      <label
+        htmlFor={id}
+        className={
+          disabled
+            ? 'flex min-h-touch w-full items-center justify-center gap-sm rounded-md border border-border bg-card px-xl text-button-md text-muted-foreground opacity-60'
+            : 'flex min-h-touch w-full cursor-pointer items-center justify-center gap-sm rounded-md border border-border bg-card px-xl text-button-md text-foreground transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring hover:bg-muted'
+        }
+      >
+        <Camera aria-hidden className="size-4" />
+        {photos.length === 0 ? 'Add photos' : 'Add more photos'}
+      </label>
 
       {refused.length > 0 ? (
         <FieldError
