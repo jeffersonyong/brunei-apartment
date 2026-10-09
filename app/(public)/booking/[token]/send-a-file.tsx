@@ -4,7 +4,9 @@ import { Check } from 'lucide-react'
 import Link from 'next/link'
 import { useActionState, useRef, useState } from 'react'
 
+import { Badge } from '@/components/ui/badge'
 import { Callout } from '@/components/ui/callout'
+import { TextActionLabel } from '@/components/ui/text-action'
 import {
   acceptAttributeFor,
   formatByteSize,
@@ -58,6 +60,14 @@ import { uploadDocumentAction, type UploadState } from './actions'
  * `lib/domain/document.ts` carries the argument at length. A guest who sends a
  * second file replaces their own; the copy says so, because otherwise "choose a
  * different file" reads as though we will end up with two.
+ *
+ * **It reads as done** (Jeff, 9 October 2026). A held file used to keep the
+ * bordered button, now saying "Choose a different file", with the tick small
+ * beside it — so the loudest thing in the section was an invitation to do it
+ * again, and a guest whose IC came with the booking form could reasonably
+ * wonder whether they still had to. Now the status sits beside the heading as
+ * a positive badge, where it is read first, and the picker steps down to a
+ * text action: still there for an unreadable photo, no longer asking.
  *
  * ── What the line under the picker promises ───────────────────────────────
  *
@@ -171,9 +181,17 @@ export function SendAFile({
 
   return (
     <section className="mt-xl border-t border-border pt-xl">
-      <h2 className="text-body-lg-strong text-foreground">
-        <span className="text-muted-foreground">{marker}.</span> {title}
-      </h2>
+      <div className="flex flex-wrap items-center gap-x-sm gap-y-xs">
+        <h2 className="text-body-lg-strong text-foreground">
+          <span className="text-muted-foreground">{marker}.</span> {title}
+        </h2>
+        {held ? (
+          <Badge tone="positive">
+            <Check aria-hidden className="size-3" />
+            {onFileSince ? `Received ${formatArrival(onFileSince)}` : 'Received'}
+          </Badge>
+        ) : null}
+      </div>
       <p className="text-body mt-xs text-copy">{description}</p>
 
       <form ref={formRef} action={action} className="mt-md grid gap-md">
@@ -182,38 +200,40 @@ export function SendAFile({
         {target ? <input type="hidden" name="target" value={target} /> : null}
 
         <div className="flex flex-wrap items-center gap-md">
-          <label
-            htmlFor={inputId}
-            className="inline-flex h-control cursor-pointer items-center gap-sm rounded-md border border-border bg-card px-lg text-button-md text-foreground transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted"
-          >
-            {held ? 'Choose a different file' : 'Choose a file'}
-          </label>
+          {/* Before the label, so the label can show the input's focus and its
+              disabled state while a file is sending: the input is the thing
+              focused and disabled, and `peer` only looks backwards. */}
           <input
             id={inputId}
             type="file"
             name="file"
             accept={acceptAttributeFor(kind)}
             disabled={pending}
-            className="sr-only"
+            className="peer sr-only"
             onChange={handlePick}
           />
+          {held ? (
+            <TextActionLabel
+              htmlFor={inputId}
+              className="h-control peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-disabled:pointer-events-none peer-disabled:opacity-50"
+            >
+              Choose a different file
+            </TextActionLabel>
+          ) : (
+            <label
+              htmlFor={inputId}
+              className="inline-flex h-control cursor-pointer items-center gap-sm rounded-md border border-border bg-card px-lg text-button-md text-foreground transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-disabled:pointer-events-none peer-disabled:opacity-50 hover:bg-muted"
+            >
+              Choose a file
+            </label>
+          )}
 
           {/* Said out loud as it changes, because the thing that changes is
               whether we have their document and they are no longer pressing a
-              button to find out. */}
+              button to find out. The badge beside the heading is the standing
+              answer; this is the acknowledgement of the file just sent. */}
           <p aria-live="polite" className="text-body-sm text-copy">
-            {pending ? (
-              'Sending…'
-            ) : held ? (
-              <span className="inline-flex items-center gap-xs">
-                <Check aria-hidden className="size-4 text-positive-deep" />
-                {state.status === 'done'
-                  ? 'Received, thank you.'
-                  : `Received ${formatArrival(onFileSince!)}.`}
-              </span>
-            ) : (
-              ''
-            )}
+            {pending ? 'Sending…' : state.status === 'done' ? 'Received, thank you.' : ''}
           </p>
         </div>
 

@@ -69,3 +69,16 @@ export function TextAction({ className, type, ...props }: React.ComponentProps<'
 export function TextActionLink({ className, ...props }: React.ComponentProps<'a'>) {
   return <a data-slot="text-action" className={cn(textActionClass, className)} {...props} />
 }
+
+/**
+ * The same action worded as the label of a visually hidden file input — the
+ * guest's "Choose a different file" once we already hold one, which is an
+ * offer rather than the ask a bordered button would make it.
+ *
+ * A label takes no focus of its own: the input does. So the focus ring is the
+ * caller's, as `peer-focus-visible:` classes with the input placed before the
+ * label (app/(public)/booking/[token]/send-a-file.tsx).
+ */
+export function TextActionLabel({ className, ...props }: React.ComponentProps<'label'>) {
+  return <label data-slot="text-action" className={cn(textActionClass, className)} {...props} />
+}

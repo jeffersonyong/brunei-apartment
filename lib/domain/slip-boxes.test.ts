@@ -39,6 +39,7 @@ describe('slipBoxesOf', () => {
       {
         key: 'first',
         kind: 'first',
+        covers: 'deposit',
         open: true,
         targets: [{ depositId: 'dep-1', paymentId: null }],
         onFileSince: null,
@@ -61,6 +62,7 @@ describe('slipBoxesOf', () => {
     )
 
     expect(boxes).toHaveLength(1)
+    expect(boxes[0]?.covers).toBe('deposit_and_payment')
     expect(boxes[0]?.targets).toEqual([
       { depositId: 'dep-1', paymentId: null },
       { depositId: null, paymentId: 'pay-1' },
@@ -84,11 +86,13 @@ describe('slipBoxesOf', () => {
 
     expect(boxes.map((box) => box.key)).toEqual(['first', 'payment:pay-2'])
     expect(boxes[0]).toMatchObject({
+      covers: 'deposit',
       targets: [{ depositId: 'dep-1', paymentId: null }],
       onFileSince: '2026-10-08T09:20:00+00:00',
     })
     expect(boxes[1]).toMatchObject({
       kind: 'rest',
+      covers: 'payment',
       open: true,
       targets: [{ depositId: null, paymentId: 'pay-2' }],
       onFileSince: null,
@@ -163,6 +167,7 @@ describe('slipBoxesOf', () => {
     )
 
     expect(boxes.map((box) => box.key)).toEqual(['first'])
+    expect(boxes[0]?.covers).toBe('payment')
     expect(boxes[0]?.targets).toEqual([{ depositId: null, paymentId: 'pay-2' }])
   })
 
@@ -184,6 +189,7 @@ describe('slipBoxesOf', () => {
     expect(boxes).toHaveLength(1)
     expect(boxes[0]).toMatchObject({
       key: 'first',
+      covers: 'payment',
       targets: [{ depositId: null, paymentId: 'pay-1' }],
     })
   })

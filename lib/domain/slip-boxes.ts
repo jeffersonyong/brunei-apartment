@@ -78,6 +78,13 @@ export interface SlipBox {
   key: SlipBoxKey
   /** The transfer "I have made the transfer" announced, or one sent after it. */
   kind: 'first' | 'rest'
+  /**
+   * What that transfer paid for, so the page can name it rather than ask for
+   * "your transfer slip" (Jeff, 9 October 2026): the deposit alone, the
+   * deposit with the stay ("everything now"), or a payment on its own — a day
+   * pass, a stay quoting no deposit by transfer, or the rest sent later.
+   */
+  covers: 'deposit' | 'deposit_and_payment' | 'payment'
   /** Whether anything in it is still waiting to be checked. */
   open: boolean
   /** Where a new slip goes: the rows still waiting, and only those. */
@@ -122,12 +129,20 @@ export function slipBoxesOf(facts: SlipFacts): readonly SlipBox[] {
   const firstRows = [...depositRow, ...withTheDeposit.map(paymentRow)]
   const boxes: SlipBox[] = []
 
+  const firstCovers: SlipBox['covers'] = !deposit
+    ? 'payment'
+    : withTheDeposit.length > 0
+      ? 'deposit_and_payment'
+      : 'deposit'
+
   if (firstRows.length > 0) {
-    boxes.push(boxOf('first', 'first', firstRows, facts.slips))
+    boxes.push(boxOf('first', 'first', firstCovers, firstRows, facts.slips))
   }
 
   for (const payment of later) {
-    boxes.push(boxOf(`payment:${payment.id}`, 'rest', [paymentRow(payment)], facts.slips))
+    boxes.push(
+      boxOf(`payment:${payment.id}`, 'rest', 'payment', [paymentRow(payment)], facts.slips),
+    )
   }
 
   return boxes
@@ -136,6 +151,7 @@ export function slipBoxesOf(facts: SlipFacts): readonly SlipBox[] {
 function boxOf(
   key: SlipBoxKey,
   kind: SlipBox['kind'],
+  covers: SlipBox['covers'],
   rows: readonly BoxRow[],
   slips: SlipFacts['slips'],
 ): SlipBox {
@@ -155,6 +171,7 @@ function boxOf(
   return {
     key,
     kind,
+    covers,
     open: waiting.length > 0,
     targets: waiting.map(({ depositId, paymentId }) => ({ depositId, paymentId })),
     onFileSince: onFile.at(-1) ?? null,
