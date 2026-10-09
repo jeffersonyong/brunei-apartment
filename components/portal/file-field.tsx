@@ -83,16 +83,8 @@ export function FileField(props: FileFieldProps) {
       </span>
 
       <div className="flex flex-wrap items-center gap-md">
-        <label
-          htmlFor={id}
-          className={
-            disabled
-              ? 'inline-flex h-[32px] items-center gap-xs rounded-md border border-border bg-card px-md text-button-md text-muted-foreground opacity-60'
-              : 'inline-flex h-[32px] cursor-pointer items-center gap-xs rounded-md border border-border bg-card px-md text-button-md text-foreground transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted'
-          }
-        >
-          {multiple ? 'Choose files' : 'Choose file'}
-        </label>
+        {/* Before the label, so the label can show the input's keyboard focus:
+            the input is what is focused, and `peer` only looks backwards. */}
         <input
           ref={inputRef}
           id={id}
@@ -101,9 +93,19 @@ export function FileField(props: FileFieldProps) {
           accept={accepts.accept}
           multiple={multiple}
           disabled={disabled}
-          className="sr-only"
+          className="peer sr-only"
           onChange={(event) => onChange(Array.from(event.target.files ?? []))}
         />
+        <label
+          htmlFor={id}
+          className={
+            disabled
+              ? 'inline-flex h-[32px] items-center gap-xs rounded-md border border-border bg-card px-md text-button-md text-muted-foreground opacity-60'
+              : 'inline-flex h-[32px] cursor-pointer items-center gap-xs rounded-md border border-border bg-card px-md text-button-md text-foreground transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring hover:bg-muted'
+          }
+        >
+          {multiple ? 'Choose files' : 'Choose file'}
+        </label>
         <span className="text-body-sm text-muted-foreground">{describe(files)}</span>
       </div>
 
